@@ -1,0 +1,170 @@
+import { Hono } from 'hono';
+import type { Env } from '../services/db.service';
+import { getSession, getCookie } from '../services/auth.service';
+import {
+  getJobs,
+  getJobById,
+  getSavedJobs,
+  saveJob,
+  unsaveJob,
+  isSaved,
+} from '../services/db.service';
+import { mockJobAnalysis } from '../services/ai.service';
+import type { User } from '@gethiredpoc/shared';
+
+type Variables = {
+  env: Env;
+};
+
+const jobs = new Hono<{ Bindings: Env; Variables: Variables }>();
+
+// Middleware to get user (optional)
+async function getOptionalUser(c: any): Promise<User | null> {
+  const sessionId = getCookie(c.req.raw, "session");
+  if (!sessionId) return null;
+  return await getSession(c.env, sessionId);
+}
+
+// Middleware to require auth
+async function requireAuth(c: any): Promise<User> {
+  const sessionId = getCookie(c.req.raw, "session");
+  if (!sessionId) {
+    throw new Error('Unauthorized');
+  }
+
+  const user = await getSession(c.env, sessionId);
+  if (!user) {
+    throw new Error('Session expired');
+  }
+
+  return user;
+}
+
+// GET /api/jobs
+jobs.get('/', async (c) => {
+  try {
+    const title = c.req.query("title") || undefined;
+    const remote = c.req.query("remote");
+    const location = c.req.query("location") || undefined;
+
+    const jobsList = await getJobs(c.env, {
+      title,
+      remote: remote === "true" ? true : remote === "false" ? false : undefined,
+      location,
+    });
+
+    return c.json({ jobs: jobsList }, 200);
+  } catch (error: any) {
+    return c.json({ error: error.message }, 500);
+  }
+});
+
+// GET /api/jobs/:id
+jobs.get('/:id', async (c) => {
+  try {
+    const jobId = c.req.param('id');
+    const job = await getJobById(c.env, jobId);
+
+    if (!job) {
+      return c.json({ error: "Job not found" }, 404);
+    }
+
+    let saved = false;
+    const user = await getOptionalUser(c);
+    if (user) {
+      saved = await isSaved(c.env, user.id, jobId);
+    }
+
+    return c.json({ job, saved }, 200);
+  } catch (error: any) {
+    return c.json({ error: error.message }, 500);
+  }
+});
+
+// POST /api/jobs/:id/save
+jobs.post('/:id/save', async (c) => {
+  try {
+    const user = await requireAuth(c);
+    const jobId = c.req.param('id');
+
+    await saveJob(c.env, user.id, jobId);
+    return c.json({ success: true }, 200);
+  } catch (error: any) {
+    if (error.message === 'Unauthorized' || error.message === 'Session expired') {
+      return c.json({ error: error.message }, 401);
+    }
+    return c.json({ error: error.message }, 500);
+  }
+});
+
+// DELETE /api/jobs/:id/save
+jobs.delete('/:id/save', async (c) => {
+  try {
+    const user = await requireAuth(c);
+    const jobId = c.req.param('id');
+
+    await unsaveJob(c.env, user.id, jobId);
+    return c.json({ success: true }, 200);
+  } catch (error: any) {
+    if (error.message === 'Unauthorized' || error.message === 'Session expired') {
+      return c.json({ error: error.message }, 401);
+    }
+    return c.json({ error: error.message }, 500);
+  }
+});
+
+// GET /api/jobs/saved
+jobs.get('/saved/list', async (c) => {
+  try {
+    const user = await requireAuth(c);
+    const jobsList = await getSavedJobs(c.env, user.id);
+    return c.json({ jobs: jobsList }, 200);
+  } catch (error: any) {
+    if (error.message === 'Unauthorized' || error.message === 'Session expired') {
+      return c.json({ error: error.message }, 401);
+    }
+    return c.json({ error: error.message }, 500);
+  }
+});
+
+// POST /api/jobs/:id/analyze
+jobs.post('/:id/analyze', async (c) => {
+  try {
+    const user = await requireAuth(c);
+    const jobId = c.req.param('id');
+
+    // Check cache first
+    const cacheKey = `job-analysis:${user.id}:${jobId}`;
+    const cached = await c.env.KV_CACHE.get(cacheKey);
+    if (cached) {
+      return c.json({ analysis: JSON.parse(cached), cached: true }, 200);
+    }
+
+    // Get job
+    const job = await getJobById(c.env, jobId);
+    if (!job) {
+      return c.json({ error: "Job not found" }, 404);
+    }
+
+    // Parse skills and requirements
+    const userSkills = user.skills ? JSON.parse(user.skills) : [];
+    const jobRequirements = job.requirements ? JSON.parse(job.requirements) : [];
+
+    // Generate analysis
+    const analysis = await mockJobAnalysis(userSkills, jobRequirements);
+
+    // Cache the result
+    await c.env.KV_CACHE.put(cacheKey, JSON.stringify(analysis), {
+      expirationTtl: 7 * 24 * 60 * 60,
+    });
+
+    return c.json({ analysis, cached: false }, 200);
+  } catch (error: any) {
+    if (error.message === 'Unauthorized' || error.message === 'Session expired') {
+      return c.json({ error: error.message }, 401);
+    }
+    return c.json({ error: error.message }, 500);
+  }
+});
+
+export default jobs;

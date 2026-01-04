@@ -1,0 +1,22 @@
+{
+  "name": "@gethiredpoc/backend",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "wrangler dev",
+    "deploy": "wrangler deploy",
+    "build": "tsc"
+  },
+  "dependencies": {
+    "@gethiredpoc/shared": "file:../shared",
+    "bcryptjs": "^2.4.3",
+    "hono": "^4.7.8"
+  },
+  "devDependencies": {
+    "@cloudflare/workers-types": "^4.20250110.0",
+    "@types/bcryptjs": "^2.4.6",
+    "typescript": "^5.9.3",
+    "wrangler": "^3.100.0"
+  }
+}

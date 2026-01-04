@@ -1,0 +1,32 @@
+name = "gethiredpoc-api"
+main = "src/index.ts"
+compatibility_date = "2024-01-01"
+node_compat = true
+
+# CORS allowed origins (update with production frontend URL)
+[vars]
+FRONTEND_URL = "https://gethiredpoc.pages.dev"
+
+# D1 Database
+[[d1_databases]]
+binding = "DB"
+database_name = "gethiredpoc-db"
+database_id = "a927d1e6-cf48-4b67-82f6-472964063676"
+
+# R2 Storage
+[[r2_buckets]]
+binding = "STORAGE"
+bucket_name = "gethiredpoc-storage"
+
+# KV Namespaces
+[[kv_namespaces]]
+binding = "KV_CACHE"
+id = "7ad0fb2965a4468c983557e3535ec772"
+
+[[kv_namespaces]]
+binding = "KV_SESSIONS"
+id = "e96d7669b11c4f63b2b1ce41026a0c5d"
+
+# AI binding for production
+[ai]
+binding = "AI"
