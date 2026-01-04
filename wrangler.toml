@@ -1,0 +1,23 @@
+  name = "jgethiredpocc"
+  main = "src/index.ts"
+  compatibility_date = "2024-01-01"
+  node_compat = true
+
+  # Local bindings (no IDs needed)
+  [[d1_databases]]
+  binding = "DB"
+  database_name = "gethiredpoc"
+
+  [[r2_buckets]]
+  binding = "STORAGE"
+  bucket_name = "gethiredpoc"
+
+  [[kv_namespaces]]
+  binding = "KV_CACHE"
+
+  [[kv_namespaces]]
+  binding = "KV_SESSIONS"
+
+  # Comment out AI binding for local mock
+  # [[ai]]
+  # binding = "AI"

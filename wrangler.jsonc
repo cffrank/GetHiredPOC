@@ -1,0 +1,58 @@
+{
+  // Schema reference for wrangler configuration
+  "$schema": "node_modules/wrangler/config-schema.json",
+
+  // Name of your worker
+  "name": "jobmatch-poc",
+
+  // Entry point for your worker
+  "main": "src/worker.tsx",
+
+  // Compatibility settings
+  "compatibility_date": "2025-08-21",
+  "compatibility_flags": ["nodejs_compat"],
+
+  // Assets configuration
+  "assets": {
+    "binding": "ASSETS"
+  },
+
+  // Observability settings
+  "observability": {
+    "enabled": true
+  },
+
+  // D1 Database
+  "d1_databases": [
+    {
+      "binding": "DB",
+      "database_name": "gethiredpoc",
+      "database_id": "local-only"
+    }
+  ],
+
+  // R2 Storage
+  "r2_buckets": [
+    {
+      "binding": "STORAGE",
+      "bucket_name": "gethiredpoc"
+    }
+  ],
+
+  // KV Namespaces
+  "kv_namespaces": [
+    {
+      "binding": "KV_CACHE",
+      "id": "local-cache"
+    },
+    {
+      "binding": "KV_SESSIONS",
+      "id": "local-sessions"
+    }
+  ],
+
+  // Environment variables
+  "vars": {
+    // Add your environment variables here
+  }
+}
