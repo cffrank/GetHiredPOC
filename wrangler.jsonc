@@ -26,8 +26,8 @@
   "d1_databases": [
     {
       "binding": "DB",
-      "database_name": "gethiredpoc",
-      "database_id": "local-only"
+      "database_name": "gethiredpoc-db",
+      "database_id": "a927d1e6-cf48-4b67-82f6-472964063676"
     }
   ],
 
@@ -35,7 +35,7 @@
   "r2_buckets": [
     {
       "binding": "STORAGE",
-      "bucket_name": "gethiredpoc"
+      "bucket_name": "gethiredpoc-storage"
     }
   ],
 
@@ -43,11 +43,11 @@
   "kv_namespaces": [
     {
       "binding": "KV_CACHE",
-      "id": "local-cache"
+      "id": "7ad0fb2965a4468c983557e3535ec772"
     },
     {
       "binding": "KV_SESSIONS",
-      "id": "local-sessions"
+      "id": "e96d7669b11c4f63b2b1ce41026a0c5d"
     }
   ],
 
