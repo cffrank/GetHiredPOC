@@ -42,6 +42,12 @@ function SortableApplication({ application, onDelete }: any) {
               {application.job.remote === 1 && (
                 <Badge className="text-xs bg-green-100 text-green-800">Remote</Badge>
               )}
+              {application.job.remote === 2 && (
+                <Badge className="text-xs bg-blue-100 text-blue-800">Hybrid</Badge>
+              )}
+              {application.job.remote === 0 && (
+                <Badge className="text-xs bg-gray-100 text-gray-800">On-Site</Badge>
+              )}
               {application.job.location && (
                 <Badge className="text-xs">{application.job.location}</Badge>
               )}

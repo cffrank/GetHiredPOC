@@ -45,6 +45,8 @@ export default function SavedJobs() {
                   <CardContent>
                     <div className="flex gap-2 mb-2">
                       {job.remote === 1 && <Badge>Remote</Badge>}
+                      {job.remote === 2 && <Badge>Hybrid</Badge>}
+                      {job.remote === 0 && <Badge>On-Site</Badge>}
                       {job.location && <Badge>{job.location}</Badge>}
                     </div>
                     <p className="text-sm text-gray-600 line-clamp-2">{job.description}</p>

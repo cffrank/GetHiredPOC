@@ -78,6 +78,8 @@ export default function JobDetail() {
             <CardContent className="space-y-6">
               <div className="flex gap-2">
                 {job.remote === 1 && <Badge>Remote</Badge>}
+                {job.remote === 2 && <Badge>Hybrid</Badge>}
+                {job.remote === 0 && <Badge>On-Site</Badge>}
                 {job.location && <Badge>{job.location}</Badge>}
                 {job.salary_min && job.salary_max && (
                   <Badge>${job.salary_min.toLocaleString()} - ${job.salary_max.toLocaleString()}</Badge>

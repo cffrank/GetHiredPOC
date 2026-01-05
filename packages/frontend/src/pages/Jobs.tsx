@@ -37,14 +37,18 @@ export default function Jobs() {
                 />
                 <select
                   className="flex h-10 w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-sm"
-                  value={remote === undefined ? 'all' : remote ? 'yes' : 'no'}
-                  onChange={(e) =>
-                    setRemote(e.target.value === 'all' ? undefined : e.target.value === 'yes')
-                  }
+                  value={remote === undefined ? 'all' : remote === true ? 'yes' : remote === false ? 'no' : 'hybrid'}
+                  onChange={(e) => {
+                    if (e.target.value === 'all') setRemote(undefined);
+                    else if (e.target.value === 'yes') setRemote(true);
+                    else if (e.target.value === 'no') setRemote(false);
+                    // Note: 'hybrid' filter not yet implemented in backend query params
+                  }}
                 >
                   <option value="all">All Jobs</option>
                   <option value="yes">Remote Only</option>
                   <option value="no">On-site Only</option>
+                  <option value="hybrid">Hybrid Only</option>
                 </select>
                 <Button variant="outline" onClick={() => { setTitle(''); setLocation(''); setRemote(undefined); }}>
                   Clear
@@ -74,6 +78,8 @@ export default function Jobs() {
                   <CardContent>
                     <div className="flex gap-2 mb-2">
                       {job.remote === 1 && <Badge>Remote</Badge>}
+                      {job.remote === 2 && <Badge>Hybrid</Badge>}
+                      {job.remote === 0 && <Badge>On-Site</Badge>}
                       {job.location && <Badge>{job.location}</Badge>}
                       {job.salary_min && job.salary_max && (
                         <Badge>${job.salary_min.toLocaleString()} - ${job.salary_max.toLocaleString()}</Badge>

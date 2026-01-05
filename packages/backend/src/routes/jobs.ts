@@ -76,20 +76,21 @@ jobs.get('/', async (c) => {
 
           // Match locations
           if (preferences.workLocations.length > 0) {
-            const hasRemote = preferences.workLocations.some(loc => loc.toLowerCase() === 'remote');
-            const hasOnSite = preferences.workLocations.some(loc => loc.toLowerCase() === 'on-site');
-            const hasHybrid = preferences.workLocations.some(loc => loc.toLowerCase() === 'hybrid');
-
             const locationMatch = preferences.workLocations.some(desiredLoc => {
               const locLower = desiredLoc.toLowerCase();
 
-              // Handle work mode preferences
+              // Handle work mode preferences (3-state remote field)
+              // remote = 0: On-site only
+              // remote = 1: Remote only
+              // remote = 2: Hybrid (both options)
               if (locLower === 'remote') {
-                return job.remote === 1;
+                return job.remote === 1 || job.remote === 2; // Remote or Hybrid
               }
-              if (locLower === 'on-site' || locLower === 'hybrid') {
-                // On-site and Hybrid match any non-remote job
-                return job.remote === 0;
+              if (locLower === 'on-site') {
+                return job.remote === 0 || job.remote === 2; // On-site or Hybrid
+              }
+              if (locLower === 'hybrid') {
+                return job.remote === 2; // Hybrid only
               }
 
               // Handle actual location strings (e.g., "Madison, WI")

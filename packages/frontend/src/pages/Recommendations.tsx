@@ -209,6 +209,8 @@ export default function Recommendations() {
                   <CardContent className="space-y-4">
                     <div className="flex gap-2 flex-wrap">
                       {job.remote === 1 && <Badge>Remote</Badge>}
+                      {job.remote === 2 && <Badge>Hybrid</Badge>}
+                      {job.remote === 0 && <Badge>On-Site</Badge>}
                       {job.location && <Badge>{job.location}</Badge>}
                       {job.salary_min && job.salary_max && (
                         <Badge>

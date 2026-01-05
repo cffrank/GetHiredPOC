@@ -100,16 +100,27 @@ export async function importJobsFromAdzuna(
           console.log(`[Adzuna Import] Contract: ${job.contract_type} / ${job.contract_time}`);
           console.log(`[Adzuna Import] Category: ${job.category?.label || 'N/A'}`);
 
-          // Detect remote jobs by checking both location and title for "remote" keyword
+          // Detect work mode: 0 = on-site, 1 = remote, 2 = hybrid
           const locationText = job.location.display_name.toLowerCase();
           const titleText = job.title.toLowerCase();
-          const isRemote = locationText.includes('remote') || titleText.includes('remote') ? 1 : 0;
+          const descriptionText = job.description.toLowerCase();
+
+          let remoteValue = 0; // Default: on-site
+
+          // Check for hybrid first (takes priority)
+          if (titleText.includes('hybrid') || locationText.includes('hybrid') || descriptionText.includes('hybrid')) {
+            remoteValue = 2;
+          }
+          // Then check for remote
+          else if (titleText.includes('remote') || locationText.includes('remote') || descriptionText.includes('remote')) {
+            remoteValue = 1;
+          }
 
           const result = await saveOrUpdateJob(env.DB, {
             title: job.title,
             company: job.company.display_name,
             location: job.location.display_name,
-            remote: isRemote,
+            remote: remoteValue,
             description: job.description,
             requirements: JSON.stringify([]), // Adzuna doesn't provide structured requirements
             salary_min: job.salary_min || null,
