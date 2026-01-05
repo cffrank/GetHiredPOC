@@ -35,7 +35,7 @@ workExperience.post('/', async (c) => {
     }
 
     const body = await c.req.json();
-    const { company, title, location, startDate, endDate, description, resumeId } = body;
+    const { company, title, location, start_date, end_date, description, resumeId } = body;
 
     if (!company || !title) {
       return c.json({ error: 'Company and title are required' }, 400);
@@ -61,8 +61,8 @@ workExperience.post('/', async (c) => {
       company,
       title,
       location || null,
-      startDate || null,
-      endDate || null,
+      start_date || null,
+      end_date || null,
       description || null
     ).run();
 
@@ -75,8 +75,8 @@ workExperience.post('/', async (c) => {
       company,
       title,
       location,
-      startDate,
-      endDate,
+      start_date,
+      end_date,
       description
     }, 201);
   } catch (error: any) {
@@ -95,7 +95,7 @@ workExperience.put('/:id', async (c) => {
 
     const experienceId = c.req.param('id');
     const body = await c.req.json();
-    const { company, title, location, startDate, endDate, description } = body;
+    const { company, title, location, start_date, end_date, description } = body;
 
     // Verify work experience belongs to user
     const existing = await c.env.DB.prepare('SELECT id FROM work_experience WHERE id = ? AND user_id = ?')
@@ -114,8 +114,8 @@ workExperience.put('/:id', async (c) => {
       company,
       title,
       location || null,
-      startDate || null,
-      endDate || null,
+      start_date || null,
+      end_date || null,
       description || null,
       experienceId
     ).run();
@@ -125,8 +125,8 @@ workExperience.put('/:id', async (c) => {
       company,
       title,
       location,
-      startDate,
-      endDate,
+      start_date,
+      end_date,
       description
     });
   } catch (error: any) {

@@ -178,7 +178,7 @@ jobs.post('/:id/hide', async (c) => {
     const jobId = c.req.param('id');
 
     // Check if job exists
-    const job = await getJob(c.env, jobId);
+    const job = await getJobById(c.env, jobId);
     if (!job) {
       return c.json({ error: 'Job not found' }, 404);
     }
