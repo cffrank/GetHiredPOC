@@ -16,7 +16,7 @@ ADZUNA_APP_ID = "65f2bced"
 # Note: Add RESEND_API_KEY via: npx wrangler secret put RESEND_API_KEY
 
 # LinkedIn OAuth credentials
-LINKEDIN_CLIENT_ID = "YOUR_LINKEDIN_CLIENT_ID_HERE"
+LINKEDIN_CLIENT_ID = "86gnb581r70q6j"
 # Note: Add LINKEDIN_CLIENT_SECRET via: npx wrangler secret put LINKEDIN_CLIENT_SECRET
 
 # D1 Database
