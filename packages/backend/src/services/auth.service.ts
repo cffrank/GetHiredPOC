@@ -32,7 +32,7 @@ export async function signup(
   const passwordHash = await hashPassword(password);
 
   const result = await env.DB.prepare(
-    "INSERT INTO users (email, password_hash) VALUES (?, ?) RETURNING id, email, full_name, bio, location, skills, avatar_url, created_at, updated_at"
+    "INSERT INTO users (email, password_hash) VALUES (?, ?) RETURNING id, email, full_name, bio, location, skills, avatar_url, address, linkedin_url, created_at, updated_at"
   )
     .bind(email, passwordHash)
     .first<User>();
@@ -52,7 +52,7 @@ export async function login(
   password: string
 ): Promise<{ user: User; sessionId: string }> {
   const result = await env.DB.prepare(
-    "SELECT id, email, password_hash, full_name, bio, location, skills, avatar_url, created_at, updated_at FROM users WHERE email = ?"
+    "SELECT id, email, password_hash, full_name, bio, location, skills, avatar_url, address, linkedin_url, created_at, updated_at FROM users WHERE email = ?"
   )
     .bind(email)
     .first<User & { password_hash: string }>();
@@ -105,7 +105,7 @@ export async function getSession(
   }
 
   const user = await env.DB.prepare(
-    "SELECT id, email, full_name, bio, location, skills, avatar_url, created_at, updated_at FROM users WHERE id = ?"
+    "SELECT id, email, full_name, bio, location, skills, avatar_url, address, linkedin_url, created_at, updated_at FROM users WHERE id = ?"
   )
     .bind(userId)
     .first<User>();
