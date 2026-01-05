@@ -10,6 +10,15 @@ export interface Job {
   salary_max: number | null;
   posted_date: number;
   created_at: number;
+  contract_time: string | null; // full_time, part_time, etc.
+  contract_type: string | null; // permanent, contract, temporary
+  category_tag: string | null; // e.g., "it-jobs"
+  category_label: string | null; // e.g., "IT Jobs"
+  salary_is_predicted: number; // 0 or 1 (whether salary is estimated)
+  latitude: number | null;
+  longitude: number | null;
+  source: string | null; // 'adzuna', 'manual', etc.
+  external_url: string | null;
 }
 
 export interface SavedJob {

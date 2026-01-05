@@ -10,8 +10,13 @@ export interface AdzunaJob {
   salary_min?: number;
   salary_max?: number;
   created: string; // ISO date
-  contract_type?: string;
-  category?: { label: string };
+  contract_time?: string; // full_time, part_time, etc.
+  contract_type?: string; // permanent, contract, temporary
+  category?: { tag: string; label: string };
+  salary_is_predicted?: string; // "0" or "1"
+  latitude?: number;
+  longitude?: number;
+  adref?: string;
 }
 
 export interface AdzunaSearchResult {
@@ -90,6 +95,11 @@ export async function importJobsFromAdzuna(
 
       for (const job of jobs) {
         try {
+          console.log(`[Adzuna Import] Job: ${job.title} at ${job.company.display_name}`);
+          console.log(`[Adzuna Import] Description length: ${job.description?.length || 0} chars`);
+          console.log(`[Adzuna Import] Contract: ${job.contract_type} / ${job.contract_time}`);
+          console.log(`[Adzuna Import] Category: ${job.category?.label || 'N/A'}`);
+
           // Detect remote jobs by checking both location and title for "remote" keyword
           const locationText = job.location.display_name.toLowerCase();
           const titleText = job.title.toLowerCase();
@@ -106,7 +116,15 @@ export async function importJobsFromAdzuna(
             salary_max: job.salary_max || null,
             posted_date: Math.floor(new Date(job.created).getTime() / 1000),
             source: 'adzuna',
-            external_url: job.redirect_url
+            external_url: job.redirect_url,
+            contract_time: job.contract_time || null,
+            contract_type: job.contract_type || null,
+            category_tag: job.category?.tag || null,
+            category_label: job.category?.label || null,
+            salary_is_predicted: job.salary_is_predicted === '1' ? 1 : 0,
+            latitude: job.latitude || null,
+            longitude: job.longitude || null,
+            adref: job.adref || null
           });
 
           if (result === 'inserted') {
@@ -145,6 +163,14 @@ async function saveOrUpdateJob(
     posted_date: number;
     source: string;
     external_url: string;
+    contract_time: string | null;
+    contract_type: string | null;
+    category_tag: string | null;
+    category_label: string | null;
+    salary_is_predicted: number;
+    latitude: number | null;
+    longitude: number | null;
+    adref: string | null;
   }
 ): Promise<'inserted' | 'updated'> {
   // Check if job exists (by external_url to avoid duplicates)
@@ -158,24 +184,36 @@ async function saveOrUpdateJob(
       UPDATE jobs SET
         title = ?, company = ?, location = ?, remote = ?,
         description = ?, requirements = ?, salary_min = ?, salary_max = ?,
-        posted_date = ?
+        posted_date = ?, contract_time = ?, contract_type = ?,
+        category_tag = ?, category_label = ?, salary_is_predicted = ?,
+        latitude = ?, longitude = ?, adref = ?
       WHERE id = ?
     `).bind(
       jobData.title, jobData.company, jobData.location, jobData.remote,
       jobData.description, jobData.requirements, jobData.salary_min, jobData.salary_max,
-      jobData.posted_date, existing.id
+      jobData.posted_date, jobData.contract_time, jobData.contract_type,
+      jobData.category_tag, jobData.category_label, jobData.salary_is_predicted,
+      jobData.latitude, jobData.longitude, jobData.adref,
+      existing.id
     ).run();
 
     return 'updated';
   } else {
     // Insert new job
     await db.prepare(`
-      INSERT INTO jobs (title, company, location, remote, description, requirements, salary_min, salary_max, posted_date, source, external_url)
-      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+      INSERT INTO jobs (
+        title, company, location, remote, description, requirements,
+        salary_min, salary_max, posted_date, source, external_url,
+        contract_time, contract_type, category_tag, category_label,
+        salary_is_predicted, latitude, longitude, adref
+      )
+      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
     `).bind(
       jobData.title, jobData.company, jobData.location, jobData.remote,
       jobData.description, jobData.requirements, jobData.salary_min, jobData.salary_max,
-      jobData.posted_date, jobData.source, jobData.external_url
+      jobData.posted_date, jobData.source, jobData.external_url,
+      jobData.contract_time, jobData.contract_type, jobData.category_tag, jobData.category_label,
+      jobData.salary_is_predicted, jobData.latitude, jobData.longitude, jobData.adref
     ).run();
 
     return 'inserted';
