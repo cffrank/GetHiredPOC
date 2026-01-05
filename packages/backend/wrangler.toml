@@ -8,12 +8,12 @@ compatibility_flags = ["nodejs_compat"]
 FRONTEND_URL = "https://gethiredpoc.pages.dev"
 BACKEND_URL = "https://gethiredpoc-api.carl-f-frank.workers.dev"
 
-# Adzuna API credentials (FREE API - no secrets needed)
+# Adzuna API credentials
 ADZUNA_APP_ID = "65f2bced"
-ADZUNA_APP_KEY = "ca10939f5e5eb6af1c4683809fa074ca"
+# Note: Add ADZUNA_APP_KEY via: npx wrangler secret put ADZUNA_APP_KEY
 
 # Resend API key for email notifications
-RESEND_API_KEY = "re_ZUh9zWG3_DokuAnE8eXjiWV3bj3tUH8wA"
+# Note: Add RESEND_API_KEY via: npx wrangler secret put RESEND_API_KEY
 
 # LinkedIn OAuth credentials
 LINKEDIN_CLIENT_ID = "YOUR_LINKEDIN_CLIENT_ID_HERE"

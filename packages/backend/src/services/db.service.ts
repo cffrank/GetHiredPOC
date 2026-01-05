@@ -8,6 +8,8 @@ export interface Env {
   AI: any;
   FRONTEND_URL?: string;
   BACKEND_URL?: string;
+  ADZUNA_APP_ID?: string;
+  ADZUNA_APP_KEY?: string;
   RESEND_API_KEY?: string;
   LINKEDIN_CLIENT_ID?: string;
   LINKEDIN_CLIENT_SECRET?: string;
