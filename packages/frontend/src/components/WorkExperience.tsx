@@ -89,13 +89,23 @@ export function WorkExperience() {
   };
 
   const handleEdit = (exp: WorkExperience) => {
+    // Convert YYYY-MM format to YYYY-MM-DD for date inputs
+    const formatDateForInput = (dateStr: string) => {
+      if (!dateStr) return '';
+      // If already in YYYY-MM-DD format, return as is
+      if (dateStr.match(/^\d{4}-\d{2}-\d{2}$/)) return dateStr;
+      // If in YYYY-MM format, add -01
+      if (dateStr.match(/^\d{4}-\d{2}$/)) return `${dateStr}-01`;
+      return dateStr;
+    };
+
     setFormData({
       company: exp.company,
       title: exp.title,
-      location: exp.location,
-      start_date: exp.start_date,
-      end_date: exp.end_date,
-      description: exp.description
+      location: exp.location || '',
+      start_date: formatDateForInput(exp.start_date),
+      end_date: formatDateForInput(exp.end_date),
+      description: exp.description || ''
     });
     setEditingId(exp.id);
     setIsAdding(true);

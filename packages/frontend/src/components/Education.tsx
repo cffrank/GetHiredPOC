@@ -89,13 +89,25 @@ export function Education() {
   };
 
   const handleEdit = (edu: Education) => {
+    // Convert YYYY format to YYYY-MM-DD for date inputs
+    const formatDateForInput = (dateStr: string) => {
+      if (!dateStr) return '';
+      // If already in YYYY-MM-DD format, return as is
+      if (dateStr.match(/^\d{4}-\d{2}-\d{2}$/)) return dateStr;
+      // If in YYYY format, convert to YYYY-01-01
+      if (dateStr.match(/^\d{4}$/)) return `${dateStr}-01-01`;
+      // If in YYYY-MM format, add -01
+      if (dateStr.match(/^\d{4}-\d{2}$/)) return `${dateStr}-01`;
+      return dateStr;
+    };
+
     setFormData({
       school: edu.school,
       degree: edu.degree,
       field_of_study: edu.field_of_study,
-      start_date: edu.start_date,
-      end_date: edu.end_date,
-      gpa: edu.gpa
+      start_date: formatDateForInput(edu.start_date),
+      end_date: formatDateForInput(edu.end_date),
+      gpa: edu.gpa || ''
     });
     setEditingId(edu.id);
     setIsAdding(true);
