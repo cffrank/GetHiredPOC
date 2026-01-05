@@ -8,6 +8,10 @@ compatibility_flags = ["nodejs_compat"]
 FRONTEND_URL = "https://gethiredpoc.pages.dev"
 BACKEND_URL = "https://gethiredpoc-api.carl-f-frank.workers.dev"
 
+# Admin emails (comma-separated list)
+# Note: Update this with actual admin email addresses
+ADMIN_EMAILS = "admin@example.com"
+
 # Adzuna API credentials
 ADZUNA_APP_ID = "65f2bced"
 # Note: Add ADZUNA_APP_KEY via: npx wrangler secret put ADZUNA_APP_KEY
