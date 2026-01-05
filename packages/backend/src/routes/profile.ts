@@ -53,6 +53,8 @@ profile.put('/', async (c) => {
       if (formData.has("bio")) updates.bio = formData.get("bio");
       if (formData.has("location")) updates.location = formData.get("location");
       if (formData.has("skills")) updates.skills = formData.get("skills");
+      if (formData.has("address")) updates.address = formData.get("address");
+      if (formData.has("linkedin_url")) updates.linkedin_url = formData.get("linkedin_url");
 
       const avatarFile = formData.get("avatar");
       if (avatarFile && typeof avatarFile === 'object' && 'arrayBuffer' in avatarFile) {
@@ -68,6 +70,8 @@ profile.put('/', async (c) => {
       if (body.skills !== undefined) {
         updates.skills = Array.isArray(body.skills) ? JSON.stringify(body.skills) : body.skills;
       }
+      if (body.address !== undefined) updates.address = body.address;
+      if (body.linkedin_url !== undefined) updates.linkedin_url = body.linkedin_url;
     }
 
     const fields: string[] = [];
@@ -89,7 +93,7 @@ profile.put('/', async (c) => {
     await c.env.DB.prepare(query).bind(...params).run();
 
     const updatedUser = await c.env.DB.prepare(
-      "SELECT id, email, full_name, bio, location, skills, avatar_url, created_at, updated_at FROM users WHERE id = ?"
+      "SELECT id, email, full_name, bio, location, skills, avatar_url, address, linkedin_url, created_at, updated_at FROM users WHERE id = ?"
     )
       .bind(user.id)
       .first<User>();
@@ -118,6 +122,8 @@ profile.patch('/', async (c) => {
       if (formData.has("bio")) updates.bio = formData.get("bio");
       if (formData.has("location")) updates.location = formData.get("location");
       if (formData.has("skills")) updates.skills = formData.get("skills");
+      if (formData.has("address")) updates.address = formData.get("address");
+      if (formData.has("linkedin_url")) updates.linkedin_url = formData.get("linkedin_url");
 
       const avatarFile = formData.get("avatar");
       if (avatarFile && typeof avatarFile === 'object' && 'arrayBuffer' in avatarFile) {
@@ -133,6 +139,8 @@ profile.patch('/', async (c) => {
       if (body.skills !== undefined) {
         updates.skills = Array.isArray(body.skills) ? JSON.stringify(body.skills) : body.skills;
       }
+      if (body.address !== undefined) updates.address = body.address;
+      if (body.linkedin_url !== undefined) updates.linkedin_url = body.linkedin_url;
     }
 
     const fields: string[] = [];
@@ -154,7 +162,7 @@ profile.patch('/', async (c) => {
     await c.env.DB.prepare(query).bind(...params).run();
 
     const updatedUser = await c.env.DB.prepare(
-      "SELECT id, email, full_name, bio, location, skills, avatar_url, created_at, updated_at FROM users WHERE id = ?"
+      "SELECT id, email, full_name, bio, location, skills, avatar_url, address, linkedin_url, created_at, updated_at FROM users WHERE id = ?"
     )
       .bind(user.id)
       .first<User>();

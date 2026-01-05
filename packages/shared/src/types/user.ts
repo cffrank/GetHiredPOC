@@ -6,6 +6,8 @@ export interface User {
   location: string | null;
   skills: string | null; // JSON string: ["React", "TypeScript"]
   avatar_url: string | null;
+  address: string | null;
+  linkedin_url: string | null;
   created_at: number;
   updated_at: number;
 }

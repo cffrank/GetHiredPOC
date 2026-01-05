@@ -28,24 +28,129 @@ export interface ParsedResume {
 /**
  * Parse PDF resume and extract structured data using AI
  *
- * NOTE: PDF text extraction requires additional libraries that aren't compatible
- * with Cloudflare Workers. For MVP, we're skipping automatic parsing.
- * Users will manually enter their work experience and education.
+ * Uses a simplified approach: extract text using basic PDF parsing,
+ * then use AI to structure the data
  */
 export async function parseResume(
   env: Env,
   pdfBuffer: ArrayBuffer
 ): Promise<ParsedResume> {
-  // TODO: Implement PDF text extraction using a Workers-compatible library
-  // For now, return empty structure - users will manually enter their data
+  try {
+    // Convert PDF to text (basic extraction)
+    // Note: This is a simplified approach. For better results, consider using a dedicated PDF parsing service
+    const pdfText = await extractTextFromPDF(pdfBuffer);
 
-  console.log(`Resume uploaded (${pdfBuffer.byteLength} bytes), manual entry required`);
+    if (!pdfText || pdfText.trim().length === 0) {
+      console.warn('No text extracted from PDF');
+      return {
+        workExperience: [],
+        education: [],
+        skills: []
+      };
+    }
 
-  return {
-    workExperience: [],
-    education: [],
-    skills: []
-  };
+    // Use AI to parse the resume text into structured data
+    const prompt = `Extract structured data from this resume text. Return a JSON object with this exact structure:
+{
+  "fullName": "string",
+  "email": "string",
+  "phone": "string",
+  "location": "string",
+  "summary": "string",
+  "workExperience": [
+    {
+      "company": "string",
+      "title": "string",
+      "location": "string",
+      "startDate": "YYYY-MM",
+      "endDate": "YYYY-MM or null if current",
+      "description": "string"
+    }
+  ],
+  "education": [
+    {
+      "school": "string",
+      "degree": "string",
+      "fieldOfStudy": "string",
+      "startDate": "YYYY",
+      "endDate": "YYYY or null if current",
+      "gpa": "string"
+    }
+  ],
+  "skills": ["skill1", "skill2", "skill3"]
+}
+
+Return ONLY valid JSON, no markdown or explanations.
+
+Resume Text:
+${pdfText.substring(0, 10000)}`; // Limit to 10k chars to stay within token limits
+
+    const response = await env.AI.run('@cf/meta/llama-3.1-8b-instruct', {
+      messages: [
+        {
+          role: 'system',
+          content: 'You are a resume parsing assistant. Extract structured information from resumes and return ONLY valid JSON.'
+        },
+        {
+          role: 'user',
+          content: prompt
+        }
+      ],
+      max_tokens: 2048
+    });
+
+    // Parse AI response
+    let jsonText = (response as any).response || '';
+    jsonText = jsonText.replace(/```json\n?/g, '').replace(/```\n?/g, '').trim();
+
+    const parsed = JSON.parse(jsonText);
+
+    return {
+      fullName: parsed.fullName || '',
+      email: parsed.email || '',
+      phone: parsed.phone || '',
+      location: parsed.location || '',
+      summary: parsed.summary || '',
+      workExperience: parsed.workExperience || [],
+      education: parsed.education || [],
+      skills: parsed.skills || []
+    };
+  } catch (error) {
+    console.error('Resume parsing error:', error);
+    // Return empty structure if parsing fails
+    return {
+      workExperience: [],
+      education: [],
+      skills: []
+    };
+  }
+}
+
+/**
+ * Basic PDF text extraction
+ * This is a simplified implementation. For production, consider using a dedicated PDF library
+ */
+async function extractTextFromPDF(pdfBuffer: ArrayBuffer): Promise<string> {
+  try {
+    // Convert ArrayBuffer to string and look for text content
+    // This is a very basic approach that works for simple PDFs
+    // For complex PDFs, you'd need a proper PDF parsing library
+
+    const uint8Array = new Uint8Array(pdfBuffer);
+    const decoder = new TextDecoder('utf-8', { fatal: false });
+    let text = decoder.decode(uint8Array);
+
+    // Remove PDF control characters and binary data
+    text = text.replace(/[^\x20-\x7E\n\r]/g, ' ');
+
+    // Clean up multiple spaces and newlines
+    text = text.replace(/\s+/g, ' ').trim();
+
+    return text;
+  } catch (error) {
+    console.error('PDF text extraction error:', error);
+    return '';
+  }
 }
 
 /**
