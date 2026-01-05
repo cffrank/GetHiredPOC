@@ -4,6 +4,14 @@ import auth from './routes/auth';
 import jobs from './routes/jobs';
 import applications from './routes/applications';
 import profile from './routes/profile';
+import admin from './routes/admin';
+import resumes from './routes/resumes';
+import workExperience from './routes/work-experience';
+import education from './routes/education';
+import emailPreferences from './routes/email-preferences';
+import exportRoutes from './routes/export';
+import aiJobs from './routes/ai-jobs';
+import recommendations from './routes/recommendations';
 import { getFile } from './services/storage.service';
 
 const app = new Hono<{ Bindings: Env }>();
@@ -30,6 +38,14 @@ app.route('/api/auth', auth);
 app.route('/api/jobs', jobs);
 app.route('/api/applications', applications);
 app.route('/api/profile', profile);
+app.route('/api/admin', admin);
+app.route('/api/resumes', resumes);
+app.route('/api/work-experience', workExperience);
+app.route('/api/education', education);
+app.route('/api/email-preferences', emailPreferences);
+app.route('/api/export', exportRoutes);
+app.route('/api/ai/jobs', aiJobs);
+app.route('/api/recommendations', recommendations);
 
 // File serving endpoint
 app.get('/api/files/*', async (c) => {
@@ -68,4 +84,21 @@ app.onError((err, c) => {
   return c.json({ error: 'Internal server error' }, 500);
 });
 
-export default app;
+// Cron trigger for daily job alerts (runs at 9 AM UTC daily)
+export default {
+  fetch: app.fetch,
+  async scheduled(event: ScheduledEvent, env: Env, ctx: ExecutionContext) {
+    console.log('[Cron] Daily job alerts triggered at', new Date().toISOString());
+
+    // Import the service dynamically to avoid circular dependencies
+    const { sendDailyAlertsToAllUsers } = await import('./services/job-alerts.service');
+
+    ctx.waitUntil(
+      sendDailyAlertsToAllUsers(env).then(result => {
+        console.log('[Cron] Daily alerts completed:', result);
+      }).catch(error => {
+        console.error('[Cron] Daily alerts failed:', error);
+      })
+    );
+  }
+};

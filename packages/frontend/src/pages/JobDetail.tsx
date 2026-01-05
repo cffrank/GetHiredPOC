@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { Navigation } from '../components/Navigation';
-import { useJob, useSaveJob, useUnsaveJob, useAnalyzeJob } from '../hooks/useJobs';
+import { useJob, useSaveJob, useUnsaveJob, useAnalyzeJob, useGenerateResume, useGenerateCoverLetter } from '../hooks/useJobs';
 import { useCreateApplication } from '../hooks/useApplications';
 import { Button } from '../components/ui/Button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '../components/ui/Card';
@@ -15,7 +15,11 @@ export default function JobDetail() {
   const unsaveJobMutation = useUnsaveJob();
   const createApplicationMutation = useCreateApplication();
   const analyzeJobMutation = useAnalyzeJob();
+  const generateResumeMutation = useGenerateResume();
+  const generateCoverLetterMutation = useGenerateCoverLetter();
   const [analysis, setAnalysis] = useState<any>(null);
+  const [resume, setResume] = useState<any>(null);
+  const [coverLetter, setCoverLetter] = useState<string | null>(null);
 
   const handleSave = () => {
     if (data?.saved) {
@@ -33,6 +37,16 @@ export default function JobDetail() {
   const handleAnalyze = async () => {
     const result = await analyzeJobMutation.mutateAsync(id!);
     setAnalysis(result.analysis);
+  };
+
+  const handleGenerateResume = async () => {
+    const result = await generateResumeMutation.mutateAsync(id!);
+    setResume(result);
+  };
+
+  const handleGenerateCoverLetter = async () => {
+    const result = await generateCoverLetterMutation.mutateAsync(id!);
+    setCoverLetter(result.coverLetter);
   };
 
   if (isLoading) return <><Navigation /><div className="p-8">Loading...</div></>;
@@ -86,10 +100,18 @@ export default function JobDetail() {
                 </div>
               )}
 
-              <div>
+              <div className="space-y-3">
                 <Button onClick={handleAnalyze} variant="outline" className="w-full">
                   {analyzeJobMutation.isPending ? 'Analyzing...' : 'Get AI Match Analysis'}
                 </Button>
+                <div className="grid grid-cols-2 gap-3">
+                  <Button onClick={handleGenerateResume} variant="outline" disabled={generateResumeMutation.isPending}>
+                    {generateResumeMutation.isPending ? 'Generating...' : 'Generate Tailored Resume'}
+                  </Button>
+                  <Button onClick={handleGenerateCoverLetter} variant="outline" disabled={generateCoverLetterMutation.isPending}>
+                    {generateCoverLetterMutation.isPending ? 'Generating...' : 'Generate Cover Letter'}
+                  </Button>
+                </div>
               </div>
 
               {analysis && (
@@ -123,6 +145,63 @@ export default function JobDetail() {
                         </div>
                       </div>
                     )}
+                  </CardContent>
+                </Card>
+              )}
+
+              {resume && (
+                <Card className="bg-green-50 border-green-200">
+                  <CardHeader>
+                    <CardTitle>AI-Generated Tailored Resume</CardTitle>
+                    <CardDescription>Customized for this position</CardDescription>
+                  </CardHeader>
+                  <CardContent className="space-y-4">
+                    <div>
+                      <h4 className="font-semibold mb-2">Professional Summary</h4>
+                      <p className="text-sm text-gray-700">{resume.summary}</p>
+                    </div>
+                    {resume.experience?.length > 0 && (
+                      <div>
+                        <h4 className="font-semibold mb-2">Relevant Experience</h4>
+                        <div className="space-y-3">
+                          {resume.experience.map((exp: any, i: number) => (
+                            <div key={i} className="border-l-2 border-green-400 pl-3">
+                              <p className="font-medium text-sm">{exp.title} at {exp.company}</p>
+                              <p className="text-xs text-gray-600 mb-1">{exp.dates}</p>
+                              <ul className="list-disc list-inside text-sm text-gray-700">
+                                {exp.highlights?.map((h: string, j: number) => (
+                                  <li key={j}>{h}</li>
+                                ))}
+                              </ul>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+                    {resume.skills?.length > 0 && (
+                      <div>
+                        <h4 className="font-semibold mb-2">Highlighted Skills</h4>
+                        <div className="flex flex-wrap gap-2">
+                          {resume.skills.map((skill: string, i: number) => (
+                            <Badge key={i} className="bg-green-100 text-green-800">{skill}</Badge>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+                  </CardContent>
+                </Card>
+              )}
+
+              {coverLetter && (
+                <Card className="bg-purple-50 border-purple-200">
+                  <CardHeader>
+                    <CardTitle>AI-Generated Cover Letter</CardTitle>
+                    <CardDescription>Personalized for {job.company}</CardDescription>
+                  </CardHeader>
+                  <CardContent>
+                    <div className="prose prose-sm max-w-none">
+                      <p className="whitespace-pre-wrap text-gray-700">{coverLetter}</p>
+                    </div>
                   </CardContent>
                 </Card>
               )}

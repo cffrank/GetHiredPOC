@@ -83,6 +83,19 @@ export const apiClient = {
       method: 'POST',
     }),
 
+  generateResume: (id: string) =>
+    apiClient.request(`/api/ai/jobs/${id}/generate-resume`, {
+      method: 'POST',
+    }),
+
+  generateCoverLetter: (id: string) =>
+    apiClient.request(`/api/ai/jobs/${id}/generate-cover-letter`, {
+      method: 'POST',
+    }),
+
+  quickMatch: (id: string) =>
+    apiClient.request(`/api/ai/jobs/${id}/quick-match`),
+
   // Applications
   getApplications: () => apiClient.request('/api/applications'),
 
@@ -114,4 +127,10 @@ export const apiClient = {
 
   updateProfileWithFile: (formData: FormData) =>
     apiClient.requestFormData('/api/profile', formData),
+
+  // Recommendations
+  getRecommendations: (limit?: number) => {
+    const params = limit ? `?limit=${limit}` : '';
+    return apiClient.request(`/api/recommendations${params}`);
+  },
 };

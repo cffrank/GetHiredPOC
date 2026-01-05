@@ -6,6 +6,8 @@ import { Button } from '../components/ui/Button';
 import { Input } from '../components/ui/Input';
 import { Label } from '../components/ui/Label';
 import { Card, CardContent, CardHeader, CardTitle } from '../components/ui/Card';
+import { WorkExperience } from '../components/WorkExperience';
+import { Education } from '../components/Education';
 
 export default function Profile() {
   const { user } = useAuth();
@@ -118,6 +120,16 @@ export default function Profile() {
               </form>
             </CardContent>
           </Card>
+
+          {/* Work Experience Section */}
+          <div className="mt-8">
+            <WorkExperience />
+          </div>
+
+          {/* Education Section */}
+          <div className="mt-8">
+            <Education />
+          </div>
         </div>
       </div>
     </>

@@ -150,3 +150,15 @@ export function clearSessionCookie(isProduction: boolean = false): string {
     return "session=; Path=/; HttpOnly; SameSite=Lax; Max-Age=0";
   }
 }
+
+/**
+ * Get current user from session cookie in Hono context
+ */
+export async function getCurrentUser(c: any): Promise<User | null> {
+  const sessionId = getCookie(c.req.raw, 'session');
+  if (!sessionId) {
+    return null;
+  }
+
+  return getSession(c.env, sessionId);
+}

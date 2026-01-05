@@ -8,6 +8,7 @@ import {
   updateApplication,
   deleteApplication,
 } from '../services/db.service';
+import { sendStatusUpdateEmail } from '../services/email.service';
 import type { User } from '@gethiredpoc/shared';
 
 type Variables = {
@@ -69,7 +70,7 @@ applications.post('/', async (c) => {
 // PUT /api/applications/:id
 applications.put('/:id', async (c) => {
   try {
-    await requireAuth(c);
+    const user = await requireAuth(c);
     const applicationId = c.req.param('id');
     const body = await c.req.json();
 
@@ -82,6 +83,20 @@ applications.put('/:id', async (c) => {
     await updateApplication(c.env, applicationId, updates);
 
     const application = await getApplicationById(c.env, applicationId);
+
+    // Send status update email if status changed
+    if (updates.status && application) {
+      const job = await c.env.DB.prepare('SELECT title, company FROM jobs WHERE id = ?')
+        .bind(application.job_id)
+        .first<{ title: string; company: string }>();
+
+      if (job) {
+        sendStatusUpdateEmail(c.env, user.email, job.title, job.company, updates.status).catch(err =>
+          console.error('Failed to send status update email:', err)
+        );
+      }
+    }
+
     return c.json({ application }, 200);
   } catch (error: any) {
     if (error.message === 'Unauthorized' || error.message === 'Session expired') {
@@ -94,7 +109,7 @@ applications.put('/:id', async (c) => {
 // PATCH /api/applications/:id
 applications.patch('/:id', async (c) => {
   try {
-    await requireAuth(c);
+    const user = await requireAuth(c);
     const applicationId = c.req.param('id');
     const body = await c.req.json();
 
@@ -107,6 +122,20 @@ applications.patch('/:id', async (c) => {
     await updateApplication(c.env, applicationId, updates);
 
     const application = await getApplicationById(c.env, applicationId);
+
+    // Send status update email if status changed
+    if (updates.status && application) {
+      const job = await c.env.DB.prepare('SELECT title, company FROM jobs WHERE id = ?')
+        .bind(application.job_id)
+        .first<{ title: string; company: string }>();
+
+      if (job) {
+        sendStatusUpdateEmail(c.env, user.email, job.title, job.company, updates.status).catch(err =>
+          console.error('Failed to send status update email:', err)
+        );
+      }
+    }
+
     return c.json({ application }, 200);
   } catch (error: any) {
     if (error.message === 'Unauthorized' || error.message === 'Session expired') {

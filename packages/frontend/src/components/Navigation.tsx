@@ -18,11 +18,17 @@ export function Navigation() {
                 <Link to="/jobs" className="text-gray-700 hover:text-gray-900">
                   Jobs
                 </Link>
+                <Link to="/recommendations" className="text-gray-700 hover:text-gray-900">
+                  Recommendations
+                </Link>
                 <Link to="/saved" className="text-gray-700 hover:text-gray-900">
                   Saved
                 </Link>
                 <Link to="/applications" className="text-gray-700 hover:text-gray-900">
                   Applications
+                </Link>
+                <Link to="/resume" className="text-gray-700 hover:text-gray-900">
+                  Resume
                 </Link>
               </>
             )}
@@ -30,6 +36,9 @@ export function Navigation() {
           <div className="flex items-center space-x-4">
             {user ? (
               <>
+                <Link to="/settings">
+                  <Button variant="ghost">Settings</Button>
+                </Link>
                 <Link to="/profile">
                   <Button variant="ghost">{user.email}</Button>
                 </Link>

@@ -1,11 +1,18 @@
 name = "gethiredpoc-api"
 main = "src/index.ts"
 compatibility_date = "2024-01-01"
-node_compat = true
+compatibility_flags = ["nodejs_compat"]
 
 # CORS allowed origins (update with production frontend URL)
 [vars]
 FRONTEND_URL = "https://gethiredpoc.pages.dev"
+
+# Adzuna API credentials (FREE API - no secrets needed)
+ADZUNA_APP_ID = "65f2bced"
+ADZUNA_APP_KEY = "ca10939f5e5eb6af1c4683809fa074ca"
+
+# Resend API key for email notifications
+RESEND_API_KEY = "re_ZUh9zWG3_DokuAnE8eXjiWV3bj3tUH8wA"
 
 # D1 Database
 [[d1_databases]]
@@ -27,6 +34,11 @@ id = "7ad0fb2965a4468c983557e3535ec772"
 binding = "KV_SESSIONS"
 id = "e96d7669b11c4f63b2b1ce41026a0c5d"
 
-# AI binding for production
+# Cloudflare Workers AI binding with AI Gateway
 [ai]
 binding = "AI"
+gateway_id = "jobmatch-ai-gateway-dev"
+
+# Cron trigger for daily job alerts
+[triggers]
+crons = ["0 9 * * *"]  # Daily at 9 AM UTC

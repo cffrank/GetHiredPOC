@@ -9,6 +9,7 @@ import {
   setSessionCookie,
   clearSessionCookie,
 } from '../services/auth.service';
+import { sendWelcomeEmail } from '../services/email.service';
 
 type Variables = {
   env: Env;
@@ -28,6 +29,11 @@ auth.post('/signup', async (c) => {
 
     const { user, sessionId } = await signup(c.env, email, password);
     const isProduction = c.env.FRONTEND_URL?.includes('pages.dev');
+
+    // Send welcome email (non-blocking)
+    sendWelcomeEmail(c.env, user.email, user.full_name).catch(err =>
+      console.error('Failed to send welcome email:', err)
+    );
 
     return c.json(
       { user },

@@ -57,3 +57,15 @@ export function useAnalyzeJob() {
     },
   });
 }
+
+export function useGenerateResume() {
+  return useMutation({
+    mutationFn: (jobId: string) => apiClient.generateResume(jobId),
+  });
+}
+
+export function useGenerateCoverLetter() {
+  return useMutation({
+    mutationFn: (jobId: string) => apiClient.generateCoverLetter(jobId),
+  });
+}
