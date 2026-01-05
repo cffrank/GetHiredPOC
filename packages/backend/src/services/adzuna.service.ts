@@ -199,3 +199,28 @@ export async function importJobsForUser(
 
   return await importJobsFromAdzuna(env, queries);
 }
+
+/**
+ * Import jobs for all users with completed preferences
+ * Uses deduplicated queries across all users to avoid redundant API calls
+ */
+export async function importJobsForAllUsers(
+  env: Env
+): Promise<{ imported: number; updated: number; errors: number; queries: number }> {
+  const { buildDeduplicatedQueriesForAllUsers } = await import('./job-preferences.service');
+
+  console.log('[Job Import] Starting daily job import for all users');
+
+  const queries = await buildDeduplicatedQueriesForAllUsers(env.DB);
+
+  console.log(`[Job Import] Generated ${queries.length} deduplicated queries from all users`);
+
+  const result = await importJobsFromAdzuna(env, queries);
+
+  console.log(`[Job Import] Completed: ${result.imported} imported, ${result.updated} updated, ${result.errors} errors`);
+
+  return {
+    ...result,
+    queries: queries.length
+  };
+}

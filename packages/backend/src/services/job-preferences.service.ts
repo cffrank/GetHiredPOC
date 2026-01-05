@@ -209,3 +209,56 @@ export function buildSearchQueriesFromPreferences(
   // Limit to 10 queries to avoid overwhelming the API
   return queries.slice(0, 10);
 }
+
+/**
+ * Get all users with completed onboarding
+ */
+export async function getAllUsersWithPreferences(db: D1Database): Promise<string[]> {
+  const result = await db.prepare(`
+    SELECT user_id FROM job_search_preferences
+    WHERE onboarding_completed = 1
+  `).all();
+
+  return result.results.map(row => row.user_id as string);
+}
+
+/**
+ * Build deduplicated search queries from all users' preferences
+ * Aggregates queries across all users to avoid redundant API calls
+ */
+export async function buildDeduplicatedQueriesForAllUsers(
+  db: D1Database
+): Promise<string[]> {
+  // Get all users with completed onboarding
+  const userIds = await getAllUsersWithPreferences(db);
+
+  if (userIds.length === 0) {
+    // No users with preferences, return defaults
+    return [
+      'software engineer remote',
+      'web developer remote',
+      'frontend engineer remote',
+      'backend engineer remote',
+      'full stack developer remote'
+    ];
+  }
+
+  // Use a Set to automatically deduplicate queries
+  const uniqueQueries = new Set<string>();
+
+  // Collect queries from all users
+  for (const userId of userIds) {
+    const preferences = await getJobSearchPreferences(db, userId);
+    const queries = buildSearchQueriesFromPreferences(preferences);
+
+    // Normalize and add to set (lowercase for deduplication)
+    queries.forEach(query => {
+      uniqueQueries.add(query.toLowerCase().trim());
+    });
+  }
+
+  console.log(`Generated ${uniqueQueries.size} unique queries from ${userIds.length} users`);
+
+  // Convert back to array and limit to reasonable number
+  return Array.from(uniqueQueries).slice(0, 50);
+}

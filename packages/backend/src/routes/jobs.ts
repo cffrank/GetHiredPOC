@@ -47,15 +47,52 @@ jobs.get('/', async (c) => {
     const remote = c.req.query("remote");
     const location = c.req.query("location") || undefined;
 
-    // Get user to exclude hidden jobs
+    // Get user to exclude hidden jobs and filter by preferences
     const user = await getOptionalUser(c);
 
-    const jobsList = await getJobs(c.env, {
+    let jobsList = await getJobs(c.env, {
       title,
       remote: remote === "true" ? true : remote === "false" ? false : undefined,
       location,
       userId: user?.id, // Pass userId to exclude hidden jobs
     });
+
+    // Filter jobs based on user preferences if logged in
+    if (user) {
+      const { getJobSearchPreferences } = await import('../services/job-preferences.service');
+      const preferences = await getJobSearchPreferences(c.env.DB, user.id);
+
+      // Only filter if user has completed onboarding
+      if (preferences.onboardingCompleted) {
+        jobsList = jobsList.filter(job => {
+          // Match job titles (case-insensitive partial match)
+          if (preferences.desiredJobTitles.length > 0) {
+            const titleMatch = preferences.desiredJobTitles.some(desiredTitle =>
+              job.title.toLowerCase().includes(desiredTitle.toLowerCase()) ||
+              desiredTitle.toLowerCase().includes(job.title.toLowerCase())
+            );
+            if (!titleMatch) return false;
+          }
+
+          // Match locations
+          if (preferences.workLocations.length > 0) {
+            const hasRemote = preferences.workLocations.some(loc => loc.toLowerCase() === 'remote');
+            const locationMatch = preferences.workLocations.some(desiredLoc => {
+              if (desiredLoc.toLowerCase() === 'remote') {
+                return job.remote === 1;
+              }
+              return job.location.toLowerCase().includes(desiredLoc.toLowerCase());
+            });
+
+            // If user wants remote, show remote jobs
+            // If user wants specific locations, show those locations
+            if (!locationMatch && !(hasRemote && job.remote === 1)) return false;
+          }
+
+          return true;
+        });
+      }
+    }
 
     return c.json({ jobs: jobsList }, 200);
   } catch (error: any) {

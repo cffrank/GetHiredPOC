@@ -88,20 +88,20 @@ app.onError((err, c) => {
   return c.json({ error: 'Internal server error' }, 500);
 });
 
-// Cron trigger for daily job alerts (runs at 9 AM UTC daily)
+// Cron trigger for daily job imports (runs at 1 AM UTC daily)
 export default {
   fetch: app.fetch,
   async scheduled(event: ScheduledEvent, env: Env, ctx: ExecutionContext) {
-    console.log('[Cron] Daily job alerts triggered at', new Date().toISOString());
+    console.log('[Cron] Daily job import triggered at', new Date().toISOString());
 
-    // Import the service dynamically to avoid circular dependencies
-    const { sendDailyAlertsToAllUsers } = await import('./services/job-alerts.service');
+    // Import jobs for all users with deduplicated queries
+    const { importJobsForAllUsers } = await import('./services/adzuna.service');
 
     ctx.waitUntil(
-      sendDailyAlertsToAllUsers(env).then(result => {
-        console.log('[Cron] Daily alerts completed:', result);
+      importJobsForAllUsers(env).then(result => {
+        console.log('[Cron] Daily job import completed:', result);
       }).catch(error => {
-        console.error('[Cron] Daily alerts failed:', error);
+        console.error('[Cron] Daily job import failed:', error);
       })
     );
   }
