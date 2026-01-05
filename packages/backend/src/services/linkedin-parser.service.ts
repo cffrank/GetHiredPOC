@@ -1,4 +1,5 @@
 import type { Env } from './db.service';
+import { getPrompt, renderPrompt, parseModelConfig } from './ai-prompt.service';
 
 interface ParsedLinkedInProfile {
   fullName?: string;
@@ -31,46 +32,22 @@ export async function parseLinkedInProfileText(
   env: Env,
   profileText: string
 ): Promise<ParsedLinkedInProfile> {
-  const prompt = `Extract structured data from this LinkedIn profile text. Return a JSON object with this exact structure:
-{
-  "fullName": "string",
-  "headline": "string",
-  "location": "string",
-  "summary": "string",
-  "workExperience": [
-    {
-      "company": "string",
-      "title": "string",
-      "location": "string",
-      "startDate": "YYYY-MM",
-      "endDate": "YYYY-MM or null if current",
-      "description": "string"
-    }
-  ],
-  "education": [
-    {
-      "school": "string",
-      "degree": "string",
-      "fieldOfStudy": "string",
-      "startDate": "YYYY",
-      "endDate": "YYYY or null if current"
-    }
-  ],
-  "skills": ["skill1", "skill2", "skill3"]
-}
+  // Get prompt template from database
+  const promptConfig = await getPrompt(env, 'linkedin_parse');
+  if (!promptConfig) {
+    throw new Error('LinkedIn parse prompt not found in database');
+  }
 
-Important:
-- Extract ALL work experience entries
-- Extract ALL education entries
-- Extract ALL skills mentioned
-- Use null for missing endDate if currently employed/studying
-- Return ONLY valid JSON, no markdown or explanations
+  // Render prompt with profile text variable
+  const prompt = renderPrompt(promptConfig.prompt_template, {
+    profile_text: profileText
+  });
 
-LinkedIn Profile Text:
-${profileText}`;
+  // Parse model configuration
+  const modelConfig = parseModelConfig(promptConfig.model_config);
 
   try {
-    const response = await env.AI.run('@cf/meta/llama-3.1-8b-instruct', {
+    const response = await env.AI.run(modelConfig.model as any, {
       messages: [
         {
           role: 'system',
@@ -81,7 +58,7 @@ ${profileText}`;
           content: prompt
         }
       ],
-      max_tokens: 2048
+      max_tokens: modelConfig.max_tokens
     });
 
     // Parse AI response

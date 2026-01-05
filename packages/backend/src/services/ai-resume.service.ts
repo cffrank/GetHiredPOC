@@ -1,4 +1,5 @@
 import type { Env } from './db.service';
+import { getPrompt, renderPrompt, parseModelConfig } from './ai-prompt.service';
 
 export interface ResumeSection {
   summary: string;
@@ -48,70 +49,55 @@ export async function generateTailoredResume(
   // Parse user skills
   const userSkills = userProfile.skills ? JSON.parse(userProfile.skills) : [];
 
-  const prompt = `You are an expert resume writer. Create a tailored resume for this job application.
+  // Get prompt template from database
+  const promptConfig = await getPrompt(env, 'resume_tailor');
+  if (!promptConfig) {
+    throw new Error('Resume tailor prompt not found in database');
+  }
 
-USER PROFILE:
-- Name: ${userProfile.full_name || 'Job Seeker'}
-- Location: ${userProfile.location || 'Not specified'}
-- Bio: ${userProfile.bio || 'Experienced professional seeking new opportunities'}
-- Skills: ${userSkills.join(', ') || 'Various professional skills'}
-
-WORK EXPERIENCE:
-${workHistory.results.map((w: any) => `
+  // Format work experience and education for prompt
+  const workExperienceText = workHistory.results.length > 0
+    ? workHistory.results.map((w: any) => `
 - ${w.title} at ${w.company} (${formatDate(w.start_date)} - ${formatDate(w.end_date || 'Present')})
   Location: ${w.location || 'N/A'}
   ${w.description || 'Professional responsibilities'}
-`).join('\n') || 'No work experience provided'}
+`).join('\n')
+    : 'No work experience provided';
 
-EDUCATION:
-${education.results.map((e: any) => `
+  const educationText = education.results.length > 0
+    ? education.results.map((e: any) => `
 - ${e.degree} in ${e.field_of_study} from ${e.school} (${e.end_date ? new Date(e.end_date).getFullYear() : 'In Progress'})
   ${e.gpa ? `GPA: ${e.gpa}` : ''}
-`).join('\n') || 'No education provided'}
+`).join('\n')
+    : 'No education provided';
 
-JOB POSTING:
-- Title: ${job.title}
-- Company: ${job.company}
-- Location: ${job.location}
-- Description: ${job.description?.substring(0, 600) || 'See job listing for details'}
+  // Render prompt with variables
+  const prompt = renderPrompt(promptConfig.prompt_template, {
+    user_name: userProfile.full_name || 'Job Seeker',
+    user_location: userProfile.location || 'Not specified',
+    user_bio: userProfile.bio || 'Experienced professional seeking new opportunities',
+    user_skills: userSkills.join(', ') || 'Various professional skills',
+    work_experience: workExperienceText,
+    education: educationText,
+    job_title: job.title,
+    job_company: job.company,
+    job_location: job.location,
+    job_description: job.description?.substring(0, 600) || 'See job listing for details'
+  });
 
-Generate a tailored resume that:
-1. Highlights relevant skills from the user's profile that match job requirements
-2. Rewrites work achievements to emphasize experience relevant to this role
-3. Creates a compelling professional summary (2-3 sentences)
-4. Prioritizes skills that match the job description
-
-Respond ONLY with valid JSON in this exact format (no markdown, no code blocks):
-{
-  "summary": "Professional summary here...",
-  "experience": [
-    {
-      "company": "Company Name",
-      "title": "Job Title",
-      "dates": "2020-2023",
-      "achievements": ["Achievement 1 tailored to the job", "Achievement 2 tailored to the job", "Achievement 3 tailored to the job"]
-    }
-  ],
-  "skills": ["Most Relevant Skill 1", "Most Relevant Skill 2", "Most Relevant Skill 3", "Skill 4", "Skill 5"],
-  "education": [
-    {
-      "school": "University Name",
-      "degree": "Degree Title",
-      "year": "2020"
-    }
-  ]
-}`;
+  // Parse model configuration
+  const modelConfig = parseModelConfig(promptConfig.model_config);
 
   try {
     console.log(`[AI Resume] Generating resume for job ${job.id}`);
 
-    const response = await env.AI.run('@cf/meta/llama-3.1-8b-instruct', {
+    const response = await env.AI.run(modelConfig.model as any, {
       prompt,
-      max_tokens: 1200,
-      temperature: 0.7,
-      gateway: {
-        id: 'jobmatch-ai-gateway-dev'
-      }
+      max_tokens: modelConfig.max_tokens,
+      temperature: modelConfig.temperature,
+      gateway: modelConfig.gateway ? {
+        id: modelConfig.gateway
+      } : undefined
     });
 
     const result = parseResumeJSON(response.response);

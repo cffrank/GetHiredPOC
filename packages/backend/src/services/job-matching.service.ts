@@ -1,4 +1,5 @@
 import type { Env } from './db.service';
+import { getPrompt, renderPrompt, parseModelConfig } from './ai-prompt.service';
 
 export interface JobMatch {
   jobId: string;
@@ -42,57 +43,48 @@ export async function analyzeJobMatch(
   // Parse user skills
   const userSkills = userProfile.skills ? JSON.parse(userProfile.skills) : [];
 
-  const prompt = `You are a job matching expert. Analyze how well this candidate matches this job opening.
+  // Get prompt template from database
+  const promptConfig = await getPrompt(env, 'job_match');
+  if (!promptConfig) {
+    throw new Error('Job match prompt not found in database');
+  }
 
-CANDIDATE PROFILE:
-- Skills: ${userSkills.join(', ') || 'No skills listed'}
-- Location: ${userProfile.location || 'Not specified'}
-- Bio: ${userProfile.bio || 'No bio provided'}
+  // Format work experience and education for prompt
+  const workExperienceText = workHistory.results.length > 0
+    ? workHistory.results.map((w: any) => `- ${w.title} at ${w.company}: ${w.description?.substring(0, 150) || 'N/A'}`).join('\n')
+    : 'No work experience';
 
-Recent Work Experience:
-${workHistory.results.map((w: any) => `- ${w.title} at ${w.company}: ${w.description?.substring(0, 150) || 'N/A'}`).join('\n') || 'No work experience'}
+  const educationText = education.results.length > 0
+    ? education.results.map((e: any) => `- ${e.degree} in ${e.field_of_study} from ${e.school}`).join('\n')
+    : 'No education listed';
 
-Education:
-${education.results.map((e: any) => `- ${e.degree} in ${e.field_of_study} from ${e.school}`).join('\n') || 'No education listed'}
+  // Render prompt with variables
+  const prompt = renderPrompt(promptConfig.prompt_template, {
+    user_skills: userSkills.join(', ') || 'No skills listed',
+    user_location: userProfile.location || 'Not specified',
+    user_bio: userProfile.bio || 'No bio provided',
+    work_experience: workExperienceText,
+    education: educationText,
+    job_title: job.title,
+    job_company: job.company,
+    job_location: job.location,
+    job_remote: job.remote ? 'Yes' : 'No',
+    job_description: job.description?.substring(0, 600) || 'See job listing'
+  });
 
-JOB OPENING:
-- Title: ${job.title}
-- Company: ${job.company}
-- Location: ${job.location}
-- Remote: ${job.remote ? 'Yes' : 'No'}
-- Description: ${job.description?.substring(0, 600) || 'See job listing'}
-
-Analyze the match and provide:
-1. Overall match score (0-100) - be realistic and honest
-2. 3-5 key strengths (specific reasons why candidate is a good fit)
-3. 1-3 concerns or gaps (areas where candidate may not fully meet requirements)
-4. Recommendation level: "strong" (80-100%), "good" (60-79%), "fair" (40-59%), or "weak" (0-39%)
-
-Consider:
-- Skills alignment with job requirements
-- Experience relevance to the role
-- Location compatibility (remote vs on-site)
-- Education requirements vs candidate's education
-- Career progression and growth potential
-
-Respond ONLY with valid JSON (no markdown, no code blocks):
-{
-  "score": 75,
-  "strengths": ["Specific strength 1", "Specific strength 2", "Specific strength 3"],
-  "concerns": ["Specific concern 1", "Specific concern 2"],
-  "recommendation": "good"
-}`;
+  // Parse model configuration
+  const modelConfig = parseModelConfig(promptConfig.model_config);
 
   try {
     console.log(`[Job Match] Analyzing match for job ${job.id}`);
 
-    const response = await env.AI.run('@cf/meta/llama-3.1-8b-instruct', {
+    const response = await env.AI.run(modelConfig.model as any, {
       prompt,
-      max_tokens: 600,
-      temperature: 0.7,
-      gateway: {
-        id: 'jobmatch-ai-gateway-dev'
-      }
+      max_tokens: modelConfig.max_tokens,
+      temperature: modelConfig.temperature,
+      gateway: modelConfig.gateway ? {
+        id: modelConfig.gateway
+      } : undefined
     });
 
     const result = parseMatchJSON(response.response);

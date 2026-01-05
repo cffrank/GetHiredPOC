@@ -1,4 +1,5 @@
 import type { Env } from './db.service';
+import { getPrompt, renderPrompt, parseModelConfig } from './ai-prompt.service';
 
 export async function generateCoverLetter(
   env: Env,
@@ -17,48 +18,37 @@ export async function generateCoverLetter(
   // Parse user skills
   const userSkills = userProfile.skills ? JSON.parse(userProfile.skills) : [];
 
-  const prompt = `You are an expert cover letter writer. Write a compelling cover letter for this job application.
+  // Get prompt template from database
+  const promptConfig = await getPrompt(env, 'cover_letter');
+  if (!promptConfig) {
+    throw new Error('Cover letter prompt not found in database');
+  }
 
-USER PROFILE:
-- Name: ${userProfile.full_name || 'Applicant'}
-- Location: ${userProfile.location || 'Available to relocate'}
-- Bio: ${userProfile.bio || 'Passionate professional seeking new opportunities'}
-- Skills: ${userSkills.join(', ') || 'Diverse professional skills'}
+  // Render prompt with variables
+  const prompt = renderPrompt(promptConfig.prompt_template, {
+    user_name: userProfile.full_name || 'Applicant',
+    user_location: userProfile.location || 'Available to relocate',
+    user_bio: userProfile.bio || 'Passionate professional seeking new opportunities',
+    user_skills: userSkills.join(', ') || 'Diverse professional skills',
+    job_title: job.title,
+    job_company: job.company,
+    job_location: job.location,
+    job_description: job.description?.substring(0, 600) || 'Exciting opportunity at a leading company'
+  });
 
-JOB:
-- Title: ${job.title}
-- Company: ${job.company}
-- Location: ${job.location}
-- Description: ${job.description?.substring(0, 600) || 'Exciting opportunity at a leading company'}
-
-Write a professional cover letter (3-4 paragraphs, approximately 250-350 words) that:
-1. Opens with enthusiasm for the specific role at ${job.company}
-2. Highlights 2-3 relevant skills/experiences that directly match the job requirements
-3. Explains why this candidate is uniquely qualified for this role
-4. Closes with a confident call to action
-
-IMPORTANT REQUIREMENTS:
-- Write in first person (I, my, me)
-- Use a professional but warm and genuine tone
-- Do NOT include placeholder text like [Your Name], [Date], [Company Address]
-- Do NOT include a salutation like "Dear Hiring Manager" - start directly with the letter body
-- Do NOT include a closing signature - end with the last paragraph
-- Be specific about the role and company
-- Make it feel personal and authentic, not generic
-- Reference specific aspects of the job description
-
-Return ONLY the cover letter text. No JSON, no code blocks, no formatting markers.`;
+  // Parse model configuration
+  const modelConfig = parseModelConfig(promptConfig.model_config);
 
   try {
     console.log(`[AI Cover Letter] Generating for job ${job.id}`);
 
-    const response = await env.AI.run('@cf/meta/llama-3.1-8b-instruct', {
+    const response = await env.AI.run(modelConfig.model as any, {
       prompt,
-      max_tokens: 900,
-      temperature: 0.8,
-      gateway: {
-        id: 'jobmatch-ai-gateway-dev'
-      }
+      max_tokens: modelConfig.max_tokens,
+      temperature: modelConfig.temperature,
+      gateway: modelConfig.gateway ? {
+        id: modelConfig.gateway
+      } : undefined
     });
 
     const coverLetter = response.response.trim();
