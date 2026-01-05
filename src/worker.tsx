@@ -18,6 +18,8 @@ import { handleSignup, handleLogin, handleLogout, handleMe } from "@/app/api/aut
 import { handleGetJobs, handleGetJob, handleSaveJob, handleUnsaveJob, handleGetSavedJobs, handleAnalyzeJob } from "@/app/api/jobs";
 import { handleGetApplications, handleCreateApplication, handleUpdateApplication, handleDeleteApplication } from "@/app/api/applications";
 import { handleGetProfile, handleUpdateProfile } from "@/app/api/profile";
+import { handleLinkedInInitiate, handleLinkedInCallback } from "@/app/api/linkedin";
+import { handleResumeUpload, handleResumeConfirm } from "@/app/api/resume-upload";
 
 export interface AppContext {
   env: Env;
@@ -55,6 +57,14 @@ const app = defineApp([
     put: ({ request, params }) => handleUpdateApplication({ request, params }),
     delete: ({ request, params }) => handleDeleteApplication({ request, params }),
   }),
+
+  // LinkedIn OAuth routes
+  route("/api/linkedin/initiate", ({ request }) => handleLinkedInInitiate({ request })),
+  route("/api/linkedin/callback", ({ request }) => handleLinkedInCallback({ request })),
+
+  // Resume upload routes
+  route("/api/resume/upload", ({ request }) => handleResumeUpload({ request })),
+  route("/api/resume/confirm", ({ request }) => handleResumeConfirm({ request })),
 
   // Page routes
   render(Document, [

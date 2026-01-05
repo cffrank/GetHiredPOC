@@ -1,5 +1,5 @@
 name = "gethiredpoc"
-main = "src/index.ts"
+main = "src/worker.tsx"
 compatibility_date = "2024-01-01"
 
 # D1 Database
@@ -23,9 +23,11 @@ binding = "KV_SESSIONS"
 id = "e96d7669b11c4f63b2b1ce41026a0c5d"
 
 # AI binding for production
-[[ai]]
+[ai]
 binding = "AI"
 
-#Linkedin
-LINKEDIN_CLIENT_ID =86gnb581r70q6j
+# LinkedIn OAuth
+[vars]
+LINKEDIN_CLIENT_ID = "86gnb581r70q6j"
+APP_URL = "https://gethiredpoc.pages.dev"
 

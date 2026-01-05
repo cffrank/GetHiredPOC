@@ -27,6 +27,10 @@ export function Profile() {
   const [bio, setBio] = useState("");
   const [location, setLocation] = useState("");
   const [skillsInput, setSkillsInput] = useState("");
+  const [importing, setImporting] = useState(false);
+  const [showResumeModal, setShowResumeModal] = useState(false);
+  const [resumeFile, setResumeFile] = useState<File | null>(null);
+  const [parsedResume, setParsedResume] = useState<any>(null);
 
   useEffect(() => {
     loadProfile();
@@ -74,6 +78,64 @@ export function Profile() {
     setSaving(false);
   };
 
+  const handleLinkedInImport = () => {
+    window.location.href = "/api/linkedin/initiate";
+  };
+
+  const handleResumeUpload = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!resumeFile) return;
+
+    setImporting(true);
+    const formData = new FormData();
+    formData.append("resume", resumeFile);
+
+    try {
+      const response = await fetch("/api/resume/upload", {
+        method: "POST",
+        body: formData,
+      });
+
+      if (response.ok) {
+        const data = await response.json();
+        setParsedResume(data.data);
+      } else {
+        const error = await response.json();
+        alert(error.error || "Failed to parse resume");
+      }
+    } catch (error) {
+      alert("Failed to upload resume");
+    }
+    setImporting(false);
+  };
+
+  const handleConfirmResume = async () => {
+    if (!parsedResume) return;
+
+    setImporting(true);
+    try {
+      const response = await fetch("/api/resume/confirm", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ parsedResume }),
+      });
+
+      if (response.ok) {
+        setShowResumeModal(false);
+        setParsedResume(null);
+        setResumeFile(null);
+        await loadProfile();
+        alert("Resume data imported successfully!");
+      } else {
+        const error = await response.json();
+        alert(error.error || "Failed to save resume data");
+      }
+    } catch (error) {
+      alert("Failed to save resume data");
+    }
+    setImporting(false);
+  };
+
   if (loading) {
     return (
       <>
@@ -112,9 +174,22 @@ export function Profile() {
                 <CardTitle className="text-3xl">{user.full_name || "Complete Your Profile"}</CardTitle>
                 <CardDescription>{user.email}</CardDescription>
               </div>
-              {!editing && (
-                <Button onClick={() => setEditing(true)}>Edit Profile</Button>
-              )}
+              <div className="flex gap-2">
+                {!editing && (
+                  <>
+                    <Button onClick={handleLinkedInImport} variant="outline" size="sm">
+                      <svg className="mr-2 h-4 w-4" viewBox="0 0 24 24" fill="currentColor">
+                        <path d="M20.447 20.452h-3.554v-5.569c0-1.328-.027-3.037-1.852-3.037-1.853 0-2.136 1.445-2.136 2.939v5.667H9.351V9h3.414v1.561h.046c.477-.9 1.637-1.85 3.37-1.85 3.601 0 4.267 2.37 4.267 5.455v6.286zM5.337 7.433c-1.144 0-2.063-.926-2.063-2.065 0-1.138.92-2.063 2.063-2.063 1.14 0 2.064.925 2.064 2.063 0 1.139-.925 2.065-2.064 2.065zm1.782 13.019H3.555V9h3.564v11.452zM22.225 0H1.771C.792 0 0 .774 0 1.729v20.542C0 23.227.792 24 1.771 24h20.451C23.2 24 24 23.227 24 22.271V1.729C24 .774 23.2 0 22.222 0h.003z"/>
+                      </svg>
+                      Import from LinkedIn
+                    </Button>
+                    <Button onClick={() => setShowResumeModal(true)} variant="outline" size="sm">
+                      📄 Import Resume
+                    </Button>
+                    <Button onClick={() => setEditing(true)}>Edit Profile</Button>
+                  </>
+                )}
+              </div>
             </div>
           </CardHeader>
 
@@ -217,6 +292,99 @@ export function Profile() {
             )}
           </CardContent>
         </Card>
+
+        {/* Resume Upload Modal */}
+        {showResumeModal && (
+          <div className="fixed inset-0 bg-black/50 flex items-center justify-center p-4 z-50">
+            <Card className="max-w-2xl w-full max-h-[90vh] overflow-y-auto">
+              <CardHeader>
+                <CardTitle>Import Resume</CardTitle>
+                <CardDescription>
+                  Upload your resume (PDF, TXT, DOC, or DOCX) and we'll extract your information
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                {!parsedResume ? (
+                  <form onSubmit={handleResumeUpload} className="space-y-4">
+                    <div className="space-y-2">
+                      <Label htmlFor="resume">Resume File</Label>
+                      <Input
+                        id="resume"
+                        type="file"
+                        accept=".pdf,.txt,.doc,.docx"
+                        onChange={(e) => setResumeFile(e.target.files?.[0] || null)}
+                        required
+                      />
+                      <p className="text-xs text-[hsl(var(--muted-foreground))]">
+                        Maximum file size: 5MB
+                      </p>
+                    </div>
+                    <div className="flex gap-2">
+                      <Button type="submit" disabled={!resumeFile || importing}>
+                        {importing ? "Parsing..." : "Parse Resume"}
+                      </Button>
+                      <Button
+                        type="button"
+                        variant="outline"
+                        onClick={() => {
+                          setShowResumeModal(false);
+                          setResumeFile(null);
+                        }}
+                      >
+                        Cancel
+                      </Button>
+                    </div>
+                  </form>
+                ) : (
+                  <div className="space-y-4">
+                    <div className="p-4 bg-[hsl(var(--muted))] rounded-lg">
+                      <h4 className="font-semibold mb-2">Parsed Information</h4>
+                      <div className="space-y-2 text-sm">
+                        <p><strong>Name:</strong> {parsedResume.name}</p>
+                        <p><strong>Email:</strong> {parsedResume.email}</p>
+                        <p><strong>Location:</strong> {parsedResume.location}</p>
+                        <p><strong>Headline:</strong> {parsedResume.headline}</p>
+                        <div>
+                          <strong>Work Experience:</strong> {parsedResume.workExperience?.length || 0} positions
+                        </div>
+                        <div>
+                          <strong>Education:</strong> {parsedResume.education?.length || 0} degrees
+                        </div>
+                        <div>
+                          <strong>Skills:</strong> {parsedResume.skills?.join(", ")}
+                        </div>
+                      </div>
+                    </div>
+                    <div className="flex gap-2">
+                      <Button onClick={handleConfirmResume} disabled={importing}>
+                        {importing ? "Saving..." : "Confirm & Import"}
+                      </Button>
+                      <Button
+                        variant="outline"
+                        onClick={() => {
+                          setParsedResume(null);
+                          setResumeFile(null);
+                        }}
+                      >
+                        Re-upload
+                      </Button>
+                      <Button
+                        variant="outline"
+                        onClick={() => {
+                          setShowResumeModal(false);
+                          setParsedResume(null);
+                          setResumeFile(null);
+                        }}
+                      >
+                        Cancel
+                      </Button>
+                    </div>
+                  </div>
+                )}
+              </CardContent>
+            </Card>
+          </div>
+        )}
       </div>
     </>
   );

@@ -9,6 +9,7 @@ import {
   isSaved,
 } from "@/app/lib/db";
 import { mockJobAnalysis } from "@/app/lib/ai-mock";
+import { analyzeJobMatchV2 } from "@/app/lib/job-matching-v2";
 
 export async function handleGetJobs({ request }: { request: Request }) {
   const env = getEnv();
@@ -115,7 +116,7 @@ export async function handleGetSavedJobs({ request }: { request: Request }) {
 
 export async function handleAnalyzeJob({ request, params }: { request: Request; params: { id: string } }) {
   const env = getEnv();
-  
+
   if (request.method !== "POST") {
     return new Response("Method not allowed", { status: 405 });
   }
@@ -123,7 +124,7 @@ export async function handleAnalyzeJob({ request, params }: { request: Request; 
   try {
     const user = await requireAuth(request, env);
 
-    const cacheKey = `job-analysis:${user.id}:${params.id}`;
+    const cacheKey = `job-analysis-v2:${user.id}:${params.id}`;
     const cached = await env.KV_CACHE.get(cacheKey);
     if (cached) {
       return Response.json({ analysis: JSON.parse(cached), cached: true }, { status: 200 });
@@ -134,10 +135,8 @@ export async function handleAnalyzeJob({ request, params }: { request: Request; 
       return Response.json({ error: "Job not found" }, { status: 404 });
     }
 
-    const userSkills = user.skills ? JSON.parse(user.skills) : [];
-    const jobRequirements = job.requirements ? JSON.parse(job.requirements) : [];
-
-    const analysis = await mockJobAnalysis(userSkills, jobRequirements);
+    // Use enhanced matching v2 with rich profile data
+    const analysis = await analyzeJobMatchV2(env.AI, env.DB, user.id, params.id);
 
     await env.KV_CACHE.put(cacheKey, JSON.stringify(analysis), {
       expirationTtl: 7 * 24 * 60 * 60,
@@ -146,6 +145,7 @@ export async function handleAnalyzeJob({ request, params }: { request: Request; 
     return Response.json({ analysis, cached: false }, { status: 200 });
   } catch (error: any) {
     if (error instanceof Response) return error;
-    return Response.json({ error: error.message }, { status: 500 });
+    console.error("Job analysis error:", error);
+    return Response.json({ error: error.message || "Failed to analyze job" }, { status: 500 });
   }
 }

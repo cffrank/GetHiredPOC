@@ -158,6 +158,23 @@ export function getCookie(request: Request, name: string): string | null {
   return match ? match[2] : null;
 }
 
+/**
+ * Get user ID from session cookie
+ * Returns null if not authenticated
+ */
+export async function getUserIdFromCookie(request: Request): Promise<string | null> {
+  const { getEnv } = await import('./env');
+  const env = getEnv();
+
+  const sessionId = getCookie(request, 'session');
+  if (!sessionId) {
+    return null;
+  }
+
+  const userId = await env.KV_SESSIONS.get(sessionId);
+  return userId;
+}
+
 export function setSessionCookie(sessionId: string): string {
   const maxAge = 7 * 24 * 60 * 60; // 7 days in seconds
   return `session=${sessionId}; Path=/; HttpOnly; Secure; SameSite=Lax; Max-Age=${maxAge}`;
