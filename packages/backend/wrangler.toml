@@ -6,6 +6,7 @@ compatibility_flags = ["nodejs_compat"]
 # CORS allowed origins (update with production frontend URL)
 [vars]
 FRONTEND_URL = "https://gethiredpoc.pages.dev"
+BACKEND_URL = "https://gethiredpoc-api.carl-f-frank.workers.dev"
 
 # Adzuna API credentials (FREE API - no secrets needed)
 ADZUNA_APP_ID = "65f2bced"

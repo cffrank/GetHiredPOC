@@ -7,6 +7,7 @@ export interface Env {
   KV_SESSIONS: KVNamespace;
   AI: any;
   FRONTEND_URL?: string;
+  BACKEND_URL?: string;
   RESEND_API_KEY?: string;
 }
 

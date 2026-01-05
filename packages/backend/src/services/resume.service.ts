@@ -64,8 +64,11 @@ export async function uploadResumePDF(
     }
   });
 
+  // Use absolute backend URL for file serving
+  const baseUrl = env.BACKEND_URL || 'http://localhost:8787';
+
   return {
-    fileUrl: `/api/files/${key}`,
+    fileUrl: `${baseUrl}/api/files/${key}`,
     fileSize: file.size
   };
 }

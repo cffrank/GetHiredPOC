@@ -14,8 +14,9 @@ export async function uploadFile(
     },
   });
 
-  // Return a URL path that can be used to retrieve the file
-  return `/api/files/${key}`;
+  // Return absolute backend URL for file serving
+  const baseUrl = env.BACKEND_URL || 'http://localhost:8787';
+  return `${baseUrl}/api/files/${key}`;
 }
 
 export async function getFile(
