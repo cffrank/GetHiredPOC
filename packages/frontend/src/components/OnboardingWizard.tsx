@@ -20,7 +20,7 @@ export function OnboardingWizard({ onComplete, initialData, isEditing = false }:
     desiredJobTitles: [],
     availabilityDate: null,
     industries: [],
-    workLocations: [],
+    workLocations: ['Remote', 'On-Site', 'Hybrid'], // Default to all work location types
     workMode: 'any',
     willingToRelocate: false,
     requiresVisaSponsorship: 'prefer-not-to-say',
