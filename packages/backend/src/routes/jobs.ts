@@ -77,16 +77,26 @@ jobs.get('/', async (c) => {
           // Match locations
           if (preferences.workLocations.length > 0) {
             const hasRemote = preferences.workLocations.some(loc => loc.toLowerCase() === 'remote');
+            const hasOnSite = preferences.workLocations.some(loc => loc.toLowerCase() === 'on-site');
+            const hasHybrid = preferences.workLocations.some(loc => loc.toLowerCase() === 'hybrid');
+
             const locationMatch = preferences.workLocations.some(desiredLoc => {
-              if (desiredLoc.toLowerCase() === 'remote') {
+              const locLower = desiredLoc.toLowerCase();
+
+              // Handle work mode preferences
+              if (locLower === 'remote') {
                 return job.remote === 1;
               }
+              if (locLower === 'on-site' || locLower === 'hybrid') {
+                // On-site and Hybrid match any non-remote job
+                return job.remote === 0;
+              }
+
+              // Handle actual location strings (e.g., "Madison, WI")
               return job.location.toLowerCase().includes(desiredLoc.toLowerCase());
             });
 
-            // If user wants remote, show remote jobs
-            // If user wants specific locations, show those locations
-            if (!locationMatch && !(hasRemote && job.remote === 1)) return false;
+            if (!locationMatch) return false;
           }
 
           return true;
