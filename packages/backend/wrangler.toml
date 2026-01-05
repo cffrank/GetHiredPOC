@@ -15,6 +15,10 @@ ADZUNA_APP_KEY = "ca10939f5e5eb6af1c4683809fa074ca"
 # Resend API key for email notifications
 RESEND_API_KEY = "re_ZUh9zWG3_DokuAnE8eXjiWV3bj3tUH8wA"
 
+# LinkedIn OAuth credentials
+LINKEDIN_CLIENT_ID = "YOUR_LINKEDIN_CLIENT_ID_HERE"
+# Note: Add LINKEDIN_CLIENT_SECRET via: npx wrangler secret put LINKEDIN_CLIENT_SECRET
+
 # D1 Database
 [[d1_databases]]
 binding = "DB"

@@ -9,6 +9,8 @@ export interface Env {
   FRONTEND_URL?: string;
   BACKEND_URL?: string;
   RESEND_API_KEY?: string;
+  LINKEDIN_CLIENT_ID?: string;
+  LINKEDIN_CLIENT_SECRET?: string;
 }
 
 // Jobs
