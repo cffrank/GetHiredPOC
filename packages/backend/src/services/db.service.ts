@@ -18,6 +18,7 @@ export async function getJobs(
     title?: string;
     remote?: boolean;
     location?: string;
+    userId?: string;
   }
 ): Promise<Job[]> {
   let query = "SELECT * FROM jobs WHERE 1=1";
@@ -36,6 +37,12 @@ export async function getJobs(
   if (filters?.location) {
     query += " AND location LIKE ?";
     params.push(`%${filters.location}%`);
+  }
+
+  // Exclude hidden jobs if user is logged in
+  if (filters?.userId) {
+    query += " AND id NOT IN (SELECT job_id FROM hidden_jobs WHERE user_id = ?)";
+    params.push(filters.userId);
   }
 
   query += " ORDER BY posted_date DESC";

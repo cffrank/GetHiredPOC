@@ -33,6 +33,7 @@ export default function Recommendations() {
   const [loading, setLoading] = useState(true);
   const [loadingJobs, setLoadingJobs] = useState<Set<string>>(new Set());
   const [error, setError] = useState<string | null>(null);
+  const [hidingJobs, setHidingJobs] = useState<Set<string>>(new Set());
 
   useEffect(() => {
     async function loadRecommendations() {
@@ -89,6 +90,28 @@ export default function Recommendations() {
 
     loadRecommendations();
   }, []);
+
+  const handleHideJob = async (jobId: string) => {
+    try {
+      setHidingJobs(prev => new Set(prev).add(jobId));
+      await apiClient.hideJob(jobId);
+
+      // Remove from recommendations
+      setRecommendations(prev => prev.filter(r => r.job.id !== jobId));
+      setHidingJobs(prev => {
+        const updated = new Set(prev);
+        updated.delete(jobId);
+        return updated;
+      });
+    } catch (err: any) {
+      console.error(`Failed to hide job ${jobId}:`, err);
+      setHidingJobs(prev => {
+        const updated = new Set(prev);
+        updated.delete(jobId);
+        return updated;
+      });
+    }
+  };
 
   if (loading) {
     return (
@@ -236,6 +259,14 @@ export default function Recommendations() {
                       </Button>
                       <Button onClick={() => navigate(`/jobs/${job.id}`)} variant="outline">
                         Apply Now
+                      </Button>
+                      <Button
+                        onClick={() => handleHideJob(job.id)}
+                        variant="outline"
+                        disabled={hidingJobs.has(job.id)}
+                        className="text-gray-600 hover:text-red-600"
+                      >
+                        {hidingJobs.has(job.id) ? 'Hiding...' : 'Not Interested'}
                       </Button>
                     </div>
                   </CardContent>

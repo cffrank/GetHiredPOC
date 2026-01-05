@@ -47,10 +47,14 @@ jobs.get('/', async (c) => {
     const remote = c.req.query("remote");
     const location = c.req.query("location") || undefined;
 
+    // Get user to exclude hidden jobs
+    const user = await getOptionalUser(c);
+
     const jobsList = await getJobs(c.env, {
       title,
       remote: remote === "true" ? true : remote === "false" ? false : undefined,
       location,
+      userId: user?.id, // Pass userId to exclude hidden jobs
     });
 
     return c.json({ jobs: jobsList }, 200);
@@ -159,6 +163,60 @@ jobs.post('/:id/analyze', async (c) => {
     });
 
     return c.json({ analysis, cached: false }, 200);
+  } catch (error: any) {
+    if (error.message === 'Unauthorized' || error.message === 'Session expired') {
+      return c.json({ error: error.message }, 401);
+    }
+    return c.json({ error: error.message }, 500);
+  }
+});
+
+// POST /api/jobs/:id/hide - Hide a job from recommendations
+jobs.post('/:id/hide', async (c) => {
+  try {
+    const user = await requireAuth(c);
+    const jobId = c.req.param('id');
+
+    // Check if job exists
+    const job = await getJob(c.env, jobId);
+    if (!job) {
+      return c.json({ error: 'Job not found' }, 404);
+    }
+
+    // Check if already hidden
+    const existing = await c.env.DB.prepare(
+      'SELECT id FROM hidden_jobs WHERE user_id = ? AND job_id = ?'
+    ).bind(user.id, jobId).first();
+
+    if (existing) {
+      return c.json({ message: 'Job already hidden' }, 200);
+    }
+
+    // Hide the job
+    await c.env.DB.prepare(
+      'INSERT INTO hidden_jobs (user_id, job_id) VALUES (?, ?)'
+    ).bind(user.id, jobId).run();
+
+    return c.json({ success: true }, 201);
+  } catch (error: any) {
+    if (error.message === 'Unauthorized' || error.message === 'Session expired') {
+      return c.json({ error: error.message }, 401);
+    }
+    return c.json({ error: error.message }, 500);
+  }
+});
+
+// DELETE /api/jobs/:id/hide - Unhide a job
+jobs.delete('/:id/hide', async (c) => {
+  try {
+    const user = await requireAuth(c);
+    const jobId = c.req.param('id');
+
+    await c.env.DB.prepare(
+      'DELETE FROM hidden_jobs WHERE user_id = ? AND job_id = ?'
+    ).bind(user.id, jobId).run();
+
+    return c.json({ success: true }, 200);
   } catch (error: any) {
     if (error.message === 'Unauthorized' || error.message === 'Session expired') {
       return c.json({ error: error.message }, 401);

@@ -96,6 +96,16 @@ export const apiClient = {
   quickMatch: (id: string) =>
     apiClient.request(`/api/ai/jobs/${id}/quick-match`),
 
+  hideJob: (id: string) =>
+    apiClient.request(`/api/jobs/${id}/hide`, {
+      method: 'POST',
+    }),
+
+  unhideJob: (id: string) =>
+    apiClient.request(`/api/jobs/${id}/hide`, {
+      method: 'DELETE',
+    }),
+
   // Applications
   getApplications: () => apiClient.request('/api/applications'),
 
