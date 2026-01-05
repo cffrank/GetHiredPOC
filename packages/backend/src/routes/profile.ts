@@ -56,13 +56,19 @@ profile.put('/', async (c) => {
       if (formData.has("address")) updates.address = formData.get("address");
       if (formData.has("linkedin_url")) updates.linkedin_url = formData.get("linkedin_url");
 
+      console.log('[Profile Update] FormData - address:', formData.get("address"));
+      console.log('[Profile Update] FormData - linkedin_url:', formData.get("linkedin_url"));
+
       const avatarFile = formData.get("avatar");
       if (avatarFile && typeof avatarFile === 'object' && 'arrayBuffer' in avatarFile) {
         const avatarUrl = await uploadFile(c.env, avatarFile as File, `avatars/${user.id}`);
         updates.avatar_url = avatarUrl;
+        console.log('[Profile Update] Uploaded avatar to:', avatarUrl);
       }
     } else {
       const body = await c.req.json();
+
+      console.log('[Profile Update] JSON body:', JSON.stringify(body));
 
       if (body.full_name !== undefined) updates.full_name = body.full_name;
       if (body.bio !== undefined) updates.bio = body.bio;
@@ -73,6 +79,8 @@ profile.put('/', async (c) => {
       if (body.address !== undefined) updates.address = body.address;
       if (body.linkedin_url !== undefined) updates.linkedin_url = body.linkedin_url;
     }
+
+    console.log('[Profile Update] Updates object:', JSON.stringify(updates));
 
     const fields: string[] = [];
     const params: any[] = [];
@@ -90,13 +98,19 @@ profile.put('/', async (c) => {
     params.push(user.id);
 
     const query = `UPDATE users SET ${fields.join(", ")} WHERE id = ?`;
-    await c.env.DB.prepare(query).bind(...params).run();
+    console.log('[Profile Update] SQL query:', query);
+    console.log('[Profile Update] SQL params:', JSON.stringify(params));
+
+    const result = await c.env.DB.prepare(query).bind(...params).run();
+    console.log('[Profile Update] SQL result:', JSON.stringify(result));
 
     const updatedUser = await c.env.DB.prepare(
       "SELECT id, email, full_name, bio, location, skills, avatar_url, address, linkedin_url, created_at, updated_at FROM users WHERE id = ?"
     )
       .bind(user.id)
       .first<User>();
+
+    console.log('[Profile Update] Updated user data:', JSON.stringify(updatedUser));
 
     return c.json({ profile: updatedUser }, 200);
   } catch (error: any) {

@@ -40,6 +40,18 @@ export default function Profile() {
   const [resumeFile, setResumeFile] = useState<File | null>(null);
   const [isUploadingResume, setIsUploadingResume] = useState(false);
 
+  // Update local state when user data changes
+  useEffect(() => {
+    if (user) {
+      setFullName(user.full_name || '');
+      setBio(user.bio || '');
+      setLocation(user.location || '');
+      setAddress(user.address || '');
+      setLinkedInUrl(user.linkedin_url || '');
+      setSkills(user.skills ? (JSON.parse(user.skills) as string[]).join(', ') : '');
+    }
+  }, [user]);
+
   // Check for LinkedIn OAuth callback messages
   useEffect(() => {
     const success = searchParams.get('success');
