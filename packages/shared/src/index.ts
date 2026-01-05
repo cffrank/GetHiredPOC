@@ -1,6 +1,10 @@
 // User types
 export type { User, Session, UserWithSkills } from './types/user';
 
+// Preferences types
+export type { JobSearchPreferences } from './types/preferences';
+export { INDUSTRIES, EMPLOYMENT_STATUS_LABELS, WORK_MODE_LABELS } from './types/preferences';
+
 // Job types
 export type {
   Job,

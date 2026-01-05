@@ -181,3 +181,21 @@ async function saveOrUpdateJob(
     return 'inserted';
   }
 }
+
+/**
+ * Import jobs for a specific user based on their job search preferences
+ */
+export async function importJobsForUser(
+  env: Env,
+  userId: string
+): Promise<{ imported: number; updated: number; errors: number }> {
+  const { getJobSearchPreferences, buildSearchQueriesFromPreferences } =
+    await import('./job-preferences.service');
+
+  const preferences = await getJobSearchPreferences(env.DB, userId);
+  const queries = buildSearchQueriesFromPreferences(preferences);
+
+  console.log(`Importing jobs for user ${userId} with ${queries.length} queries:`, queries);
+
+  return await importJobsFromAdzuna(env, queries);
+}

@@ -11,6 +11,8 @@ import Applications from './pages/Applications';
 import Resume from './pages/Resume';
 import Settings from './pages/Settings';
 import Recommendations from './pages/Recommendations';
+import Onboarding from './pages/Onboarding';
+import JobPreferences from './pages/JobPreferences';
 
 export default function App() {
   return (
@@ -20,6 +22,8 @@ export default function App() {
       <Route path="/signup" element={<Signup />} />
 
       <Route element={<ProtectedRoute />}>
+        <Route path="/onboarding" element={<Onboarding />} />
+        <Route path="/preferences" element={<JobPreferences />} />
         <Route path="/jobs" element={<Jobs />} />
         <Route path="/jobs/:id" element={<JobDetail />} />
         <Route path="/saved" element={<SavedJobs />} />
