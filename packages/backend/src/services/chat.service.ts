@@ -1,3 +1,4 @@
+import OpenAI from 'openai';
 import type { Env } from './db.service';
 import type {
   ChatMessage,
@@ -541,45 +542,33 @@ export async function sendChatMessage(
   const gatewayId = 'jobmatch-ai-gateway-dev';
   const modelName = 'gpt-4o-mini';
 
+  // Initialize OpenAI client with AI Gateway
+  const openai = new OpenAI({
+    apiKey: env.OPENAI_API_KEY,
+    baseURL: `https://gateway.ai.cloudflare.com/v1/${accountId}/${gatewayId}/openai`,
+    defaultHeaders: {
+      'cf-aig-authorization': `Bearer ${env.AI_GATEWAY_TOKEN}`,
+    },
+  });
+
   while (iterations < MAX_ITERATIONS) {
     iterations++;
 
     try {
       console.log(`[Chat] Iteration ${iterations}, calling OpenAI GPT-4o-mini through AI Gateway...`);
 
-      // Call OpenAI API through Cloudflare AI Gateway
-      // Requires both headers:
-      // - Authorization: OpenAI API authentication
-      // - cf-aig-authorization: AI Gateway authentication
-      const apiResponse = await fetch(
-        `https://gateway.ai.cloudflare.com/v1/${accountId}/${gatewayId}/openai/chat/completions`,
-        {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            'Authorization': `Bearer ${env.OPENAI_API_KEY}`,
-            'cf-aig-authorization': `Bearer ${env.AI_GATEWAY_TOKEN}`,
-          },
-          body: JSON.stringify({
-            model: modelName,
-            messages,
-            tools: TOOL_DEFINITIONS,
-            max_tokens: 2048,
-            temperature: 0.7,
-          }),
-        }
-      );
+      // Call OpenAI API through Cloudflare AI Gateway using SDK
+      const response = await openai.chat.completions.create({
+        model: modelName,
+        messages: messages as any,
+        tools: TOOL_DEFINITIONS as any,
+        max_tokens: 2048,
+        temperature: 0.7,
+      });
 
-      if (!apiResponse.ok) {
-        const errorText = await apiResponse.text();
-        console.error('[Chat] OpenAI API error:', apiResponse.status, errorText);
-        throw new Error(`OpenAI API error: ${apiResponse.status} - ${errorText}`);
-      }
-
-      const response = await apiResponse.json() as OpenAIResponse;
       console.log('[Chat] Raw OpenAI response:', JSON.stringify(response, null, 2));
 
-      // Extract the AI's response from OpenAI format
+      // Extract the AI's response
       const aiMessage = response.choices[0].message;
       const aiContent = aiMessage.content || '';
       const aiToolCalls = aiMessage.tool_calls || [];
