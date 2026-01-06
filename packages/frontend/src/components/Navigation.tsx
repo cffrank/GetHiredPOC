@@ -36,6 +36,13 @@ export function Navigation() {
           <div className="flex items-center space-x-4">
             {user ? (
               <>
+                {user.role === 'admin' && (
+                  <Link to="/admin">
+                    <Button variant="ghost" className="text-purple-600 hover:text-purple-700">
+                      Admin
+                    </Button>
+                  </Link>
+                )}
                 <Link to="/settings">
                   <Button variant="ghost">Settings</Button>
                 </Link>
