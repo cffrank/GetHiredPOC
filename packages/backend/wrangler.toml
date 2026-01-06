@@ -24,8 +24,7 @@ ADZUNA_APP_ID = "65f2bced"
 LINKEDIN_CLIENT_ID = "86gnb581r70q6j"
 # Note: Add LINKEDIN_CLIENT_SECRET via: npx wrangler secret put LINKEDIN_CLIENT_SECRET
 
-# OpenAI API key for GPT-4o-mini chat functionality
-# Note: Add OPENAI_API_KEY via: npx wrangler secret put OPENAI_API_KEY
+# Note: OpenAI API key for chat is configured in the AI Gateway
 
 # D1 Database
 [[d1_databases]]
