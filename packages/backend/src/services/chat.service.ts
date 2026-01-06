@@ -540,12 +540,12 @@ export async function sendChatMessage(
   // AI Gateway configuration
   const accountId = env.CLOUDFLARE_ACCOUNT_ID;
   const gatewayId = 'jobmatch-ai-gateway-dev';
-  const modelName = 'gpt-4o-mini';
+  const modelName = 'openai/gpt-4o-mini'; // Unified API requires provider prefix
 
-  // Initialize OpenAI client with AI Gateway
+  // Initialize OpenAI client with AI Gateway using Unified API (compat endpoint)
   const openai = new OpenAI({
     apiKey: env.OPENAI_API_KEY,
-    baseURL: `https://gateway.ai.cloudflare.com/v1/${accountId}/${gatewayId}/openai`,
+    baseURL: `https://gateway.ai.cloudflare.com/v1/${accountId}/${gatewayId}/compat`,
     defaultHeaders: {
       'cf-aig-authorization': `Bearer ${env.AI_GATEWAY_TOKEN}`,
     },
