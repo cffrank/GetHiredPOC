@@ -27,10 +27,6 @@ async function getAIGatewayMetrics(
             filter: { datetimeHour_geq: $start, datetimeHour_leq: $end }
           ) {
             count
-            sum {
-              tokensIn
-              tokensOut
-            }
             dimensions {
               gateway
               model
@@ -65,28 +61,28 @@ async function getAIGatewayMetrics(
 
     const data = await response.json() as any;
 
-    // Sum all request counts and tokens from the gateway
+    // Sum all request counts from the gateway
     const requests = data?.data?.viewer?.accounts?.[0]?.requests || [];
 
     let totalRequests = 0;
-    let totalTokensIn = 0;
-    let totalTokensOut = 0;
 
     for (const r of requests) {
       if (r.dimensions.gateway === 'jobmatch-ai-gateway-dev') {
         totalRequests += r.count || 0;
-        totalTokensIn += r.sum?.tokensIn || 0;
-        totalTokensOut += r.sum?.tokensOut || 0;
       }
     }
 
-    // Calculate cost based on GPT-4o-mini pricing
-    // Input: $0.15 per 1M tokens, Output: $0.60 per 1M tokens
-    const costIn = (totalTokensIn / 1_000_000) * 0.15;
-    const costOut = (totalTokensOut / 1_000_000) * 0.60;
-    const totalCost = costIn + costOut;
+    // Estimate cost based on average tokens per chat request
+    // GPT-4o-mini pricing: Input $0.15/1M tokens, Output $0.60/1M tokens
+    // Average chat request: ~500 input tokens, ~300 output tokens
+    const avgInputTokens = 500;
+    const avgOutputTokens = 300;
+    const costPerRequest =
+      (avgInputTokens / 1_000_000) * 0.15 +
+      (avgOutputTokens / 1_000_000) * 0.60;
+    const totalCost = totalRequests * costPerRequest;
 
-    console.log(`[Admin] AI Gateway (${hoursAgo}h): ${totalRequests} requests, ${totalTokensIn} input tokens, ${totalTokensOut} output tokens, $${totalCost.toFixed(4)}`);
+    console.log(`[Admin] AI Gateway (${hoursAgo}h): ${totalRequests} requests, estimated cost: $${totalCost.toFixed(4)}`);
 
     return { requests: totalRequests, cost: totalCost };
   } catch (error) {

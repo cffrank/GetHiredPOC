@@ -134,21 +134,21 @@ export default function AdminDashboard() {
             <h3 className="text-sm font-medium opacity-80">AI Requests Today</h3>
             <p className="text-3xl font-bold mt-2">{(metrics?.ai_requests_today || 0).toLocaleString()}</p>
             <p className="text-xs mt-1 opacity-70">
-              Est. Cost: ${(metrics?.ai_cost_today || 0).toFixed(4)}
+              ~${(metrics?.ai_cost_today || 0).toFixed(4)} estimated
             </p>
           </div>
           <div className="bg-green-50 border border-green-200 text-green-700 rounded-lg p-6 shadow-sm">
             <h3 className="text-sm font-medium opacity-80">AI Requests This Week</h3>
             <p className="text-3xl font-bold mt-2">{(metrics?.ai_requests_week || 0).toLocaleString()}</p>
             <p className="text-xs mt-1 opacity-70">
-              Est. Cost: ${(metrics?.ai_cost_week || 0).toFixed(4)}
+              ~${(metrics?.ai_cost_week || 0).toFixed(4)} estimated
             </p>
           </div>
           <div className="bg-purple-50 border border-purple-200 text-purple-700 rounded-lg p-6 shadow-sm">
             <h3 className="text-sm font-medium opacity-80">AI Requests This Month</h3>
             <p className="text-3xl font-bold mt-2">{(metrics?.ai_requests_month || 0).toLocaleString()}</p>
             <p className="text-xs mt-1 opacity-70">
-              Est. Cost: ${(metrics?.ai_cost_month || 0).toFixed(4)}
+              ~${(metrics?.ai_cost_month || 0).toFixed(4)} estimated
             </p>
           </div>
         </div>
