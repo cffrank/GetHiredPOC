@@ -526,6 +526,10 @@ export async function sendChatMessage(
     throw new Error('AI_GATEWAY_TOKEN not configured. Please run: npx wrangler secret put AI_GATEWAY_TOKEN');
   }
 
+  if (!env.OPENAI_API_KEY) {
+    throw new Error('OPENAI_API_KEY not configured. Please run: npx wrangler secret put OPENAI_API_KEY');
+  }
+
   // Tool calling loop with OpenAI GPT-4o-mini through AI Gateway
   let toolCalls: ToolCall[] = [];
   let finalContent = '';
@@ -544,14 +548,16 @@ export async function sendChatMessage(
       console.log(`[Chat] Iteration ${iterations}, calling OpenAI GPT-4o-mini through AI Gateway...`);
 
       // Call OpenAI API through Cloudflare AI Gateway
-      // Note: OpenAI API key is configured in the AI Gateway
-      // cf-aig-authorization header is required for authenticated gateway access
+      // Requires both headers:
+      // - Authorization: OpenAI API authentication
+      // - cf-aig-authorization: AI Gateway authentication
       const apiResponse = await fetch(
         `https://gateway.ai.cloudflare.com/v1/${accountId}/${gatewayId}/openai/chat/completions`,
         {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
+            'Authorization': `Bearer ${env.OPENAI_API_KEY}`,
             'cf-aig-authorization': `Bearer ${env.AI_GATEWAY_TOKEN}`,
           },
           body: JSON.stringify({
