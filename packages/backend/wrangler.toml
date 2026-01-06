@@ -7,7 +7,7 @@ compatibility_flags = ["nodejs_compat"]
 [vars]
 FRONTEND_URL = "https://gethiredpoc.pages.dev"
 BACKEND_URL = "https://gethiredpoc-api.carl-f-frank.workers.dev"
-CLOUDFLARE_ACCOUNT_ID = "ea2e3ef3acb6b0f1f00f7b71134b6ca0"
+CLOUDFLARE_ACCOUNT_ID = "280c58ea17d9fe3235c33bd0a52a256b"
 
 # Admin emails (comma-separated list)
 # Note: Update this with actual admin email addresses
