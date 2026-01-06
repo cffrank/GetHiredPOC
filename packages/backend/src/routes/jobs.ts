@@ -93,7 +93,47 @@ jobs.get('/', async (c) => {
                 return job.remote === 2; // Hybrid only
               }
 
-              // Handle actual location strings (e.g., "Madison, WI")
+              // Handle actual location strings
+              // Check state field first (e.g., "WI", "Wisconsin", or "Madison, WI")
+              if (job.state) {
+                const stateLower = job.state.toLowerCase();
+
+                // Direct state code match (e.g., "WI")
+                if (locLower === stateLower) {
+                  return true;
+                }
+
+                // State name match (e.g., "wisconsin")
+                const stateNames: Record<string, string> = {
+                  'al': 'alabama', 'ak': 'alaska', 'az': 'arizona', 'ar': 'arkansas', 'ca': 'california',
+                  'co': 'colorado', 'ct': 'connecticut', 'de': 'delaware', 'fl': 'florida', 'ga': 'georgia',
+                  'hi': 'hawaii', 'id': 'idaho', 'il': 'illinois', 'in': 'indiana', 'ia': 'iowa',
+                  'ks': 'kansas', 'ky': 'kentucky', 'la': 'louisiana', 'me': 'maine', 'md': 'maryland',
+                  'ma': 'massachusetts', 'mi': 'michigan', 'mn': 'minnesota', 'ms': 'mississippi',
+                  'mo': 'missouri', 'mt': 'montana', 'ne': 'nebraska', 'nv': 'nevada', 'nh': 'new hampshire',
+                  'nj': 'new jersey', 'nm': 'new mexico', 'ny': 'new york', 'nc': 'north carolina',
+                  'nd': 'north dakota', 'oh': 'ohio', 'ok': 'oklahoma', 'or': 'oregon', 'pa': 'pennsylvania',
+                  'ri': 'rhode island', 'sc': 'south carolina', 'sd': 'south dakota', 'tn': 'tennessee',
+                  'tx': 'texas', 'ut': 'utah', 'vt': 'vermont', 'va': 'virginia', 'wa': 'washington',
+                  'wv': 'west virginia', 'wi': 'wisconsin', 'wy': 'wyoming'
+                };
+
+                const stateName = stateNames[stateLower];
+                if (stateName && locLower === stateName) {
+                  return true;
+                }
+
+                // Check if location string contains state (e.g., "Madison, WI")
+                const locParts = desiredLoc.split(',').map(s => s.trim().toLowerCase());
+                if (locParts.length > 1) {
+                  const lastPart = locParts[locParts.length - 1];
+                  if (lastPart === stateLower || lastPart === stateName) {
+                    return true;
+                  }
+                }
+              }
+
+              // Fallback to location string matching (for backward compatibility)
               return job.location.toLowerCase().includes(desiredLoc.toLowerCase());
             });
 

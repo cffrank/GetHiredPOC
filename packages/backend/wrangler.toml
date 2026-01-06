@@ -10,7 +10,7 @@ BACKEND_URL = "https://gethiredpoc-api.carl-f-frank.workers.dev"
 
 # Admin emails (comma-separated list)
 # Note: Update this with actual admin email addresses
-ADMIN_EMAILS = "admin@example.com"
+ADMIN_EMAILS = "carl.f.frank@gmail.com,admin@example.com"
 
 # Adzuna API credentials
 ADZUNA_APP_ID = "65f2bced"

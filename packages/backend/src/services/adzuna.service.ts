@@ -25,6 +25,63 @@ export interface AdzunaSearchResult {
 }
 
 /**
+ * Extract state abbreviation from location data
+ * Examples:
+ * - "Madison, WI" -> "WI"
+ * - "Madison, Wisconsin" -> "WI"
+ * - "San Francisco, CA" -> "CA"
+ */
+function extractState(location: { area: string[]; display_name: string }): string | null {
+  // State abbreviations mapping
+  const stateMap: Record<string, string> = {
+    'alabama': 'AL', 'alaska': 'AK', 'arizona': 'AZ', 'arkansas': 'AR', 'california': 'CA',
+    'colorado': 'CO', 'connecticut': 'CT', 'delaware': 'DE', 'florida': 'FL', 'georgia': 'GA',
+    'hawaii': 'HI', 'idaho': 'ID', 'illinois': 'IL', 'indiana': 'IN', 'iowa': 'IA',
+    'kansas': 'KS', 'kentucky': 'KY', 'louisiana': 'LA', 'maine': 'ME', 'maryland': 'MD',
+    'massachusetts': 'MA', 'michigan': 'MI', 'minnesota': 'MN', 'mississippi': 'MS',
+    'missouri': 'MO', 'montana': 'MT', 'nebraska': 'NE', 'nevada': 'NV', 'new hampshire': 'NH',
+    'new jersey': 'NJ', 'new mexico': 'NM', 'new york': 'NY', 'north carolina': 'NC',
+    'north dakota': 'ND', 'ohio': 'OH', 'oklahoma': 'OK', 'oregon': 'OR', 'pennsylvania': 'PA',
+    'rhode island': 'RI', 'south carolina': 'SC', 'south dakota': 'SD', 'tennessee': 'TN',
+    'texas': 'TX', 'utah': 'UT', 'vermont': 'VT', 'virginia': 'VA', 'washington': 'WA',
+    'west virginia': 'WV', 'wisconsin': 'WI', 'wyoming': 'WY'
+  };
+
+  // Try to extract from display_name (e.g., "Madison, WI")
+  const displayParts = location.display_name.split(',').map(s => s.trim());
+
+  // Check if last part is a 2-letter state code
+  if (displayParts.length >= 2) {
+    const lastPart = displayParts[displayParts.length - 1].toUpperCase();
+    if (lastPart.length === 2 && Object.values(stateMap).includes(lastPart)) {
+      return lastPart;
+    }
+
+    // Check if last part is a full state name
+    const stateName = displayParts[displayParts.length - 1].toLowerCase();
+    if (stateMap[stateName]) {
+      return stateMap[stateName];
+    }
+  }
+
+  // Try to find state in area array
+  for (const area of location.area) {
+    const areaLower = area.toLowerCase();
+    // Check if it's a state abbreviation
+    const areaUpper = area.toUpperCase();
+    if (areaUpper.length === 2 && Object.values(stateMap).includes(areaUpper)) {
+      return areaUpper;
+    }
+    // Check if it's a full state name
+    if (stateMap[areaLower]) {
+      return stateMap[areaLower];
+    }
+  }
+
+  return null;
+}
+
+/**
  * Search jobs from Adzuna API
  */
 export async function searchAdzunaJobs(
@@ -72,6 +129,7 @@ export async function searchAdzunaJobs(
 
 /**
  * Import jobs from Adzuna into D1 database
+ * Supports location-specific queries (e.g., "software engineer Wisconsin")
  */
 export async function importJobsFromAdzuna(
   env: Env,
@@ -81,7 +139,8 @@ export async function importJobsFromAdzuna(
     'frontend engineer remote',
     'backend engineer remote',
     'full stack developer remote'
-  ]
+  ],
+  defaultLocation: string = 'remote'
 ): Promise<{ imported: number; updated: number; errors: number }> {
   let imported = 0;
   let updated = 0;
@@ -89,7 +148,50 @@ export async function importJobsFromAdzuna(
 
   for (const query of searchQueries) {
     try {
-      const { jobs } = await searchAdzunaJobs(env, query, 'remote', 1);
+      // Check if query contains a location (state name or city)
+      // Common patterns: "software engineer Wisconsin", "web developer Madison WI"
+      let searchLocation = defaultLocation;
+      let searchQuery = query;
+
+      // List of US states to detect
+      const states = [
+        'wisconsin', 'california', 'texas', 'florida', 'new york', 'illinois',
+        'pennsylvania', 'ohio', 'georgia', 'michigan', 'north carolina',
+        'wi', 'ca', 'tx', 'fl', 'ny', 'il', 'pa', 'oh', 'ga', 'mi', 'nc'
+      ];
+
+      // Common cities
+      const cities = [
+        'madison', 'milwaukee', 'green bay', 'los angeles', 'san francisco',
+        'chicago', 'austin', 'houston', 'miami', 'seattle', 'boston', 'denver'
+      ];
+
+      const queryLower = query.toLowerCase();
+
+      // Check for state names
+      for (const state of states) {
+        if (queryLower.includes(state)) {
+          searchLocation = state;
+          // Remove state from query to get clean job title
+          searchQuery = query.replace(new RegExp(state, 'gi'), '').trim();
+          break;
+        }
+      }
+
+      // Check for city names
+      if (searchLocation === defaultLocation) {
+        for (const city of cities) {
+          if (queryLower.includes(city)) {
+            searchLocation = city;
+            searchQuery = query.replace(new RegExp(city, 'gi'), '').trim();
+            break;
+          }
+        }
+      }
+
+      console.log(`Searching: "${searchQuery}" in "${searchLocation}"`);
+
+      const { jobs } = await searchAdzunaJobs(env, searchQuery, searchLocation, 1);
 
       console.log(`Found ${jobs.length} jobs for "${query}"`);
 
@@ -116,10 +218,14 @@ export async function importJobsFromAdzuna(
             remoteValue = 1;
           }
 
+          // Extract state from location
+          const state = extractState(job.location);
+
           const result = await saveOrUpdateJob(env.DB, {
             title: job.title,
             company: job.company.display_name,
             location: job.location.display_name,
+            state: state,
             remote: remoteValue,
             description: job.description,
             requirements: JSON.stringify([]), // Adzuna doesn't provide structured requirements
@@ -166,6 +272,7 @@ async function saveOrUpdateJob(
     title: string;
     company: string;
     location: string;
+    state: string | null;
     remote: number;
     description: string;
     requirements: string;
@@ -193,14 +300,14 @@ async function saveOrUpdateJob(
     // Update existing job
     await db.prepare(`
       UPDATE jobs SET
-        title = ?, company = ?, location = ?, remote = ?,
+        title = ?, company = ?, location = ?, state = ?, remote = ?,
         description = ?, requirements = ?, salary_min = ?, salary_max = ?,
         posted_date = ?, contract_time = ?, contract_type = ?,
         category_tag = ?, category_label = ?, salary_is_predicted = ?,
         latitude = ?, longitude = ?, adref = ?
       WHERE id = ?
     `).bind(
-      jobData.title, jobData.company, jobData.location, jobData.remote,
+      jobData.title, jobData.company, jobData.location, jobData.state, jobData.remote,
       jobData.description, jobData.requirements, jobData.salary_min, jobData.salary_max,
       jobData.posted_date, jobData.contract_time, jobData.contract_type,
       jobData.category_tag, jobData.category_label, jobData.salary_is_predicted,
@@ -213,14 +320,14 @@ async function saveOrUpdateJob(
     // Insert new job
     await db.prepare(`
       INSERT INTO jobs (
-        title, company, location, remote, description, requirements,
+        title, company, location, state, remote, description, requirements,
         salary_min, salary_max, posted_date, source, external_url,
         contract_time, contract_type, category_tag, category_label,
         salary_is_predicted, latitude, longitude, adref
       )
-      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
     `).bind(
-      jobData.title, jobData.company, jobData.location, jobData.remote,
+      jobData.title, jobData.company, jobData.location, jobData.state, jobData.remote,
       jobData.description, jobData.requirements, jobData.salary_min, jobData.salary_max,
       jobData.posted_date, jobData.source, jobData.external_url,
       jobData.contract_time, jobData.contract_type, jobData.category_tag, jobData.category_label,
