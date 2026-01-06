@@ -31,6 +31,7 @@ LINKEDIN_CLIENT_ID = "86gnb581r70q6j"
 binding = "DB"
 database_name = "gethiredpoc-db"
 database_id = "a927d1e6-cf48-4b67-82f6-472964063676"
+migrations_dir = "../../migrations"
 
 # R2 Storage
 [[r2_buckets]]

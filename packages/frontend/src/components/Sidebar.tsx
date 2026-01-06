@@ -21,7 +21,7 @@ export function Sidebar() {
       {/* Mobile Hamburger Button - Fixed at top */}
       <button
         onClick={toggleSidebar}
-        className="fixed top-20 left-4 z-50 lg:hidden bg-white border border-gray-200 rounded-full p-3 shadow-soft hover:bg-gray-50 min-h-touch min-w-touch"
+        className="fixed top-20 left-4 z-[60] lg:hidden bg-white border border-gray-200 rounded-full p-3 shadow-soft hover:bg-gray-50 min-h-touch min-w-touch"
         aria-label={isOpen ? 'Close sidebar' : 'Open sidebar'}
       >
         {isOpen ? (
