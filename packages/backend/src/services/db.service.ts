@@ -13,7 +13,6 @@ export interface Env {
   RESEND_API_KEY?: string;
   LINKEDIN_CLIENT_ID?: string;
   LINKEDIN_CLIENT_SECRET?: string;
-  ANTHROPIC_API_KEY?: string;
 }
 
 // Jobs

@@ -9,168 +9,136 @@ import type {
 import { getJobs, saveJob, getJobById } from './db.service';
 import { createApplication } from './db.service';
 
-// Anthropic API types
-interface AnthropicMessage {
-  role: 'user' | 'assistant';
-  content: string | Array<{ type: string; [key: string]: any }>;
+// Workers AI message types
+interface AIMessage {
+  role: 'user' | 'assistant' | 'system';
+  content: string;
 }
 
-interface AnthropicToolUse {
-  type: 'tool_use';
+interface WorkersAIResponse {
+  response: string;
+}
+
+// Tool invocation parsed from AI response
+interface ParsedToolCall {
   id: string;
   name: string;
-  input: any;
+  args: any;
 }
 
-interface AnthropicResponse {
-  id: string;
-  type: string;
-  role: 'assistant';
-  content: Array<{ type: string; text?: string; id?: string; name?: string; input?: any }>;
-  stop_reason: string;
-}
-
-// Tool definitions for Claude
+// Tool definitions - simplified for prompt engineering approach
 const TOOLS = [
   {
     name: 'search_jobs',
     description: 'Search for job openings by title, location, or remote status. Returns a list of matching jobs.',
-    input_schema: {
-      type: 'object',
-      properties: {
-        query: {
-          type: 'string',
-          description: 'Job title or keywords to search for (e.g., "software engineer", "product manager")'
-        },
-        location: {
-          type: 'string',
-          description: 'Location to search in (e.g., "San Francisco", "Remote")'
-        },
-        remote: {
-          type: 'boolean',
-          description: 'Filter for remote jobs only'
-        }
-      }
-    }
+    parameters: 'query (string, optional): Job title or keywords; location (string, optional): Location to search in; remote (boolean, optional): Filter for remote jobs only',
+    example: 'TOOL: search_jobs\nARGS: {"query": "software engineer", "location": "San Francisco", "remote": true}'
   },
   {
     name: 'save_job',
-    description: 'Bookmark/save a job posting for later review. Use the job_id from search results.',
-    input_schema: {
-      type: 'object',
-      properties: {
-        job_id: {
-          type: 'string',
-          description: 'The unique identifier of the job to save'
-        }
-      },
-      required: ['job_id']
-    }
+    description: 'Bookmark/save a job posting for later review. Requires the job_id from search results.',
+    parameters: 'job_id (string, REQUIRED): The unique identifier of the job to save',
+    example: 'TOOL: save_job\nARGS: {"job_id": "abc123"}'
   },
   {
     name: 'get_user_profile',
     description: 'Fetch the current user\'s profile information including name, location, bio, and skills.',
-    input_schema: {
-      type: 'object',
-      properties: {}
-    }
+    parameters: 'None',
+    example: 'TOOL: get_user_profile\nARGS: {}'
   },
   {
     name: 'update_user_profile',
     description: 'Update the user\'s profile information. Can update name, bio, location, or skills.',
-    input_schema: {
-      type: 'object',
-      properties: {
-        full_name: {
-          type: 'string',
-          description: 'User\'s full name'
-        },
-        bio: {
-          type: 'string',
-          description: 'Professional bio or summary'
-        },
-        location: {
-          type: 'string',
-          description: 'User\'s location (city, state, country)'
-        },
-        skills: {
-          type: 'array',
-          items: { type: 'string' },
-          description: 'List of skills (e.g., ["JavaScript", "React", "Node.js"])'
-        }
-      }
-    }
+    parameters: 'full_name (string, optional): User\'s full name; bio (string, optional): Professional bio; location (string, optional): User\'s location; skills (array of strings, optional): List of skills',
+    example: 'TOOL: update_user_profile\nARGS: {"bio": "Experienced software engineer", "skills": ["JavaScript", "React"]}'
   },
   {
     name: 'get_job_preferences',
-    description: 'Fetch the user\'s job search preferences including desired roles, locations, salary range, etc.',
-    input_schema: {
-      type: 'object',
-      properties: {}
-    }
+    description: 'Fetch the user\'s job search preferences including desired roles, locations, salary range.',
+    parameters: 'None',
+    example: 'TOOL: get_job_preferences\nARGS: {}'
   },
   {
     name: 'update_job_preferences',
     description: 'Update the user\'s job search preferences and criteria.',
-    input_schema: {
-      type: 'object',
-      properties: {
-        desired_roles: {
-          type: 'array',
-          items: { type: 'string' },
-          description: 'Desired job titles or roles'
-        },
-        desired_locations: {
-          type: 'array',
-          items: { type: 'string' },
-          description: 'Preferred work locations'
-        },
-        min_salary: {
-          type: 'number',
-          description: 'Minimum acceptable salary'
-        },
-        remote_preference: {
-          type: 'string',
-          enum: ['remote_only', 'hybrid', 'on_site', 'no_preference'],
-          description: 'Remote work preference'
-        }
-      }
-    }
+    parameters: 'desired_roles (array, optional): Job titles; desired_locations (array, optional): Preferred locations; min_salary (number, optional): Minimum salary; remote_preference (string, optional): "remote_only", "hybrid", "on_site", or "no_preference"',
+    example: 'TOOL: update_job_preferences\nARGS: {"desired_roles": ["Software Engineer"], "remote_preference": "remote_only"}'
   },
   {
     name: 'create_application',
-    description: 'Apply to a job posting. This creates an application record for tracking.',
-    input_schema: {
-      type: 'object',
-      properties: {
-        job_id: {
-          type: 'string',
-          description: 'The unique identifier of the job to apply to'
-        },
-        status: {
-          type: 'string',
-          enum: ['saved', 'applied', 'interviewing', 'offered', 'rejected'],
-          description: 'Initial application status (default: "saved")'
-        }
-      },
-      required: ['job_id']
-    }
+    description: 'Apply to a job posting. Creates an application record for tracking.',
+    parameters: 'job_id (string, REQUIRED): Job to apply to; status (string, optional): "saved", "applied", "interviewing", "offered", or "rejected" (default: "saved")',
+    example: 'TOOL: create_application\nARGS: {"job_id": "abc123", "status": "applied"}'
   },
   {
     name: 'parse_job_posting',
-    description: 'Extract structured data from a pasted job posting text. Returns job title, company, requirements, etc.',
-    input_schema: {
-      type: 'object',
-      properties: {
-        job_text: {
-          type: 'string',
-          description: 'The full text of the job posting to parse'
-        }
-      },
-      required: ['job_text']
-    }
+    description: 'Extract structured data from pasted job posting text. Returns job title, company, requirements, etc.',
+    parameters: 'job_text (string, REQUIRED): The full text of the job posting to parse',
+    example: 'TOOL: parse_job_posting\nARGS: {"job_text": "Software Engineer at TechCorp..."}'
   }
 ];
+
+// Build system prompt with tool descriptions
+function buildSystemPrompt(): string {
+  const toolDescriptions = TOOLS.map((tool, index) =>
+    `${index + 1}. ${tool.name}: ${tool.description}
+   Parameters: ${tool.parameters}
+   Example usage:
+   ${tool.example}`
+  ).join('\n\n');
+
+  return `You are a helpful job search assistant. You help users find jobs, manage their applications, and optimize their profile for job searching.
+
+You have access to these tools:
+
+${toolDescriptions}
+
+IMPORTANT INSTRUCTIONS FOR USING TOOLS:
+
+1. When you need to use a tool, respond with EXACTLY this format:
+   TOOL: tool_name
+   ARGS: {"arg1": "value1", "arg2": value2}
+
+2. You can call multiple tools in sequence by repeating the TOOL/ARGS pattern.
+
+3. After tool results are provided to you, respond naturally to the user explaining what happened.
+
+4. DO NOT make up tool results - wait for the actual results to be provided.
+
+5. Be conversational, helpful, and proactive. When users ask about jobs, search for them. When they want to save a job or apply, use the appropriate tools. Always confirm actions after completing them.
+
+6. The ARGS must be valid JSON. Use double quotes for strings.`;
+}
+
+// Parse tool calls from AI response using prompt engineering markers
+function parseToolCalls(response: string): ParsedToolCall[] {
+  const toolCalls: ParsedToolCall[] = [];
+
+  // Match TOOL: name followed by ARGS: {...}
+  const toolPattern = /TOOL:\s*(\w+)\s*\n\s*ARGS:\s*(\{[^}]*\})/g;
+  let match;
+
+  while ((match = toolPattern.exec(response)) !== null) {
+    const [, name, argsJson] = match;
+    try {
+      const args = JSON.parse(argsJson);
+      toolCalls.push({
+        id: `tool_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
+        name: name.trim(),
+        args
+      });
+    } catch (error) {
+      console.error(`Failed to parse tool args for ${name}:`, argsJson, error);
+    }
+  }
+
+  return toolCalls;
+}
+
+// Remove tool call markers from response to get clean text
+function stripToolMarkers(response: string): string {
+  return response.replace(/TOOL:\s*\w+\s*\n\s*ARGS:\s*\{[^}]*\}/g, '').trim();
+}
 
 // Execute a tool call
 async function executeTool(
@@ -396,7 +364,7 @@ Job posting:
 ${toolInput.job_text}`;
 
         const aiResponse = await env.AI.run('@cf/meta/llama-3.1-8b-instruct', {
-          messages: [{ role: 'user', content: prompt }],
+          prompt,
           temperature: 0.3,
           max_tokens: 800
         });
@@ -454,114 +422,95 @@ export async function sendChatMessage(
     .bind(convId)
     .all<ChatMessage>();
 
-  // Build messages for Anthropic API
-  const messages: AnthropicMessage[] = (history.results || []).map(msg => ({
-    role: msg.role as 'user' | 'assistant',
-    content: msg.content
-  }));
-
-  // Call Anthropic API
-  const apiKey = env.ANTHROPIC_API_KEY;
-  if (!apiKey) {
-    throw new Error('ANTHROPIC_API_KEY not configured. Please run: npx wrangler secret put ANTHROPIC_API_KEY');
+  // Build conversation context for Workers AI
+  // Workers AI models work better with a single prompt containing full context
+  let conversationContext = '';
+  for (const msg of history.results || []) {
+    if (msg.role === 'user') {
+      conversationContext += `User: ${msg.content}\n\n`;
+    } else if (msg.role === 'assistant') {
+      conversationContext += `Assistant: ${msg.content}\n\n`;
+    }
   }
 
-  let assistantResponse: AnthropicResponse;
+  // Tool calling loop - using prompt engineering approach
   let toolCalls: ToolCall[] = [];
-  let toolResults: ToolResult[] = [];
   let finalContent = '';
   let iterations = 0;
   const MAX_ITERATIONS = 5; // Prevent infinite loops
 
-  // Tool calling loop
+  // Model configuration - using a more capable model for chat
+  const modelName = '@cf/meta/llama-3.1-70b-instruct'; // Larger model for better tool use
+  const systemPrompt = buildSystemPrompt();
+
   while (iterations < MAX_ITERATIONS) {
     iterations++;
 
-    const response = await fetch('https://api.anthropic.com/v1/messages', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'x-api-key': apiKey,
-        'anthropic-version': '2023-06-01'
-      },
-      body: JSON.stringify({
-        model: 'claude-3-5-sonnet-20241022',
-        max_tokens: 4096,
-        messages,
-        tools: TOOLS,
-        system: `You are a helpful job search assistant. You help users find jobs, manage their applications, and optimize their profile for job searching.
+    // Build the full prompt with system instructions and conversation context
+    const fullPrompt = `${systemPrompt}
 
-Key capabilities:
-- Search for jobs by title, location, and remote status
-- Save jobs for later review
-- Create job applications
-- View and update user profile
-- Manage job search preferences
-- Parse job postings from pasted text
+${conversationContext}
 
-Be conversational, helpful, and proactive. When users ask about jobs, search for them. When they want to save a job or apply, use the appropriate tools. Always confirm actions after completing them.`
-      })
-    });
+Remember: If you need to use a tool, respond with TOOL: tool_name followed by ARGS: {...} on the next line. Otherwise, respond naturally to help the user.`;
 
-    if (!response.ok) {
-      const error = await response.text();
-      console.error('Anthropic API error:', error);
-      throw new Error(`Anthropic API error: ${response.status} ${error}`);
-    }
+    try {
+      console.log(`[Chat] Iteration ${iterations}, calling Workers AI...`);
 
-    assistantResponse = await response.json() as AnthropicResponse;
-
-    // Check if AI wants to use tools
-    const toolUses = assistantResponse.content.filter(
-      (block: any) => block.type === 'tool_use'
-    ) as AnthropicToolUse[];
-
-    if (toolUses.length === 0) {
-      // No tools to call, we're done
-      const textBlocks = assistantResponse.content.filter(
-        (block: any) => block.type === 'text'
-      );
-      finalContent = textBlocks.map((block: any) => block.text).join('\n');
-      break;
-    }
-
-    // Execute tools
-    for (const toolUse of toolUses) {
-      const result = await executeTool(env, userId, toolUse.name, toolUse.input);
-
-      toolCalls.push({
-        id: toolUse.id,
-        type: 'function',
-        function: {
-          name: toolUse.name,
-          arguments: JSON.stringify(toolUse.input)
+      const response = await env.AI.run(modelName as any, {
+        prompt: fullPrompt,
+        max_tokens: 2048,
+        temperature: 0.7,
+        gateway: {
+          id: 'jobmatch-ai-gateway-dev'
         }
       });
 
-      toolResults.push({
-        tool_call_id: toolUse.id,
-        output: result
-      });
+      const aiResponse = (response as WorkersAIResponse).response;
+
+      // Check if AI wants to use tools
+      const parsedToolCalls = parseToolCalls(aiResponse);
+
+      if (parsedToolCalls.length === 0) {
+        // No tools to call, we're done
+        finalContent = aiResponse.trim();
+        break;
+      }
+
+      console.log(`[Chat] Detected ${parsedToolCalls.length} tool calls`);
+
+      // Execute tools and collect results
+      let toolResultsText = '\n\nTool Results:\n';
+
+      for (const toolCall of parsedToolCalls) {
+        const result = await executeTool(env, userId, toolCall.name, toolCall.args);
+
+        toolCalls.push({
+          id: toolCall.id,
+          type: 'function',
+          function: {
+            name: toolCall.name,
+            arguments: JSON.stringify(toolCall.args)
+          }
+        });
+
+        toolResultsText += `\nResult for ${toolCall.name}:\n${result}\n`;
+      }
+
+      // Add tool results to conversation context for next iteration
+      conversationContext += `Assistant: ${stripToolMarkers(aiResponse)}\n\n`;
+      conversationContext += toolResultsText + '\n';
+      conversationContext += 'User: Please respond naturally based on the tool results above.\n\n';
+    } catch (error: any) {
+      console.error('[Chat] Workers AI error:', error);
+      // Fallback to a simple error message
+      finalContent = 'I apologize, but I encountered an error processing your request. Please try again.';
+      break;
     }
+  }
 
-    // Add assistant response with tool uses to messages
-    messages.push({
-      role: 'assistant',
-      content: assistantResponse.content as any
-    });
-
-    // Add tool results to messages
-    messages.push({
-      role: 'user',
-      content: toolResults.map(tr => ({
-        type: 'tool_result',
-        tool_use_id: tr.tool_call_id,
-        content: tr.output
-      })) as any
-    });
-
-    // Clear tool results for next iteration
-    toolResults = [];
+  // If we hit max iterations, use the last response
+  if (iterations >= MAX_ITERATIONS && !finalContent) {
+    finalContent = 'I apologize, but I had trouble completing your request. Please try rephrasing or breaking it into smaller steps.';
   }
 
   // Save assistant message
