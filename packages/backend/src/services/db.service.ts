@@ -14,6 +14,7 @@ export interface Env {
   LINKEDIN_CLIENT_ID?: string;
   LINKEDIN_CLIENT_SECRET?: string;
   CLOUDFLARE_ACCOUNT_ID?: string;
+  AI_GATEWAY_TOKEN?: string;
 }
 
 // Jobs
