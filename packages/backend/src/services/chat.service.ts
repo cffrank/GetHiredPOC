@@ -9,136 +9,209 @@ import type {
 import { getJobs, saveJob, getJobById } from './db.service';
 import { createApplication } from './db.service';
 
-// Workers AI message types
-interface AIMessage {
-  role: 'user' | 'assistant' | 'system';
+// OpenAI API message types for Workers AI
+interface OpenAIMessage {
+  role: 'system' | 'user' | 'assistant';
+  content: string;
+  tool_calls?: OpenAIToolCall[];
+}
+
+interface OpenAIToolCall {
+  id: string;
+  type: 'function';
+  function: {
+    name: string;
+    arguments: string; // JSON string
+  };
+}
+
+interface OpenAIToolMessage {
+  role: 'tool';
+  tool_call_id: string;
   content: string;
 }
 
-interface WorkersAIResponse {
-  response: string;
+interface OpenAIResponse {
+  response?: string; // For simple text responses
+  content?: string; // Alternative field name
+  tool_calls?: OpenAIToolCall[];
+  message?: {
+    role: string;
+    content: string;
+    tool_calls?: OpenAIToolCall[];
+  };
 }
 
-// Tool invocation parsed from AI response
-interface ParsedToolCall {
-  id: string;
-  name: string;
-  args: any;
-}
-
-// Tool definitions - simplified for prompt engineering approach
-const TOOLS = [
+// Tool definitions in OpenAI function calling format
+const TOOL_DEFINITIONS = [
   {
-    name: 'search_jobs',
-    description: 'Search for job openings by title, location, or remote status. Returns a list of matching jobs.',
-    parameters: 'query (string, optional): Job title or keywords; location (string, optional): Location to search in; remote (boolean, optional): Filter for remote jobs only',
-    example: 'TOOL: search_jobs\nARGS: {"query": "software engineer", "location": "San Francisco", "remote": true}'
+    type: 'function',
+    function: {
+      name: 'search_jobs',
+      description: 'Search for job openings by title, location, or remote status. Returns a list of matching jobs.',
+      parameters: {
+        type: 'object',
+        properties: {
+          query: {
+            type: 'string',
+            description: 'Job title or keywords to search for'
+          },
+          location: {
+            type: 'string',
+            description: 'Location to search in (e.g., "San Francisco", "Remote")'
+          },
+          remote: {
+            type: 'boolean',
+            description: 'Filter for remote jobs only'
+          }
+        }
+      }
+    }
   },
   {
-    name: 'save_job',
-    description: 'Bookmark/save a job posting for later review. Requires the job_id from search results.',
-    parameters: 'job_id (string, REQUIRED): The unique identifier of the job to save',
-    example: 'TOOL: save_job\nARGS: {"job_id": "abc123"}'
+    type: 'function',
+    function: {
+      name: 'save_job',
+      description: 'Bookmark/save a job posting for later review. Requires the job_id from search results.',
+      parameters: {
+        type: 'object',
+        properties: {
+          job_id: {
+            type: 'string',
+            description: 'The unique identifier of the job to save'
+          }
+        },
+        required: ['job_id']
+      }
+    }
   },
   {
-    name: 'get_user_profile',
-    description: 'Fetch the current user\'s profile information including name, location, bio, and skills.',
-    parameters: 'None',
-    example: 'TOOL: get_user_profile\nARGS: {}'
+    type: 'function',
+    function: {
+      name: 'get_user_profile',
+      description: 'Fetch the current user\'s profile information including name, location, bio, and skills.',
+      parameters: {
+        type: 'object',
+        properties: {}
+      }
+    }
   },
   {
-    name: 'update_user_profile',
-    description: 'Update the user\'s profile information. Can update name, bio, location, or skills.',
-    parameters: 'full_name (string, optional): User\'s full name; bio (string, optional): Professional bio; location (string, optional): User\'s location; skills (array of strings, optional): List of skills',
-    example: 'TOOL: update_user_profile\nARGS: {"bio": "Experienced software engineer", "skills": ["JavaScript", "React"]}'
+    type: 'function',
+    function: {
+      name: 'update_user_profile',
+      description: 'Update the user\'s profile information. Can update name, bio, location, or skills.',
+      parameters: {
+        type: 'object',
+        properties: {
+          full_name: {
+            type: 'string',
+            description: 'User\'s full name'
+          },
+          bio: {
+            type: 'string',
+            description: 'Professional bio or summary'
+          },
+          location: {
+            type: 'string',
+            description: 'User\'s location (city, state, or country)'
+          },
+          skills: {
+            type: 'array',
+            items: { type: 'string' },
+            description: 'List of professional skills'
+          }
+        }
+      }
+    }
   },
   {
-    name: 'get_job_preferences',
-    description: 'Fetch the user\'s job search preferences including desired roles, locations, salary range.',
-    parameters: 'None',
-    example: 'TOOL: get_job_preferences\nARGS: {}'
+    type: 'function',
+    function: {
+      name: 'get_job_preferences',
+      description: 'Fetch the user\'s job search preferences including desired roles, locations, salary range.',
+      parameters: {
+        type: 'object',
+        properties: {}
+      }
+    }
   },
   {
-    name: 'update_job_preferences',
-    description: 'Update the user\'s job search preferences and criteria.',
-    parameters: 'desired_roles (array, optional): Job titles; desired_locations (array, optional): Preferred locations; min_salary (number, optional): Minimum salary; remote_preference (string, optional): "remote_only", "hybrid", "on_site", or "no_preference"',
-    example: 'TOOL: update_job_preferences\nARGS: {"desired_roles": ["Software Engineer"], "remote_preference": "remote_only"}'
+    type: 'function',
+    function: {
+      name: 'update_job_preferences',
+      description: 'Update the user\'s job search preferences and criteria.',
+      parameters: {
+        type: 'object',
+        properties: {
+          desired_roles: {
+            type: 'array',
+            items: { type: 'string' },
+            description: 'List of desired job titles or roles'
+          },
+          desired_locations: {
+            type: 'array',
+            items: { type: 'string' },
+            description: 'Preferred work locations'
+          },
+          min_salary: {
+            type: 'number',
+            description: 'Minimum acceptable salary'
+          },
+          remote_preference: {
+            type: 'string',
+            enum: ['remote_only', 'hybrid', 'on_site', 'no_preference'],
+            description: 'Remote work preference'
+          }
+        }
+      }
+    }
   },
   {
-    name: 'create_application',
-    description: 'Apply to a job posting. Creates an application record for tracking.',
-    parameters: 'job_id (string, REQUIRED): Job to apply to; status (string, optional): "saved", "applied", "interviewing", "offered", or "rejected" (default: "saved")',
-    example: 'TOOL: create_application\nARGS: {"job_id": "abc123", "status": "applied"}'
+    type: 'function',
+    function: {
+      name: 'create_application',
+      description: 'Apply to a job posting. Creates an application record for tracking.',
+      parameters: {
+        type: 'object',
+        properties: {
+          job_id: {
+            type: 'string',
+            description: 'Job to apply to'
+          },
+          status: {
+            type: 'string',
+            enum: ['saved', 'applied', 'interviewing', 'offered', 'rejected'],
+            description: 'Application status (default: saved)'
+          }
+        },
+        required: ['job_id']
+      }
+    }
   },
   {
-    name: 'parse_job_posting',
-    description: 'Extract structured data from pasted job posting text. Returns job title, company, requirements, etc.',
-    parameters: 'job_text (string, REQUIRED): The full text of the job posting to parse',
-    example: 'TOOL: parse_job_posting\nARGS: {"job_text": "Software Engineer at TechCorp..."}'
+    type: 'function',
+    function: {
+      name: 'parse_job_posting',
+      description: 'Extract structured data from pasted job posting text. Returns job title, company, requirements, etc.',
+      parameters: {
+        type: 'object',
+        properties: {
+          job_text: {
+            type: 'string',
+            description: 'The full text of the job posting to parse'
+          }
+        },
+        required: ['job_text']
+      }
+    }
   }
 ];
 
-// Build system prompt with tool descriptions
-function buildSystemPrompt(): string {
-  const toolDescriptions = TOOLS.map((tool, index) =>
-    `${index + 1}. ${tool.name}: ${tool.description}
-   Parameters: ${tool.parameters}
-   Example usage:
-   ${tool.example}`
-  ).join('\n\n');
+// Simple system prompt - GPT-4o-mini handles tool calling natively
+const SYSTEM_PROMPT = `You are a helpful job search assistant. You help users find jobs, manage their profile, update preferences, and apply to positions.
 
-  return `You are a helpful job search assistant. You help users find jobs, manage their applications, and optimize their profile for job searching.
-
-You have access to these tools:
-
-${toolDescriptions}
-
-IMPORTANT INSTRUCTIONS FOR USING TOOLS:
-
-1. When you need to use a tool, respond with EXACTLY this format:
-   TOOL: tool_name
-   ARGS: {"arg1": "value1", "arg2": value2}
-
-2. You can call multiple tools in sequence by repeating the TOOL/ARGS pattern.
-
-3. After tool results are provided to you, respond naturally to the user explaining what happened.
-
-4. DO NOT make up tool results - wait for the actual results to be provided.
-
-5. Be conversational, helpful, and proactive. When users ask about jobs, search for them. When they want to save a job or apply, use the appropriate tools. Always confirm actions after completing them.
-
-6. The ARGS must be valid JSON. Use double quotes for strings.`;
-}
-
-// Parse tool calls from AI response using prompt engineering markers
-function parseToolCalls(response: string): ParsedToolCall[] {
-  const toolCalls: ParsedToolCall[] = [];
-
-  // Match TOOL: name followed by ARGS: {...}
-  const toolPattern = /TOOL:\s*(\w+)\s*\n\s*ARGS:\s*(\{[^}]*\})/g;
-  let match;
-
-  while ((match = toolPattern.exec(response)) !== null) {
-    const [, name, argsJson] = match;
-    try {
-      const args = JSON.parse(argsJson);
-      toolCalls.push({
-        id: `tool_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
-        name: name.trim(),
-        args
-      });
-    } catch (error) {
-      console.error(`Failed to parse tool args for ${name}:`, argsJson, error);
-    }
-  }
-
-  return toolCalls;
-}
-
-// Remove tool call markers from response to get clean text
-function stripToolMarkers(response: string): string {
-  return response.replace(/TOOL:\s*\w+\s*\n\s*ARGS:\s*\{[^}]*\}/g, '').trim();
-}
+Be conversational and helpful. Use the available tools when needed to help users accomplish their goals. When you receive tool results, explain them clearly to the user.`;
 
 // Execute a tool call
 async function executeTool(
@@ -415,94 +488,121 @@ export async function sendChatMessage(
     throw new Error('Failed to save user message');
   }
 
-  // Get conversation history (last 10 messages)
+  // Get conversation history (last 20 messages for better context)
   const history = await env.DB.prepare(
-    'SELECT * FROM chat_messages WHERE conversation_id = ? ORDER BY created_at ASC LIMIT 10'
+    'SELECT * FROM chat_messages WHERE conversation_id = ? ORDER BY created_at DESC LIMIT 20'
   )
     .bind(convId)
     .all<ChatMessage>();
 
-  // Build conversation context for Workers AI
-  // Workers AI models work better with a single prompt containing full context
-  let conversationContext = '';
-  for (const msg of history.results || []) {
-    if (msg.role === 'user') {
-      conversationContext += `User: ${msg.content}\n\n`;
-    } else if (msg.role === 'assistant') {
-      conversationContext += `Assistant: ${msg.content}\n\n`;
+  // Build messages array in OpenAI format (reverse to get chronological order)
+  const messages: OpenAIMessage[] = [
+    { role: 'system', content: SYSTEM_PROMPT }
+  ];
+
+  // Add conversation history in chronological order
+  const reversedHistory = (history.results || []).reverse();
+  for (const msg of reversedHistory) {
+    if (msg.role === 'user' || msg.role === 'assistant') {
+      messages.push({
+        role: msg.role,
+        content: msg.content
+      });
     }
   }
 
-  // Tool calling loop - using prompt engineering approach
+  // Tool calling loop with native OpenAI function calling
   let toolCalls: ToolCall[] = [];
   let finalContent = '';
   let iterations = 0;
   const MAX_ITERATIONS = 5; // Prevent infinite loops
 
-  // Model configuration - using a more capable model for chat
-  const modelName = '@cf/meta/llama-3.1-70b-instruct'; // Larger model for better tool use
-  const systemPrompt = buildSystemPrompt();
+  // Model configuration - using OpenAI GPT-4o-mini through Workers AI
+  const modelName = 'gpt-4o-mini';
 
   while (iterations < MAX_ITERATIONS) {
     iterations++;
 
-    // Build the full prompt with system instructions and conversation context
-    const fullPrompt = `${systemPrompt}
-
-${conversationContext}
-
-Remember: If you need to use a tool, respond with TOOL: tool_name followed by ARGS: {...} on the next line. Otherwise, respond naturally to help the user.`;
-
     try {
-      console.log(`[Chat] Iteration ${iterations}, calling Workers AI...`);
+      console.log(`[Chat] Iteration ${iterations}, calling OpenAI GPT-4o-mini via Workers AI...`);
 
       const response = await env.AI.run(modelName as any, {
-        prompt: fullPrompt,
+        messages,
+        tools: TOOL_DEFINITIONS,
         max_tokens: 2048,
         temperature: 0.7,
         gateway: {
           id: 'jobmatch-ai-gateway-dev'
         }
-      });
+      }) as OpenAIResponse;
 
-      const aiResponse = (response as WorkersAIResponse).response;
+      console.log('[Chat] Raw AI response:', JSON.stringify(response, null, 2));
+
+      // Parse response - check multiple possible response formats
+      let aiContent = '';
+      let aiToolCalls: OpenAIToolCall[] = [];
+
+      // Workers AI may return response in different formats
+      if (response.message) {
+        aiContent = response.message.content || '';
+        aiToolCalls = response.message.tool_calls || [];
+      } else if (response.response) {
+        aiContent = response.response;
+        aiToolCalls = response.tool_calls || [];
+      } else if (response.content) {
+        aiContent = response.content;
+        aiToolCalls = response.tool_calls || [];
+      }
 
       // Check if AI wants to use tools
-      const parsedToolCalls = parseToolCalls(aiResponse);
+      if (aiToolCalls && aiToolCalls.length > 0) {
+        console.log(`[Chat] Detected ${aiToolCalls.length} tool calls`);
 
-      if (parsedToolCalls.length === 0) {
-        // No tools to call, we're done
-        finalContent = aiResponse.trim();
-        break;
-      }
-
-      console.log(`[Chat] Detected ${parsedToolCalls.length} tool calls`);
-
-      // Execute tools and collect results
-      let toolResultsText = '\n\nTool Results:\n';
-
-      for (const toolCall of parsedToolCalls) {
-        const result = await executeTool(env, userId, toolCall.name, toolCall.args);
-
-        toolCalls.push({
-          id: toolCall.id,
-          type: 'function',
-          function: {
-            name: toolCall.name,
-            arguments: JSON.stringify(toolCall.args)
-          }
+        // Add assistant message with tool calls to history
+        messages.push({
+          role: 'assistant',
+          content: aiContent || '',
+          tool_calls: aiToolCalls
         });
 
-        toolResultsText += `\nResult for ${toolCall.name}:\n${result}\n`;
+        // Execute tools and collect results
+        for (const toolCall of aiToolCalls) {
+          const toolName = toolCall.function.name;
+          const toolArgs = JSON.parse(toolCall.function.arguments);
+
+          console.log(`[Chat] Executing tool: ${toolName} with args:`, toolArgs);
+
+          const result = await executeTool(env, userId, toolName, toolArgs);
+
+          // Store tool call for database
+          toolCalls.push({
+            id: toolCall.id,
+            type: 'function',
+            function: {
+              name: toolName,
+              arguments: toolCall.function.arguments
+            }
+          });
+
+          // Add tool result to messages for next iteration
+          messages.push({
+            role: 'tool',
+            tool_call_id: toolCall.id,
+            content: result
+          } as any);
+        }
+
+        // Continue loop to get final response after tool execution
+        continue;
       }
 
-      // Add tool results to conversation context for next iteration
-      conversationContext += `Assistant: ${stripToolMarkers(aiResponse)}\n\n`;
-      conversationContext += toolResultsText + '\n';
-      conversationContext += 'User: Please respond naturally based on the tool results above.\n\n';
+      // No more tool calls, we have the final response
+      finalContent = aiContent.trim();
+      break;
+
     } catch (error: any) {
-      console.error('[Chat] Workers AI error:', error);
-      // Fallback to a simple error message
+      console.error('[Chat] AI error:', error);
+      // Fallback to error message
       finalContent = 'I apologize, but I encountered an error processing your request. Please try again.';
       break;
     }
