@@ -14,6 +14,7 @@ import exportRoutes from './routes/export';
 import aiJobs from './routes/ai-jobs';
 import recommendations from './routes/recommendations';
 import linkedin from './routes/linkedin';
+import chat from './routes/chat';
 import { getFile } from './services/storage.service';
 
 const app = new Hono<{ Bindings: Env }>();
@@ -50,6 +51,7 @@ app.route('/api/export', exportRoutes);
 app.route('/api/ai/jobs', aiJobs);
 app.route('/api/recommendations', recommendations);
 app.route('/api/linkedin', linkedin);
+app.route('/api/chat', chat);
 
 // File serving endpoint
 app.get('/api/files/*', async (c) => {

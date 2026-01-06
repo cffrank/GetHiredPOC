@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
-import { ChevronLeft, ChevronRight } from 'lucide-react';
+import { ChevronLeft, ChevronRight, Bot } from 'lucide-react';
+import { ChatInterface } from './ChatInterface';
 
 export function Sidebar() {
   const [isOpen, setIsOpen] = useState(() => {
@@ -30,7 +31,7 @@ export function Sidebar() {
         className={`
           fixed top-16 left-0 h-[calc(100vh-4rem)] bg-white border-r border-gray-200 z-30
           transition-all duration-300 ease-in-out
-          ${isOpen ? 'w-64' : 'w-0 lg:w-16'}
+          ${isOpen ? 'w-96' : 'w-0 lg:w-16'}
           lg:relative lg:top-0 lg:h-screen
         `}
       >
@@ -54,22 +55,15 @@ export function Sidebar() {
             ${isOpen ? 'opacity-100' : 'opacity-0 lg:opacity-100'}
           `}
         >
-          <div className="p-4">
-            {isOpen ? (
-              <div className="space-y-4">
-                <h2 className="text-lg font-semibold text-gray-900">AI Assistant</h2>
-                <p className="text-sm text-gray-500">
-                  Chat functionality will be added in Phase 4
-                </p>
+          {isOpen ? (
+            <ChatInterface isOpen={isOpen} />
+          ) : (
+            <div className="flex justify-center pt-2">
+              <div className="w-8 h-8 bg-blue-100 rounded-full flex items-center justify-center">
+                <Bot className="w-4 h-4 text-blue-600" />
               </div>
-            ) : (
-              <div className="flex justify-center pt-2">
-                <div className="w-8 h-8 bg-gray-200 rounded-full flex items-center justify-center">
-                  <span className="text-xs text-gray-600">AI</span>
-                </div>
-              </div>
-            )}
-          </div>
+            </div>
+          )}
         </div>
       </aside>
     </>

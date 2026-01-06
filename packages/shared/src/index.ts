@@ -22,6 +22,19 @@ export type {
   ApplicationWithAnalysis,
 } from './types/application';
 
+// Chat types
+export type {
+  ChatMessage,
+  ChatConversation,
+  ChatConversationWithMessages,
+  ToolCall,
+  ToolResult,
+  SendChatMessageRequest,
+  SendChatMessageResponse,
+  CreateConversationRequest,
+  CreateConversationResponse,
+} from './types/chat';
+
 // API types
 export type {
   // Auth

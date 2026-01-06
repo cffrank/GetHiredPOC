@@ -143,4 +143,27 @@ export const apiClient = {
     const params = limit ? `?limit=${limit}` : '';
     return apiClient.request(`/api/recommendations${params}`);
   },
+
+  // Chat
+  sendChatMessage: (conversationId: string | undefined, message: string) =>
+    apiClient.request('/api/chat/message', {
+      method: 'POST',
+      body: JSON.stringify({ conversation_id: conversationId, message }),
+    }),
+
+  getChatConversations: () => apiClient.request('/api/chat/conversations'),
+
+  getChatConversation: (id: string) =>
+    apiClient.request(`/api/chat/conversations/${id}`),
+
+  createChatConversation: (title?: string) =>
+    apiClient.request('/api/chat/conversations', {
+      method: 'POST',
+      body: JSON.stringify({ title }),
+    }),
+
+  deleteChatConversation: (id: string) =>
+    apiClient.request(`/api/chat/conversations/${id}`, {
+      method: 'DELETE',
+    }),
 };
