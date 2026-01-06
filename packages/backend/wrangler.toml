@@ -7,6 +7,7 @@ compatibility_flags = ["nodejs_compat"]
 [vars]
 FRONTEND_URL = "https://gethiredpoc.pages.dev"
 BACKEND_URL = "https://gethiredpoc-api.carl-f-frank.workers.dev"
+CLOUDFLARE_ACCOUNT_ID = "ea2e3ef3acb6b0f1f00f7b71134b6ca0"
 
 # Admin emails (comma-separated list)
 # Note: Update this with actual admin email addresses
@@ -22,6 +23,9 @@ ADZUNA_APP_ID = "65f2bced"
 # LinkedIn OAuth credentials
 LINKEDIN_CLIENT_ID = "86gnb581r70q6j"
 # Note: Add LINKEDIN_CLIENT_SECRET via: npx wrangler secret put LINKEDIN_CLIENT_SECRET
+
+# OpenAI API key for GPT-4o-mini chat functionality
+# Note: Add OPENAI_API_KEY via: npx wrangler secret put OPENAI_API_KEY
 
 # D1 Database
 [[d1_databases]]

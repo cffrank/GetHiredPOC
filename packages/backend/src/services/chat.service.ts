@@ -9,7 +9,7 @@ import type {
 import { getJobs, saveJob, getJobById } from './db.service';
 import { createApplication } from './db.service';
 
-// OpenAI API message types for Workers AI
+// OpenAI API message types
 interface OpenAIMessage {
   role: 'system' | 'user' | 'assistant';
   content: string;
@@ -31,14 +31,20 @@ interface OpenAIToolMessage {
   content: string;
 }
 
+// OpenAI Chat Completions API response format
 interface OpenAIResponse {
-  response?: string; // For simple text responses
-  content?: string; // Alternative field name
-  tool_calls?: OpenAIToolCall[];
-  message?: {
-    role: string;
-    content: string;
-    tool_calls?: OpenAIToolCall[];
+  choices: Array<{
+    message: {
+      role: string;
+      content: string | null;
+      tool_calls?: OpenAIToolCall[];
+    };
+    finish_reason: string;
+  }>;
+  usage?: {
+    prompt_tokens: number;
+    completion_tokens: number;
+    total_tokens: number;
   };
 }
 
@@ -511,48 +517,64 @@ export async function sendChatMessage(
     }
   }
 
-  // Tool calling loop with native OpenAI function calling
+  // Validate environment variables
+  if (!env.OPENAI_API_KEY) {
+    throw new Error('OPENAI_API_KEY not configured. Please run: npx wrangler secret put OPENAI_API_KEY');
+  }
+
+  if (!env.CLOUDFLARE_ACCOUNT_ID) {
+    throw new Error('CLOUDFLARE_ACCOUNT_ID not configured');
+  }
+
+  // Tool calling loop with OpenAI GPT-4o-mini through AI Gateway
   let toolCalls: ToolCall[] = [];
   let finalContent = '';
   let iterations = 0;
   const MAX_ITERATIONS = 5; // Prevent infinite loops
 
-  // Model configuration - using OpenAI GPT-4o-mini through Workers AI
+  // AI Gateway configuration
+  const accountId = env.CLOUDFLARE_ACCOUNT_ID;
+  const gatewayId = 'jobmatch-ai-gateway-dev';
   const modelName = 'gpt-4o-mini';
 
   while (iterations < MAX_ITERATIONS) {
     iterations++;
 
     try {
-      console.log(`[Chat] Iteration ${iterations}, calling OpenAI GPT-4o-mini via Workers AI...`);
+      console.log(`[Chat] Iteration ${iterations}, calling OpenAI GPT-4o-mini through AI Gateway...`);
 
-      const response = await env.AI.run(modelName as any, {
-        messages,
-        tools: TOOL_DEFINITIONS,
-        max_tokens: 2048,
-        temperature: 0.7,
-        gateway: {
-          id: 'jobmatch-ai-gateway-dev'
+      // Call OpenAI API through Cloudflare AI Gateway
+      const apiResponse = await fetch(
+        `https://gateway.ai.cloudflare.com/v1/${accountId}/${gatewayId}/openai/chat/completions`,
+        {
+          method: 'POST',
+          headers: {
+            'Authorization': `Bearer ${env.OPENAI_API_KEY}`,
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            model: modelName,
+            messages,
+            tools: TOOL_DEFINITIONS,
+            max_tokens: 2048,
+            temperature: 0.7,
+          }),
         }
-      }) as OpenAIResponse;
+      );
 
-      console.log('[Chat] Raw AI response:', JSON.stringify(response, null, 2));
-
-      // Parse response - check multiple possible response formats
-      let aiContent = '';
-      let aiToolCalls: OpenAIToolCall[] = [];
-
-      // Workers AI may return response in different formats
-      if (response.message) {
-        aiContent = response.message.content || '';
-        aiToolCalls = response.message.tool_calls || [];
-      } else if (response.response) {
-        aiContent = response.response;
-        aiToolCalls = response.tool_calls || [];
-      } else if (response.content) {
-        aiContent = response.content;
-        aiToolCalls = response.tool_calls || [];
+      if (!apiResponse.ok) {
+        const errorText = await apiResponse.text();
+        console.error('[Chat] OpenAI API error:', apiResponse.status, errorText);
+        throw new Error(`OpenAI API error: ${apiResponse.status} - ${errorText}`);
       }
+
+      const response = await apiResponse.json() as OpenAIResponse;
+      console.log('[Chat] Raw OpenAI response:', JSON.stringify(response, null, 2));
+
+      // Extract the AI's response from OpenAI format
+      const aiMessage = response.choices[0].message;
+      const aiContent = aiMessage.content || '';
+      const aiToolCalls = aiMessage.tool_calls || [];
 
       // Check if AI wants to use tools
       if (aiToolCalls && aiToolCalls.length > 0) {
@@ -561,7 +583,7 @@ export async function sendChatMessage(
         // Add assistant message with tool calls to history
         messages.push({
           role: 'assistant',
-          content: aiContent || '',
+          content: aiContent,
           tool_calls: aiToolCalls
         });
 
@@ -584,7 +606,7 @@ export async function sendChatMessage(
             }
           });
 
-          // Add tool result to messages for next iteration
+          // Add tool result to messages for next iteration (OpenAI format)
           messages.push({
             role: 'tool',
             tool_call_id: toolCall.id,
@@ -601,7 +623,7 @@ export async function sendChatMessage(
       break;
 
     } catch (error: any) {
-      console.error('[Chat] AI error:', error);
+      console.error('[Chat] OpenAI API error:', error);
       // Fallback to error message
       finalContent = 'I apologize, but I encountered an error processing your request. Please try again.';
       break;
