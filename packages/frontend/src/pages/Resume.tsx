@@ -1,7 +1,6 @@
 import { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { apiClient } from '../lib/api-client';
-import { Navigation } from '../components/Navigation';
 
 interface Resume {
   id: string;
@@ -114,9 +113,7 @@ export default function Resume() {
   }
 
   return (
-    <>
-      <Navigation />
-      <div className="max-w-4xl mx-auto p-6">
+    <div className="max-w-4xl mx-auto p-6">
         <div className="mb-8">
           <h1 className="text-3xl font-bold mb-2">My Resumes</h1>
           <p className="text-gray-600">Upload and manage your resumes</p>
@@ -229,6 +226,5 @@ export default function Resume() {
         )}
       </div>
     </div>
-    </>
   );
 }

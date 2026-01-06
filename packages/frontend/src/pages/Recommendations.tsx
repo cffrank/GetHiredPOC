@@ -1,6 +1,5 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Navigation } from '../components/Navigation';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '../components/ui/Card';
 import { Badge } from '../components/ui/Badge';
 import { Button } from '../components/ui/Button';
@@ -115,27 +114,21 @@ export default function Recommendations() {
 
   if (loading) {
     return (
-      <>
-        <Navigation />
-        <div className="min-h-[calc(100vh-4rem)] bg-gray-50">
-          <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-            <div className="text-center">Loading jobs...</div>
-          </div>
+      <div className="min-h-full bg-gray-50">
+        <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+          <div className="text-center">Loading jobs...</div>
         </div>
-      </>
+      </div>
     );
   }
 
   if (error) {
     return (
-      <>
-        <Navigation />
-        <div className="min-h-[calc(100vh-4rem)] bg-gray-50">
-          <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-            <div className="text-center text-red-600">Error: {error}</div>
-          </div>
+      <div className="min-h-full bg-gray-50">
+        <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+          <div className="text-center text-red-600">Error: {error}</div>
         </div>
-      </>
+      </div>
     );
   }
 
@@ -157,9 +150,7 @@ export default function Recommendations() {
   };
 
   return (
-    <>
-      <Navigation />
-      <div className="min-h-[calc(100vh-4rem)] bg-gray-50">
+    <div className="min-h-full bg-gray-50">
         <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
           <div className="mb-8">
             <h1 className="text-3xl font-bold text-gray-900 mb-2">Your Top Job Matches</h1>
@@ -299,7 +290,6 @@ export default function Recommendations() {
             </div>
           )}
         </div>
-      </div>
-    </>
+    </div>
   );
 }

@@ -2,7 +2,6 @@ import { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { Link } from 'react-router-dom';
 import { apiClient } from '../lib/api-client';
-import { Navigation } from '../components/Navigation';
 
 interface EmailPreferences {
   digestEnabled: boolean;
@@ -64,9 +63,7 @@ export default function Settings() {
   }
 
   return (
-    <>
-      <Navigation />
-      <div className="max-w-4xl mx-auto p-6">
+    <div className="max-w-4xl mx-auto p-6">
         <div className="mb-8">
           <h1 className="text-3xl font-bold mb-2">Settings</h1>
           <p className="text-gray-600">Manage your account preferences</p>
@@ -231,6 +228,5 @@ export default function Settings() {
         </div>
       </div>
     </div>
-    </>
   );
 }

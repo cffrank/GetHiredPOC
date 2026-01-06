@@ -1,6 +1,5 @@
 import { useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { Navigation } from '../components/Navigation';
 import { useJob, useSaveJob, useUnsaveJob, useAnalyzeJob, useGenerateResume, useGenerateCoverLetter } from '../hooks/useJobs';
 import { useCreateApplication } from '../hooks/useApplications';
 import { Button } from '../components/ui/Button';
@@ -49,16 +48,14 @@ export default function JobDetail() {
     setCoverLetter(result.coverLetter);
   };
 
-  if (isLoading) return <><Navigation /><div className="p-8">Loading...</div></>;
-  if (!data?.job) return <><Navigation /><div className="p-8">Job not found</div></>;
+  if (isLoading) return <div className="p-8">Loading...</div>;
+  if (!data?.job) return <div className="p-8">Job not found</div>;
 
   const job = data.job;
   const requirements = job.requirements ? JSON.parse(job.requirements) : [];
 
   return (
-    <>
-      <Navigation />
-      <div className="min-h-[calc(100vh-4rem)] bg-gray-50">
+    <div className="min-h-full bg-gray-50">
         <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
           <Card>
             <CardHeader>
@@ -210,7 +207,6 @@ export default function JobDetail() {
             </CardContent>
           </Card>
         </div>
-      </div>
-    </>
+    </div>
   );
 }

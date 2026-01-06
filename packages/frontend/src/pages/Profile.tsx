@@ -1,6 +1,5 @@
 import { useState, FormEvent, useEffect } from 'react';
 import { useSearchParams } from 'react-router-dom';
-import { Navigation } from '../components/Navigation';
 import { useAuth } from '../context/AuthContext';
 import { useUpdateProfile, useUpdateProfileWithFile } from '../hooks/useProfile';
 import { Button } from '../components/ui/Button';
@@ -175,9 +174,7 @@ export default function Profile() {
   };
 
   return (
-    <>
-      <Navigation />
-      <div className="min-h-[calc(100vh-4rem)] bg-gray-50">
+    <div className="min-h-full bg-gray-50">
         <div className="max-w-2xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
           <h1 className="text-3xl font-bold mb-8">Profile</h1>
 
@@ -504,7 +501,6 @@ export default function Profile() {
             <Education />
           </div>
         </div>
-      </div>
-    </>
+    </div>
   );
 }
