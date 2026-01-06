@@ -19,21 +19,23 @@ export default function Jobs() {
           <h1 className="text-3xl font-bold mb-8">Browse Jobs</h1>
 
           {/* Filters */}
-          <Card className="mb-8">
+          <Card className="mb-8 shadow-soft">
             <CardContent className="pt-6">
-              <div className="grid md:grid-cols-4 gap-4">
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
                 <Input
                   placeholder="Search by title..."
                   value={title}
                   onChange={(e) => setTitle(e.target.value)}
+                  className="min-h-touch"
                 />
                 <Input
                   placeholder="Location..."
                   value={location}
                   onChange={(e) => setLocation(e.target.value)}
+                  className="min-h-touch"
                 />
                 <select
-                  className="flex h-10 w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-sm"
+                  className="flex min-h-touch w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-sm shadow-soft"
                   value={remote === undefined ? 'all' : remote === true ? 'yes' : remote === false ? 'no' : 'hybrid'}
                   onChange={(e) => {
                     if (e.target.value === 'all') setRemote(undefined);
@@ -60,26 +62,26 @@ export default function Jobs() {
           ) : (
             <div className="space-y-4">
               {data?.jobs.map((job: any) => (
-                <Card key={job.id}>
+                <Card key={job.id} className="shadow-soft hover:shadow-soft-lg transition-shadow">
                   <CardHeader>
-                    <div className="flex justify-between items-start">
-                      <div>
-                        <CardTitle>{job.title}</CardTitle>
-                        <CardDescription>{job.company}</CardDescription>
+                    <div className="flex flex-col sm:flex-row sm:justify-between sm:items-start gap-4">
+                      <div className="flex-1">
+                        <CardTitle className="text-xl sm:text-2xl">{job.title}</CardTitle>
+                        <CardDescription className="text-base mt-1">{job.company}</CardDescription>
                       </div>
-                      <Link to={`/jobs/${job.id}`}>
-                        <Button size="sm">View Details</Button>
+                      <Link to={`/jobs/${job.id}`} className="w-full sm:w-auto">
+                        <Button size="sm" className="w-full sm:w-auto">View Details</Button>
                       </Link>
                     </div>
                   </CardHeader>
                   <CardContent>
-                    <div className="flex gap-2 mb-2">
-                      {job.remote === 1 && <Badge>Remote</Badge>}
-                      {job.remote === 2 && <Badge>Hybrid</Badge>}
-                      {job.remote === 0 && <Badge>On-Site</Badge>}
-                      {job.location && <Badge>{job.location}</Badge>}
+                    <div className="flex flex-wrap gap-2 mb-3">
+                      {job.remote === 1 && <Badge className="bg-green-100 text-green-800">Remote</Badge>}
+                      {job.remote === 2 && <Badge className="bg-blue-100 text-blue-800">Hybrid</Badge>}
+                      {job.remote === 0 && <Badge className="bg-gray-100 text-gray-800">On-Site</Badge>}
+                      {job.location && <Badge className="bg-primary-100 text-primary-800">{job.location}</Badge>}
                       {job.salary_min && job.salary_max && (
-                        <Badge>${job.salary_min.toLocaleString()} - ${job.salary_max.toLocaleString()}</Badge>
+                        <Badge className="bg-purple-100 text-purple-800">${job.salary_min.toLocaleString()} - ${job.salary_max.toLocaleString()}</Badge>
                       )}
                     </div>
                     <p className="text-sm text-gray-600 line-clamp-2">{job.description}</p>

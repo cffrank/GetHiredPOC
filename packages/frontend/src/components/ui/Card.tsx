@@ -3,7 +3,7 @@ import { clsx } from 'clsx';
 
 export const Card = forwardRef<HTMLDivElement, HTMLAttributes<HTMLDivElement>>(
   ({ className, ...props }, ref) => (
-    <div ref={ref} className={clsx('rounded-lg border bg-white shadow-sm', className)} {...props} />
+    <div ref={ref} className={clsx('rounded-lg border bg-white shadow-soft', className)} {...props} />
   )
 );
 
