@@ -19,10 +19,7 @@ interface SystemMetrics {
 export default function AdminDashboard() {
   const { data: metrics, isLoading, error } = useQuery<SystemMetrics>({
     queryKey: ['admin', 'metrics'],
-    queryFn: async () => {
-      const response = await apiClient.fetch('/api/admin/metrics');
-      return response.json();
-    },
+    queryFn: () => apiClient.request('/api/admin/metrics'),
   });
 
   if (isLoading) {

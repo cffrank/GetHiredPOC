@@ -29,21 +29,15 @@ export default function AdminPrompts() {
 
   const { data: prompts, isLoading, error } = useQuery<{ prompts: AIPrompt[] }>({
     queryKey: ['admin', 'prompts'],
-    queryFn: async () => {
-      const response = await apiClient.fetch('/api/admin/prompts?active_only=false');
-      return response.json();
-    },
+    queryFn: () => apiClient.request('/api/admin/prompts?active_only=false'),
   });
 
   const saveMutation = useMutation({
-    mutationFn: async (data: typeof formData) => {
-      const response = await apiClient.fetch('/api/admin/prompts', {
+    mutationFn: (data: typeof formData) =>
+      apiClient.request('/api/admin/prompts', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(data),
-      });
-      return response.json();
-    },
+      }),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['admin', 'prompts'] });
       setIsEditing(false);
@@ -54,12 +48,10 @@ export default function AdminPrompts() {
   });
 
   const deleteMutation = useMutation({
-    mutationFn: async (promptKey: string) => {
-      const response = await apiClient.fetch(`/api/admin/prompts/${promptKey}`, {
+    mutationFn: (promptKey: string) =>
+      apiClient.request(`/api/admin/prompts/${promptKey}`, {
         method: 'DELETE',
-      });
-      return response.json();
-    },
+      }),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['admin', 'prompts'] });
       setSelectedPrompt(null);

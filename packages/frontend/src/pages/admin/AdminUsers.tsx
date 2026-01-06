@@ -20,26 +20,22 @@ export default function AdminUsers() {
 
   const { data, isLoading, error } = useQuery<UsersResponse>({
     queryKey: ['admin', 'users', page, searchQuery],
-    queryFn: async () => {
+    queryFn: () => {
       const params = new URLSearchParams({
         page: page.toString(),
         limit: '20',
         ...(searchQuery && { search: searchQuery }),
       });
-      const response = await apiClient.fetch(`/api/admin/users?${params}`);
-      return response.json();
+      return apiClient.request(`/api/admin/users?${params}`);
     },
   });
 
   const updateRoleMutation = useMutation({
-    mutationFn: async ({ userId, role }: { userId: string; role: 'user' | 'admin' }) => {
-      const response = await apiClient.fetch(`/api/admin/users/${userId}/role`, {
+    mutationFn: ({ userId, role }: { userId: string; role: 'user' | 'admin' }) =>
+      apiClient.request(`/api/admin/users/${userId}/role`, {
         method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ role }),
-      });
-      return response.json();
-    },
+      }),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['admin', 'users'] });
     },

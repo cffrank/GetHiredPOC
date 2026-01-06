@@ -17,26 +17,21 @@ export default function AdminJobs() {
   const [importResult, setImportResult] = useState<ImportResult | null>(null);
 
   const bulkImportMutation = useMutation({
-    mutationFn: async (searchQueries: string[]) => {
-      const response = await apiClient.fetch('/api/admin/import-jobs', {
+    mutationFn: (searchQueries: string[]) =>
+      apiClient.request('/api/admin/import-jobs', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ queries: searchQueries }),
-      });
-      return response.json();
-    },
+      }),
     onSuccess: (data) => {
       setImportResult(data);
     },
   });
 
   const userImportMutation = useMutation({
-    mutationFn: async (targetUserId: string) => {
-      const response = await apiClient.fetch(`/api/admin/import-jobs-for-user/${targetUserId}`, {
+    mutationFn: (targetUserId: string) =>
+      apiClient.request(`/api/admin/import-jobs-for-user/${targetUserId}`, {
         method: 'POST',
-      });
-      return response.json();
-    },
+      }),
     onSuccess: (data) => {
       setImportResult(data);
     },

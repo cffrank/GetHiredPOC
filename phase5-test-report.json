@@ -1,0 +1,42 @@
+{
+  "timestamp": "2026-01-06T03:36:23.365Z",
+  "api_base": "https://gethiredpoc.carlf.workers.dev",
+  "summary": {
+    "total": 6,
+    "passed": 0,
+    "failed": 6,
+    "success_rate": "0.0%"
+  },
+  "tests": [
+    {
+      "name": "Admin login successful",
+      "passed": false,
+      "details": "fetch failed"
+    },
+    {
+      "name": "Regular user blocked from admin routes",
+      "passed": false,
+      "details": "fetch failed"
+    },
+    {
+      "name": "Metrics endpoint accessible",
+      "passed": false,
+      "details": "fetch failed"
+    },
+    {
+      "name": "User management endpoints",
+      "passed": false,
+      "details": "fetch failed"
+    },
+    {
+      "name": "Job import endpoints",
+      "passed": false,
+      "details": "fetch failed"
+    },
+    {
+      "name": "AI prompt endpoints",
+      "passed": false,
+      "details": "fetch failed"
+    }
+  ]
+}

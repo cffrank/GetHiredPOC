@@ -1,0 +1,314 @@
+{
+  "timestamp": "2026-01-05T22:36:45.050Z",
+  "productionUrl": "https://gethiredpoc-api.carl-f-frank.workers.dev",
+  "testSuites": [
+    {
+      "name": "Admin Endpoints Security",
+      "total": 5,
+      "passed": 5,
+      "failed": 0,
+      "warnings": 0,
+      "tests": [
+        {
+          "description": "GET /api/admin/prompts returns 401 without auth",
+          "status": "pass",
+          "message": "OK",
+          "duration": 257,
+          "details": {
+            "status": 401,
+            "contentType": "application/json"
+          }
+        },
+        {
+          "description": "GET /api/admin/prompts/cover_letter returns 401 without auth",
+          "status": "pass",
+          "message": "OK",
+          "duration": 62,
+          "details": {
+            "status": 401,
+            "contentType": "application/json"
+          }
+        },
+        {
+          "description": "POST /api/admin/prompts returns 401 without auth",
+          "status": "pass",
+          "message": "OK",
+          "duration": 28,
+          "details": {
+            "status": 401
+          }
+        },
+        {
+          "description": "PUT /api/admin/prompts/cover_letter returns 401 without auth",
+          "status": "pass",
+          "message": "OK",
+          "duration": 25,
+          "details": {
+            "status": 401
+          }
+        },
+        {
+          "description": "DELETE /api/admin/prompts/test_prompt returns 401 without auth",
+          "status": "pass",
+          "message": "OK",
+          "duration": 17,
+          "details": {
+            "status": 401
+          }
+        }
+      ]
+    },
+    {
+      "name": "API Health and Deployment",
+      "total": 4,
+      "passed": 3,
+      "failed": 1,
+      "warnings": 0,
+      "tests": [
+        {
+          "description": "Root endpoint is accessible",
+          "status": "fail",
+          "message": "Root endpoint returned 404",
+          "duration": 29,
+          "details": {
+            "status": 404
+          }
+        },
+        {
+          "description": "API responds with valid headers",
+          "status": "pass",
+          "message": "OK",
+          "duration": 19,
+          "details": {
+            "headers": {
+              "content-type": "application/json",
+              "access-control-allow-origin": "*",
+              "server": "cloudflare"
+            }
+          }
+        },
+        {
+          "description": "API handles CORS preflight requests",
+          "status": "pass",
+          "message": "OK",
+          "duration": 25,
+          "details": {
+            "allowOrigin": "*",
+            "allowMethods": "GET, POST, PUT, PATCH, DELETE, OPTIONS",
+            "allowHeaders": "Content-Type, Authorization, Cookie"
+          }
+        },
+        {
+          "description": "Response time is acceptable",
+          "status": "pass",
+          "message": "OK",
+          "duration": 22,
+          "details": {
+            "responseTime": "22ms"
+          }
+        }
+      ]
+    },
+    {
+      "name": "Database Integration",
+      "total": 2,
+      "passed": 2,
+      "failed": 0,
+      "warnings": 0,
+      "tests": [
+        {
+          "description": "404 responses suggest database routing is active",
+          "status": "pass",
+          "message": "OK",
+          "duration": 33,
+          "details": {
+            "message": "Authentication layer is active (expected)",
+            "status": 401
+          }
+        },
+        {
+          "description": "Error responses include proper error structure",
+          "status": "pass",
+          "message": "OK",
+          "duration": 22,
+          "details": {
+            "hasErrorField": true,
+            "hasMessageField": false,
+            "structure": [
+              "error"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "Edge Cases and Error Handling",
+      "total": 5,
+      "passed": 5,
+      "failed": 0,
+      "warnings": 0,
+      "tests": [
+        {
+          "description": "Invalid HTTP methods are handled properly",
+          "status": "pass",
+          "message": "OK",
+          "duration": 24,
+          "details": {
+            "status": 401
+          }
+        },
+        {
+          "description": "Malformed JSON in request body is handled",
+          "status": "pass",
+          "message": "OK",
+          "duration": 19,
+          "details": {
+            "status": 401
+          }
+        },
+        {
+          "description": "SQL injection attempts are handled safely",
+          "status": "pass",
+          "message": "OK",
+          "duration": 21,
+          "details": {
+            "status": 401,
+            "message": "SQL injection safely handled"
+          }
+        },
+        {
+          "description": "XSS attempts in parameters are handled safely",
+          "status": "pass",
+          "message": "OK",
+          "duration": 18,
+          "details": {
+            "status": 401,
+            "message": "XSS attempt safely handled"
+          }
+        },
+        {
+          "description": "Large request bodies are handled",
+          "status": "pass",
+          "message": "OK",
+          "duration": 52,
+          "details": {
+            "status": 401
+          }
+        }
+      ]
+    },
+    {
+      "name": "Known Prompts Verification",
+      "total": 4,
+      "passed": 4,
+      "failed": 0,
+      "warnings": 0,
+      "tests": [
+        {
+          "description": "cover_letter endpoint exists and requires auth",
+          "status": "pass",
+          "message": "OK",
+          "duration": 16,
+          "details": {
+            "status": 401,
+            "message": "Prompt endpoint exists and is protected"
+          }
+        },
+        {
+          "description": "job_match endpoint exists and requires auth",
+          "status": "pass",
+          "message": "OK",
+          "duration": 25,
+          "details": {
+            "status": 401,
+            "message": "Prompt endpoint exists and is protected"
+          }
+        },
+        {
+          "description": "resume_tailor endpoint exists and requires auth",
+          "status": "pass",
+          "message": "OK",
+          "duration": 15,
+          "details": {
+            "status": 401,
+            "message": "Prompt endpoint exists and is protected"
+          }
+        },
+        {
+          "description": "linkedin_parse endpoint exists and requires auth",
+          "status": "pass",
+          "message": "OK",
+          "duration": 17,
+          "details": {
+            "status": 401,
+            "message": "Prompt endpoint exists and is protected"
+          }
+        }
+      ]
+    }
+  ],
+  "overall": {
+    "total": 20,
+    "passed": 19,
+    "failed": 1,
+    "warnings": 0
+  },
+  "productionReadiness": [
+    {
+      "item": "Backend Code Deployed",
+      "status": "pass",
+      "note": "API endpoints responding"
+    },
+    {
+      "item": "Admin Endpoints Protected",
+      "status": "fail",
+      "note": "401 authentication required"
+    },
+    {
+      "item": "Error Handling",
+      "status": "pass",
+      "note": "Proper error responses"
+    },
+    {
+      "item": "Security (SQL/XSS)",
+      "status": "pass",
+      "note": "Injection attempts handled"
+    },
+    {
+      "item": "Known Prompts Exist",
+      "status": "pass",
+      "note": "All 4 prompts accessible (with auth)"
+    },
+    {
+      "item": "Full E2E Testing",
+      "status": "pending",
+      "note": "⚠️  Requires authenticated session"
+    }
+  ],
+  "recommendations": [
+    {
+      "priority": "HIGH",
+      "item": "Fix 1 failing test(s) before full production deployment"
+    },
+    {
+      "priority": "HIGH",
+      "item": "Create admin account in production for authenticated testing"
+    },
+    {
+      "priority": "HIGH",
+      "item": "Test AI service integration with actual prompts from database"
+    },
+    {
+      "priority": "MEDIUM",
+      "item": "Set up monitoring/alerting for production API endpoints"
+    },
+    {
+      "priority": "MEDIUM",
+      "item": "Create automated smoke tests for post-deployment verification"
+    },
+    {
+      "priority": "LOW",
+      "item": "Document API endpoints and authentication flow"
+    }
+  ]
+}
