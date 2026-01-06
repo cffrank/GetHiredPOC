@@ -16,6 +16,7 @@ export interface Env {
   CLOUDFLARE_ACCOUNT_ID?: string;
   AI_GATEWAY_TOKEN?: string;
   OPENAI_API_KEY?: string;
+  CLOUDFLARE_API_TOKEN?: string;
 }
 
 // Jobs

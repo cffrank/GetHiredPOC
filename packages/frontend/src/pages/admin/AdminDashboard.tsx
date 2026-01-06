@@ -12,6 +12,9 @@ interface SystemMetrics {
   ai_requests_today: number;
   ai_requests_week: number;
   ai_requests_month: number;
+  ai_cost_today: number;
+  ai_cost_week: number;
+  ai_cost_month: number;
   database_size_mb?: number;
   active_sessions?: number;
 }
@@ -127,21 +130,27 @@ export default function AdminDashboard() {
       <div className="mb-8">
         <h2 className="text-xl font-semibold text-gray-800 mb-4">AI Usage Metrics</h2>
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-          <MetricCard
-            title="AI Requests Today"
-            value={metrics?.ai_requests_today || 0}
-            color="blue"
-          />
-          <MetricCard
-            title="AI Requests This Week"
-            value={metrics?.ai_requests_week || 0}
-            color="green"
-          />
-          <MetricCard
-            title="AI Requests This Month"
-            value={metrics?.ai_requests_month || 0}
-            color="purple"
-          />
+          <div className="bg-blue-50 border border-blue-200 text-blue-700 rounded-lg p-6 shadow-sm">
+            <h3 className="text-sm font-medium opacity-80">AI Requests Today</h3>
+            <p className="text-3xl font-bold mt-2">{(metrics?.ai_requests_today || 0).toLocaleString()}</p>
+            <p className="text-xs mt-1 opacity-70">
+              Est. Cost: ${(metrics?.ai_cost_today || 0).toFixed(4)}
+            </p>
+          </div>
+          <div className="bg-green-50 border border-green-200 text-green-700 rounded-lg p-6 shadow-sm">
+            <h3 className="text-sm font-medium opacity-80">AI Requests This Week</h3>
+            <p className="text-3xl font-bold mt-2">{(metrics?.ai_requests_week || 0).toLocaleString()}</p>
+            <p className="text-xs mt-1 opacity-70">
+              Est. Cost: ${(metrics?.ai_cost_week || 0).toFixed(4)}
+            </p>
+          </div>
+          <div className="bg-purple-50 border border-purple-200 text-purple-700 rounded-lg p-6 shadow-sm">
+            <h3 className="text-sm font-medium opacity-80">AI Requests This Month</h3>
+            <p className="text-3xl font-bold mt-2">{(metrics?.ai_requests_month || 0).toLocaleString()}</p>
+            <p className="text-xs mt-1 opacity-70">
+              Est. Cost: ${(metrics?.ai_cost_month || 0).toFixed(4)}
+            </p>
+          </div>
         </div>
       </div>
 
