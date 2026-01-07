@@ -10,6 +10,7 @@ import {
   isSaved,
 } from '../services/db.service';
 import { mockJobAnalysis } from '../services/ai.service';
+import { findSimilarJobs } from '../services/vector.service';
 import type { User } from '@gethiredpoc/shared';
 
 type Variables = {
@@ -43,22 +44,97 @@ async function requireAuth(c: any): Promise<User> {
 // GET /api/jobs
 jobs.get('/', async (c) => {
   try {
-    const title = c.req.query("title") || undefined;
+    const query = c.req.query("q") || c.req.query("title") || undefined;
     const remote = c.req.query("remote");
     const location = c.req.query("location") || undefined;
 
     // Get user to exclude hidden jobs and filter by preferences
     const user = await getOptionalUser(c);
 
-    let jobsList = await getJobs(c.env, {
-      title,
-      remote: remote === "true" ? true : remote === "false" ? false : undefined,
-      location,
-      userId: user?.id, // Pass userId to exclude hidden jobs
-    });
+    let jobsList: any[] = [];
 
-    // Filter jobs based on user preferences if logged in
-    if (user) {
+    // Try semantic search if query is provided
+    if (query) {
+      try {
+        console.log('[API] Attempting semantic search for query:', query);
+        const { generateEmbedding } = await import('../services/embedding.service');
+        const { searchSimilarJobs } = await import('../services/vector.service');
+
+        // Generate embedding for search query
+        const queryEmbedding = await generateEmbedding(c.env, query);
+        console.log('[API] Generated query embedding, searching similar jobs');
+
+        // Search similar jobs
+        const similarJobs = await searchSimilarJobs(c.env, queryEmbedding, 100, {
+          remote: remote === 'true' ? true : undefined,
+        });
+
+        console.log(`[API] Found ${similarJobs.length} similar jobs from vector search`);
+
+        // Get job IDs from vector search results
+        const jobIds = similarJobs.map(j => j.id);
+
+        if (jobIds.length > 0) {
+          // Fetch full job details
+          const placeholders = jobIds.map(() => '?').join(',');
+          let dbQuery = `SELECT * FROM jobs WHERE id IN (${placeholders})`;
+          const params: any[] = [...jobIds];
+
+          // Apply location filter if provided
+          if (location) {
+            dbQuery += ' AND location LIKE ?';
+            params.push(`%${location}%`);
+          }
+
+          // Apply user hidden jobs filter if logged in
+          if (user) {
+            dbQuery += ` AND id NOT IN (
+              SELECT job_id FROM hidden_jobs WHERE user_id = ?
+            )`;
+            params.push(user.id);
+          }
+
+          dbQuery += ' ORDER BY created_at DESC LIMIT 50';
+
+          const result = await c.env.DB.prepare(dbQuery).bind(...params).all();
+          jobsList = result.results || [];
+
+          console.log(`[API] Retrieved ${jobsList.length} full job details after vector search`);
+        } else {
+          // Fallback: Vector search returned 0 results
+          console.log('[API] Vector search returned 0 results, falling back to keyword search');
+          // Extract main keywords from query (first 1-2 words are usually the job title)
+          const keywords = query.split(' ').slice(0, 2).join(' ');
+          jobsList = await getJobs(c.env, {
+            title: keywords,  // Use extracted keywords instead of full query
+            remote: remote === "true" ? true : remote === "false" ? false : undefined,
+            location,
+            userId: user?.id,
+          });
+        }
+      } catch (error: any) {
+        console.error('[API] Semantic search error, falling back to keyword search:', error.message);
+        // Fall back to keyword search on error
+        const keywords = query.split(' ').slice(0, 2).join(' ');
+        jobsList = await getJobs(c.env, {
+          title: keywords,  // Use extracted keywords
+          remote: remote === "true" ? true : remote === "false" ? false : undefined,
+          location,
+          userId: user?.id,
+        });
+      }
+    } else {
+      // No query provided, use regular filter-based search
+      jobsList = await getJobs(c.env, {
+        title: undefined,
+        remote: remote === "true" ? true : remote === "false" ? false : undefined,
+        location,
+        userId: user?.id, // Pass userId to exclude hidden jobs
+      });
+    }
+
+    // Filter jobs based on user preferences if logged in and not using semantic search
+    if (user && !query) {
       const { getJobSearchPreferences } = await import('../services/job-preferences.service');
       const preferences = await getJobSearchPreferences(c.env.DB, user.id);
 
@@ -169,6 +245,44 @@ jobs.get('/:id', async (c) => {
 
     return c.json({ job, saved }, 200);
   } catch (error: any) {
+    return c.json({ error: error.message }, 500);
+  }
+});
+
+// GET /api/jobs/:id/similar - Find similar jobs based on vector similarity
+jobs.get('/:id/similar', async (c) => {
+  try {
+    const jobId = c.req.param('id');
+
+    // Find similar jobs using vector similarity
+    const similarResults = await findSimilarJobs(c.env, jobId, 10);
+
+    // Fetch full job details for the similar jobs
+    const jobIds = similarResults.map(r => r.id);
+
+    if (jobIds.length === 0) {
+      return c.json([]);
+    }
+
+    const placeholders = jobIds.map(() => '?').join(',');
+    const jobs = await c.env.DB.prepare(
+      `SELECT * FROM jobs WHERE id IN (${placeholders})`
+    )
+      .bind(...jobIds)
+      .all();
+
+    // Merge similarity scores with job data
+    const jobsWithScores = jobs.results.map((job: any) => {
+      const result = similarResults.find(r => r.id === job.id);
+      return {
+        ...job,
+        similarity_score: result ? Math.round(result.score * 100) : 0
+      };
+    });
+
+    return c.json(jobsWithScores);
+  } catch (error: any) {
+    console.error('[API] Error finding similar jobs:', error);
     return c.json({ error: error.message }, 500);
   }
 });

@@ -142,6 +142,7 @@ export async function importJobsFromAdzuna(
   ],
   defaultLocation: string = 'remote'
 ): Promise<{ imported: number; updated: number; errors: number }> {
+  const { embedNewJob } = await import('./job-embedding.service');
   let imported = 0;
   let updated = 0;
   let errors = 0;
@@ -221,7 +222,7 @@ export async function importJobsFromAdzuna(
           // Extract state from location
           const state = extractState(job.location);
 
-          const result = await saveOrUpdateJob(env.DB, {
+          const saveResult = await saveOrUpdateJob(env.DB, {
             title: job.title,
             company: job.company.display_name,
             location: job.location.display_name,
@@ -244,11 +245,17 @@ export async function importJobsFromAdzuna(
             adref: job.adref || null
           });
 
-          if (result === 'inserted') {
+          if (saveResult.result === 'inserted') {
             imported++;
           } else {
             updated++;
           }
+
+          // Generate embedding for the job (either new or updated)
+          // This happens asynchronously in the background
+          embedNewJob(env, saveResult.job).catch(err => {
+            console.error(`[Adzuna Import] Failed to embed job ${saveResult.jobId}:`, err);
+          });
         } catch (error: any) {
           console.error('Error saving job:', error.message);
           errors++;
@@ -265,6 +272,7 @@ export async function importJobsFromAdzuna(
 
 /**
  * Save or update a job in the database (deduplicates by external_url)
+ * Returns { result: 'inserted' | 'updated', jobId: string, job: any }
  */
 async function saveOrUpdateJob(
   db: D1Database,
@@ -290,11 +298,11 @@ async function saveOrUpdateJob(
     longitude: number | null;
     adref: string | null;
   }
-): Promise<'inserted' | 'updated'> {
+): Promise<{ result: 'inserted' | 'updated'; jobId: string; job: any }> {
   // Check if job exists (by external_url to avoid duplicates)
   const existing = await db.prepare(
     'SELECT id FROM jobs WHERE external_url = ?'
-  ).bind(jobData.external_url).first();
+  ).bind(jobData.external_url).first<{ id: string }>();
 
   if (existing) {
     // Update existing job
@@ -315,10 +323,15 @@ async function saveOrUpdateJob(
       existing.id
     ).run();
 
-    return 'updated';
+    // Fetch and return the updated job
+    const job = await db.prepare('SELECT * FROM jobs WHERE id = ?')
+      .bind(existing.id)
+      .first();
+
+    return { result: 'updated', jobId: existing.id, job };
   } else {
     // Insert new job
-    await db.prepare(`
+    const result = await db.prepare(`
       INSERT INTO jobs (
         title, company, location, state, remote, description, requirements,
         salary_min, salary_max, posted_date, source, external_url,
@@ -334,7 +347,12 @@ async function saveOrUpdateJob(
       jobData.salary_is_predicted, jobData.latitude, jobData.longitude, jobData.adref
     ).run();
 
-    return 'inserted';
+    // Fetch the newly inserted job
+    const job = await db.prepare('SELECT * FROM jobs WHERE external_url = ?')
+      .bind(jobData.external_url)
+      .first<any>();
+
+    return { result: 'inserted', jobId: job?.id || '', job };
   }
 }
 

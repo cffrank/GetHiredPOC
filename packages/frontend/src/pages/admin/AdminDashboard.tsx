@@ -1,3 +1,4 @@
+import { useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { apiClient } from '../../lib/api-client';
 
@@ -20,6 +21,9 @@ interface SystemMetrics {
 }
 
 export default function AdminDashboard() {
+  const [backfilling, setBackfilling] = useState(false);
+  const [backfillResult, setBackfillResult] = useState<any>(null);
+
   const { data: metrics, isLoading, error } = useQuery<SystemMetrics>({
     queryKey: ['admin', 'metrics'],
     queryFn: () => apiClient.request('/api/admin/metrics'),
@@ -41,6 +45,42 @@ export default function AdminDashboard() {
       </div>
     );
   }
+
+  const handleBackfillEmbeddings = async () => {
+    if (!confirm('This will generate embeddings for all jobs without them. This may take a few minutes and cost approximately $0.01. Continue?')) {
+      return;
+    }
+
+    setBackfilling(true);
+    setBackfillResult(null);
+
+    try {
+      const response = await fetch(
+        `${import.meta.env.VITE_API_URL}/api/admin/backfill-embeddings`,
+        {
+          method: 'POST',
+          headers: {
+            'Authorization': `Bearer ${localStorage.getItem('token')}`,
+            'Content-Type': 'application/json'
+          }
+        }
+      );
+
+      const data = await response.json();
+
+      if (response.ok) {
+        setBackfillResult(data);
+        alert(`Success! Backfilled ${data.processed} jobs. Estimated cost: $${data.estimatedCost.toFixed(4)}`);
+      } else {
+        alert(`Error: ${data.error}`);
+      }
+    } catch (error: any) {
+      console.error('Error backfilling embeddings:', error);
+      alert('Error backfilling embeddings');
+    } finally {
+      setBackfilling(false);
+    }
+  };
 
   const MetricCard = ({ title, value, subtitle, color = 'blue' }: {
     title: string;
@@ -151,6 +191,32 @@ export default function AdminDashboard() {
               ~${(metrics?.ai_cost_month || 0).toFixed(4)} estimated
             </p>
           </div>
+        </div>
+      </div>
+
+      {/* Vector Embeddings */}
+      <div className="mb-8">
+        <div className="bg-white border border-gray-200 rounded-lg p-6 shadow-sm">
+          <h2 className="text-xl font-semibold text-gray-800 mb-4">Vector Embeddings</h2>
+          <p className="text-sm text-gray-600 mb-4">
+            Generate semantic embeddings for jobs to enable AI-powered search and recommendations.
+          </p>
+          <button
+            onClick={handleBackfillEmbeddings}
+            disabled={backfilling}
+            className="inline-flex items-center px-4 py-2 border border-gray-300 rounded-md font-medium text-sm text-gray-700 bg-white hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+          >
+            {backfilling ? 'Processing...' : 'Backfill Job Embeddings'}
+          </button>
+          {backfillResult && (
+            <div className="mt-4 p-3 bg-green-50 border border-green-200 rounded">
+              <p className="text-sm text-green-800">
+                ✓ Processed {backfillResult.processed} jobs
+                <br />
+                Estimated cost: ${backfillResult.estimatedCost.toFixed(4)}
+              </p>
+            </div>
+          )}
         </div>
       </div>
 

@@ -1,10 +1,11 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useJob, useSaveJob, useUnsaveJob, useAnalyzeJob, useGenerateResume, useGenerateCoverLetter } from '../hooks/useJobs';
 import { useCreateApplication } from '../hooks/useApplications';
 import { Button } from '../components/ui/Button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '../components/ui/Card';
 import { Badge } from '../components/ui/Badge';
+import { MapPin } from 'lucide-react';
 
 export default function JobDetail() {
   const { id } = useParams<{ id: string }>();
@@ -19,6 +20,8 @@ export default function JobDetail() {
   const [analysis, setAnalysis] = useState<any>(null);
   const [resume, setResume] = useState<any>(null);
   const [coverLetter, setCoverLetter] = useState<string | null>(null);
+  const [similarJobs, setSimilarJobs] = useState<any[]>([]);
+  const [loadingSimilar, setLoadingSimilar] = useState(false);
 
   const handleSave = () => {
     if (data?.saved) {
@@ -46,6 +49,37 @@ export default function JobDetail() {
   const handleGenerateCoverLetter = async () => {
     const result = await generateCoverLetterMutation.mutateAsync(id!);
     setCoverLetter(result.coverLetter);
+  };
+
+  useEffect(() => {
+    if (data?.job) {
+      fetchSimilarJobs();
+    }
+  }, [data?.job?.id]);
+
+  const fetchSimilarJobs = async () => {
+    if (!data?.job) return;
+
+    setLoadingSimilar(true);
+    try {
+      const response = await fetch(
+        `${import.meta.env.VITE_API_URL}/api/jobs/${data.job.id}/similar`,
+        {
+          headers: {
+            'Authorization': `Bearer ${localStorage.getItem('token')}`
+          }
+        }
+      );
+
+      if (response.ok) {
+        const responseData = await response.json();
+        setSimilarJobs(responseData.slice(0, 5)); // Show top 5
+      }
+    } catch (error) {
+      console.error('Error fetching similar jobs:', error);
+    } finally {
+      setLoadingSimilar(false);
+    }
   };
 
   if (isLoading) return <div className="p-8">Loading...</div>;
@@ -201,6 +235,51 @@ export default function JobDetail() {
                     <div className="prose prose-sm max-w-none">
                       <p className="whitespace-pre-wrap text-gray-700 leading-relaxed">{coverLetter}</p>
                     </div>
+                  </CardContent>
+                </Card>
+              )}
+
+              {/* Similar Jobs Section */}
+              {similarJobs.length > 0 && (
+                <Card>
+                  <CardHeader>
+                    <CardTitle>Similar Jobs</CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    {loadingSimilar ? (
+                      <div className="text-center py-4">
+                        <p className="text-gray-500">Loading similar jobs...</p>
+                      </div>
+                    ) : (
+                      <div className="space-y-3">
+                        {similarJobs.map((similarJob: any) => (
+                          <div
+                            key={similarJob.id}
+                            className="border rounded-lg p-4 hover:bg-gray-50 cursor-pointer transition-colors"
+                            onClick={() => navigate(`/jobs/${similarJob.id}`)}
+                          >
+                            <div className="flex items-start justify-between">
+                              <div className="flex-1">
+                                <h4 className="font-semibold text-gray-900">{similarJob.title}</h4>
+                                <p className="text-sm text-gray-600">{similarJob.company}</p>
+                                <div className="flex items-center gap-2 mt-1 text-sm text-gray-500">
+                                  <MapPin className="h-4 w-4" />
+                                  <span>{similarJob.location}</span>
+                                  {similarJob.remote && (
+                                    <Badge className="bg-blue-100 text-blue-800">Remote</Badge>
+                                  )}
+                                </div>
+                              </div>
+                              {similarJob.similarity_score && (
+                                <Badge className="ml-2 bg-gray-100 text-gray-800">
+                                  {similarJob.similarity_score}% match
+                                </Badge>
+                              )}
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    )}
                   </CardContent>
                 </Card>
               )}

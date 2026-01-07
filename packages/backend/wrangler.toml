@@ -52,6 +52,11 @@ id = "e96d7669b11c4f63b2b1ce41026a0c5d"
 binding = "AI"
 gateway_id = "jobmatch-ai-gateway-dev"
 
+# Vectorize binding for semantic search
+[[vectorize]]
+binding = "VECTORIZE"
+index_name = "job-embeddings"
+
 # Cron triggers
 [triggers]
 crons = ["0 1 * * *"]  # Daily at 1 AM UTC for job imports

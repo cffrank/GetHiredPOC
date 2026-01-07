@@ -154,6 +154,37 @@ admin.post('/import-jobs-for-user/:userId', async (c) => {
   }
 });
 
+// POST /api/admin/backfill-embeddings
+// Backfill embeddings for all jobs that don't have them
+admin.post('/backfill-embeddings', async (c) => {
+  try {
+    const limit = c.req.query('limit') ? parseInt(c.req.query('limit')) : undefined;
+    const currentUser = c.get('user') as User;
+
+    const { backfillJobEmbeddings } = await import('../services/backfill.service');
+
+    const result = await backfillJobEmbeddings(c.env, limit);
+
+    // Record audit log
+    await recordAuditLog(
+      c.env,
+      currentUser.id,
+      'backfill_embeddings',
+      `Backfilled ${result.processed} jobs with embeddings. Estimated cost: $${result.estimatedCost.toFixed(4)}`,
+      c.req.header('CF-Connecting-IP')
+    );
+
+    return c.json({
+      success: true,
+      ...result,
+      message: `Backfilled ${result.processed} jobs successfully. Estimated cost: $${result.estimatedCost.toFixed(4)}`
+    });
+  } catch (error: any) {
+    console.error('[Admin] Backfill embeddings error:', error);
+    return c.json({ error: error.message }, 500);
+  }
+});
+
 // ============================================================================
 // AI PROMPT MANAGEMENT ENDPOINTS
 // ============================================================================

@@ -6,6 +6,7 @@ export interface Env {
   KV_CACHE: KVNamespace;
   KV_SESSIONS: KVNamespace;
   AI: any;
+  VECTORIZE: VectorizeIndex;
   FRONTEND_URL?: string;
   BACKEND_URL?: string;
   ADZUNA_APP_ID?: string;
@@ -17,6 +18,7 @@ export interface Env {
   AI_GATEWAY_TOKEN?: string;
   OPENAI_API_KEY?: string;
   CLOUDFLARE_API_TOKEN?: string;
+  ADMIN_EMAILS?: string;
 }
 
 // Jobs
