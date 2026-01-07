@@ -1,22 +1,39 @@
 # Polar Checkout Flow - Test Guide
 
+## ⚠️ IMPORTANT: Use Sandbox for Testing!
+
+**Before testing, complete the sandbox setup:**
+
+👉 **See:** [`POLAR_SANDBOX_SETUP.md`](./POLAR_SANDBOX_SETUP.md)
+
+This guide assumes you've already:
+1. Created a sandbox account at https://sandbox.polar.sh
+2. Set up a sandbox product and access token
+3. Configured the backend with `POLAR_SANDBOX = "true"`
+
+**Do NOT test with production credentials!** Use the dedicated sandbox environment to avoid processing real money.
+
+---
+
 ## Test Environment
 
 **Frontend:** https://gethiredpoc.pages.dev
 **Backend:** https://gethiredpoc-api.carl-f-frank.workers.dev
 **Webhook URL:** https://gethiredpoc-api.carl-f-frank.workers.dev/api/webhooks/polar
 
+**Current Mode:** Sandbox (`POLAR_SANDBOX = "true"`)
 **Latest Deployment:** January 7, 2026
 
 ---
 
 ## Prerequisites
 
-✅ Polar.sh account configured
-✅ Product created: PRO ($39/month)
-✅ Product ID: `fbfe9261-44b5-4a08-99b8-e094af09aa8f`
-✅ Access token set in Cloudflare Workers secrets
-✅ Webhooks configured in Polar dashboard (Required events below)
+✅ Sandbox account created at https://sandbox.polar.sh
+✅ Sandbox product created: PRO ($39/month)
+✅ Sandbox access token set in Cloudflare Workers secrets
+✅ Backend configured with `POLAR_SANDBOX = "true"`
+✅ Webhooks configured in **sandbox** dashboard
+✅ Test checkout creation verified with `test-checkout.ts`
 
 ---
 
@@ -68,20 +85,25 @@ Configure these events in Polar dashboard at: https://polar.sh/dashboard/webhook
    - Button shows loading spinner: "Creating checkout session..."
    - After 1-2 seconds, you're redirected to Polar.sh checkout page
 
-### Step 4: Polar Checkout Page
+### Step 4: Polar Sandbox Checkout Page
 
-You should now be on: `https://polar.sh/checkout/polar_c_...`
+You should now be on: `https://sandbox.polar.sh/checkout/polar_c_...`
+
+**⚠️ Important:** Verify the URL starts with `sandbox.polar.sh`, not `polar.sh`!
 
 1. Verify the checkout page shows:
    - Product: "PRO"
    - Price: $39.00 USD/month
    - Billing interval: Monthly
    - Your email address (pre-filled)
-2. Enter test payment details:
+2. Enter **Stripe test card** details (sandbox only!):
    - **Test Card:** 4242 4242 4242 4242
    - **Expiry:** Any future date (e.g., 12/28)
    - **CVC:** Any 3 digits (e.g., 123)
    - **ZIP:** Any 5 digits (e.g., 12345)
+
+   More test cards: https://docs.stripe.com/testing#cards
+
 3. Review and complete checkout
 
 ### Step 5: Payment Success Redirect
