@@ -35,7 +35,9 @@ LINKEDIN_CLIENT_ID = "86gnb581r70q6j"
 
 # Polar.sh API Token for subscription payment processing
 # Note: Add POLAR_ACCESS_TOKEN via: npx wrangler secret put POLAR_ACCESS_TOKEN (DONE)
+# IMPORTANT: Use sandbox.polar.sh for testing! Create separate sandbox account and access token.
 POLAR_PRODUCT_ID = "fbfe9261-44b5-4a08-99b8-e094af09aa8f" # PRO product (has $39/month price)
+POLAR_SANDBOX = "true" # Set to "false" for production, "true" for sandbox testing
 
 # D1 Database
 [[d1_databases]]

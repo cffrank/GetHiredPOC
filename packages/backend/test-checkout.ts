@@ -12,6 +12,7 @@ const FRONTEND_URL = 'https://gethiredpoc.pages.dev';
 async function testCheckout() {
   const polar = new Polar({
     accessToken: POLAR_ACCESS_TOKEN,
+    server: 'sandbox', // Use sandbox environment for testing
   });
 
   try {

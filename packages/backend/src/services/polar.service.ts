@@ -15,10 +15,14 @@ import type { Env } from './db.service';
 
 /**
  * Initialize Polar SDK client
+ *
+ * @param accessToken - Polar access token
+ * @param sandbox - Whether to use sandbox environment (default: false)
  */
-export function createPolarClient(accessToken: string): Polar {
+export function createPolarClient(accessToken: string, sandbox: boolean = false): Polar {
   return new Polar({
     accessToken,
+    server: sandbox ? 'sandbox' : 'production',
   });
 }
 
@@ -41,7 +45,8 @@ export async function createCheckoutSession(
   url: string;
   customer_id: string;
 }> {
-  const polar = createPolarClient(env.POLAR_ACCESS_TOKEN);
+  const isSandbox = env.POLAR_SANDBOX === 'true';
+  const polar = createPolarClient(env.POLAR_ACCESS_TOKEN, isSandbox);
 
   try {
     const checkout = await polar.checkouts.create({
@@ -77,7 +82,8 @@ export async function createCheckoutSession(
  * @returns Customer details
  */
 export async function retrieveCustomer(env: Env, customerId: string) {
-  const polar = createPolarClient(env.POLAR_ACCESS_TOKEN);
+  const isSandbox = env.POLAR_SANDBOX === 'true';
+  const polar = createPolarClient(env.POLAR_ACCESS_TOKEN, isSandbox);
 
   try {
     const customer = await polar.customers.get(customerId);
@@ -96,7 +102,8 @@ export async function retrieveCustomer(env: Env, customerId: string) {
  * @returns Subscription details
  */
 export async function retrieveSubscription(env: Env, subscriptionId: string) {
-  const polar = createPolarClient(env.POLAR_ACCESS_TOKEN);
+  const isSandbox = env.POLAR_SANDBOX === 'true';
+  const polar = createPolarClient(env.POLAR_ACCESS_TOKEN, isSandbox);
 
   try {
     const subscription = await polar.subscriptions.get(subscriptionId);
@@ -115,7 +122,8 @@ export async function retrieveSubscription(env: Env, subscriptionId: string) {
  * @returns Canceled subscription details
  */
 export async function cancelSubscription(env: Env, subscriptionId: string) {
-  const polar = createPolarClient(env.POLAR_ACCESS_TOKEN);
+  const isSandbox = env.POLAR_SANDBOX === 'true';
+  const polar = createPolarClient(env.POLAR_ACCESS_TOKEN, isSandbox);
 
   try {
     const canceled = await polar.subscriptions.cancel(subscriptionId);

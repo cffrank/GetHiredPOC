@@ -31,6 +31,7 @@ export interface Env {
   // Polar.sh Payment Processing
   POLAR_ACCESS_TOKEN?: string;
   POLAR_PRODUCT_ID?: string;
+  POLAR_SANDBOX?: string; // 'true' for sandbox, 'false' or unset for production
 }
 
 // Jobs
