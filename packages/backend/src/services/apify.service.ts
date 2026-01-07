@@ -422,7 +422,7 @@ async function fetchDatasetItems(
 }
 
 /**
- * Search LinkedIn jobs via Apify
+ * Search LinkedIn jobs via Apify (using curious_coder/linkedin-jobs-search-scraper)
  */
 export async function searchLinkedInJobs(
   env: Env,
@@ -436,26 +436,43 @@ export async function searchLinkedInJobs(
 
   console.log(`[LinkedIn] Searching for "${query}" in "${location}"`);
 
-  // Retrieve LinkedIn cookie from KV storage (if configured)
-  const linkedinCookie = await env.KV_CACHE.get('linkedin_scraper_cookie');
+  // Retrieve LinkedIn cookie from KV storage (required for curious_coder scraper)
+  const linkedinCookieStr = await env.KV_CACHE.get('linkedin_scraper_cookie');
 
-  if (linkedinCookie) {
-    console.log('[LinkedIn] Using configured cookie for authentication');
-  } else {
-    console.log('[LinkedIn] No cookie configured - scraper may return limited data');
+  if (!linkedinCookieStr) {
+    console.warn('[LinkedIn] No cookie configured - curious_coder scraper requires cookies');
+    throw new Error('LinkedIn cookie not configured. Please configure cookie in Admin Dashboard.');
   }
 
-  // Build input for LinkedIn scraper
+  console.log('[LinkedIn] Using configured cookie for authentication');
+
+  // Parse cookie JSON (should be array format from Cookie-Editor)
+  let cookies;
+  try {
+    cookies = JSON.parse(linkedinCookieStr);
+  } catch (error) {
+    console.error('[LinkedIn] Failed to parse cookie JSON:', error);
+    throw new Error('Invalid LinkedIn cookie format. Please re-export from Cookie-Editor.');
+  }
+
+  // Build LinkedIn search URL (curious_coder requires full URL)
+  // Format: https://www.linkedin.com/jobs/search/?keywords=query&location=location
+  const encodedQuery = encodeURIComponent(query);
+  const encodedLocation = encodeURIComponent(location);
+  const jobsSearchUrl = `https://www.linkedin.com/jobs/search/?keywords=${encodedQuery}&location=${encodedLocation}`;
+
+  // Build input for curious_coder LinkedIn scraper
   const scraperInput: Record<string, any> = {
-    keywords: query,
-    location: location,
-    maxResults: maxResults
+    cookies: cookies, // JSON array format
+    jobsSearchUrl: jobsSearchUrl,
+    totalNumberOfRecords: maxResults,
+    scrapeJobDetails: true,
+    scrapeSkillsRequirements: true,
+    scrapeCompanyDetails: false,
+    userAgent: 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/121.0.0.0 Safari/537.36'
   };
 
-  // Add cookie if available
-  if (linkedinCookie) {
-    scraperInput.cookie = linkedinCookie;
-  }
+  console.log(`[LinkedIn] Using search URL: ${jobsSearchUrl}`);
 
   // Start LinkedIn scraper
   const runId = await startActorRun(env, env.APIFY_LINKEDIN_ACTOR_ID, scraperInput);
