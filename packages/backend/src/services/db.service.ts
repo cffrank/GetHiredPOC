@@ -27,6 +27,10 @@ export interface Env {
   // Cost Controls
   MAX_DAILY_SCRAPER_RUNS?: string;
   MAX_USER_IMPORTS_PER_DAY?: string;
+
+  // Polar.sh Payment Processing
+  POLAR_ACCESS_TOKEN?: string;
+  POLAR_PRODUCT_PRICE_ID?: string;
 }
 
 // Jobs

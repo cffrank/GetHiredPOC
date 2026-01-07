@@ -15,10 +15,13 @@ import Settings from './pages/Settings';
 import Recommendations from './pages/Recommendations';
 import Onboarding from './pages/Onboarding';
 import JobPreferences from './pages/JobPreferences';
+import Subscription from './pages/Subscription';
 import AdminDashboard from './pages/admin/AdminDashboard';
 import AdminUsers from './pages/admin/AdminUsers';
+import AdminSubscriptions from './pages/admin/AdminSubscriptions';
 import AdminJobs from './pages/admin/AdminJobs';
 import AdminPrompts from './pages/admin/AdminPrompts';
+import AdminAnalytics from './pages/admin/AdminAnalytics';
 
 export default function App() {
   return (
@@ -39,6 +42,7 @@ export default function App() {
           <Route path="/applications" element={<Applications />} />
           <Route path="/resume" element={<Resume />} />
           <Route path="/settings" element={<Settings />} />
+          <Route path="/subscription" element={<Subscription />} />
         </Route>
       </Route>
 
@@ -46,8 +50,10 @@ export default function App() {
         <Route element={<AdminLayout />}>
           <Route path="/admin" element={<AdminDashboard />} />
           <Route path="/admin/users" element={<AdminUsers />} />
+          <Route path="/admin/subscriptions" element={<AdminSubscriptions />} />
           <Route path="/admin/jobs" element={<AdminJobs />} />
           <Route path="/admin/prompts" element={<AdminPrompts />} />
+          <Route path="/admin/analytics" element={<AdminAnalytics />} />
         </Route>
       </Route>
 

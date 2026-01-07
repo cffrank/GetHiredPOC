@@ -1,5 +1,12 @@
 import { Resend } from 'resend';
+import { render } from '@react-email/render';
 import type { Env } from './db.service';
+import type { User } from '@gethiredpoc/shared';
+import { LimitWarningEmail } from '../emails/LimitWarningEmail';
+import { LimitReachedEmail } from '../emails/LimitReachedEmail';
+import { PaymentSuccessEmail } from '../emails/PaymentSuccessEmail';
+import { PaymentFailedEmail } from '../emails/PaymentFailedEmail';
+import { MonthlyUsageSummary } from '../emails/MonthlyUsageSummary';
 
 export interface EmailPreferences {
   userId: string;
@@ -224,4 +231,249 @@ async function logEmail(
     INSERT INTO email_log (user_id, email_type, subject, status)
     VALUES (?, ?, ?, ?)
   `).bind(user.id, emailType, subject, status).run();
+}
+
+/**
+ * Helper function to determine if limit warning should be sent
+ */
+export function shouldSendLimitWarning(current: number, limit: number): boolean {
+  const percentage = (current / limit) * 100;
+  // Send at 80% and 100%
+  return percentage >= 80 && percentage < 100;
+}
+
+/**
+ * Send limit warning email when user reaches 80% of their limit
+ */
+export async function sendLimitWarningEmail(
+  env: Env,
+  user: User,
+  limitType: 'job searches' | 'applications' | 'resumes' | 'cover letters',
+  current: number,
+  limit: number
+): Promise<void> {
+  const apiKey = env.RESEND_API_KEY;
+  if (!apiKey) {
+    console.warn('Resend API key not configured, skipping limit warning email');
+    return;
+  }
+
+  const resend = new Resend(apiKey);
+  const percentage = Math.round((current / limit) * 100);
+  const subject = `You've used ${percentage}% of your ${limitType} limit`;
+
+  try {
+    const html = await render(
+      LimitWarningEmail({
+        userName: user.full_name || 'there',
+        limitType,
+        current,
+        limit,
+        upgradeUrl: `${env.FRONTEND_URL || 'https://gethiredpoc.pages.dev'}/subscription`,
+      })
+    );
+
+    await resend.emails.send({
+      from: 'GetHiredPOC <noreply@gethiredpoc.com>',
+      to: user.email,
+      subject,
+      html,
+    });
+
+    console.log(`Limit warning email sent to ${user.email}`);
+    await logEmail(env.DB, user.email, 'limit_warning', subject, 'sent');
+  } catch (error: any) {
+    console.error('Failed to send limit warning email:', error.message);
+    await logEmail(env.DB, user.email, 'limit_warning', subject, 'failed');
+  }
+}
+
+/**
+ * Send limit reached email when user hits 100% of their limit
+ */
+export async function sendLimitReachedEmail(
+  env: Env,
+  user: User,
+  limitType: 'job searches' | 'applications' | 'resumes' | 'cover letters',
+  limit: number,
+  resetDate?: string
+): Promise<void> {
+  const apiKey = env.RESEND_API_KEY;
+  if (!apiKey) {
+    console.warn('Resend API key not configured, skipping limit reached email');
+    return;
+  }
+
+  const resend = new Resend(apiKey);
+  const subject = `You've reached your ${limitType} limit`;
+
+  try {
+    const html = await render(
+      LimitReachedEmail({
+        userName: user.full_name || 'there',
+        limitType,
+        limit,
+        upgradeUrl: `${env.FRONTEND_URL || 'https://gethiredpoc.pages.dev'}/subscription`,
+        resetDate,
+      })
+    );
+
+    await resend.emails.send({
+      from: 'GetHiredPOC <noreply@gethiredpoc.com>',
+      to: user.email,
+      subject,
+      html,
+    });
+
+    console.log(`Limit reached email sent to ${user.email}`);
+    await logEmail(env.DB, user.email, 'limit_reached', subject, 'sent');
+  } catch (error: any) {
+    console.error('Failed to send limit reached email:', error.message);
+    await logEmail(env.DB, user.email, 'limit_reached', subject, 'failed');
+  }
+}
+
+/**
+ * Send payment success email after PRO subscription purchase
+ */
+export async function sendPaymentSuccessEmail(
+  env: Env,
+  user: User,
+  amount: number,
+  subscriptionId: string,
+  startDate: string,
+  nextBillingDate: string
+): Promise<void> {
+  const apiKey = env.RESEND_API_KEY;
+  if (!apiKey) {
+    console.warn('Resend API key not configured, skipping payment success email');
+    return;
+  }
+
+  const resend = new Resend(apiKey);
+  const subject = 'Thank you for upgrading to PRO!';
+
+  try {
+    const html = await render(
+      PaymentSuccessEmail({
+        userName: user.full_name || 'there',
+        amount,
+        subscriptionId,
+        startDate,
+        nextBillingDate,
+        dashboardUrl: `${env.FRONTEND_URL || 'https://gethiredpoc.pages.dev'}/dashboard`,
+      })
+    );
+
+    await resend.emails.send({
+      from: 'GetHiredPOC <noreply@gethiredpoc.com>',
+      to: user.email,
+      subject,
+      html,
+    });
+
+    console.log(`Payment success email sent to ${user.email}`);
+    await logEmail(env.DB, user.email, 'payment_success', subject, 'sent');
+  } catch (error: any) {
+    console.error('Failed to send payment success email:', error.message);
+    await logEmail(env.DB, user.email, 'payment_success', subject, 'failed');
+  }
+}
+
+/**
+ * Send payment failed email (dunning email)
+ */
+export async function sendPaymentFailedEmail(
+  env: Env,
+  user: User,
+  amount: number,
+  failureReason: string,
+  retryDate: string
+): Promise<void> {
+  const apiKey = env.RESEND_API_KEY;
+  if (!apiKey) {
+    console.warn('Resend API key not configured, skipping payment failed email');
+    return;
+  }
+
+  const resend = new Resend(apiKey);
+  const subject = 'Action required: Payment failed';
+
+  try {
+    const html = await render(
+      PaymentFailedEmail({
+        userName: user.full_name || 'there',
+        amount,
+        failureReason,
+        retryDate,
+        updatePaymentUrl: `${env.FRONTEND_URL || 'https://gethiredpoc.pages.dev'}/subscription`,
+      })
+    );
+
+    await resend.emails.send({
+      from: 'GetHiredPOC <noreply@gethiredpoc.com>',
+      to: user.email,
+      subject,
+      html,
+    });
+
+    console.log(`Payment failed email sent to ${user.email}`);
+    await logEmail(env.DB, user.email, 'payment_failed', subject, 'sent');
+  } catch (error: any) {
+    console.error('Failed to send payment failed email:', error.message);
+    await logEmail(env.DB, user.email, 'payment_failed', subject, 'failed');
+  }
+}
+
+/**
+ * Send monthly usage summary email
+ */
+export async function sendMonthlyUsageSummary(
+  env: Env,
+  user: User,
+  month: string,
+  usage: {
+    jobSearches: number;
+    jobsImported: number;
+    applications: number;
+    resumesGenerated: number;
+    coverLettersGenerated: number;
+  }
+): Promise<void> {
+  const apiKey = env.RESEND_API_KEY;
+  if (!apiKey) {
+    console.warn('Resend API key not configured, skipping monthly summary email');
+    return;
+  }
+
+  const resend = new Resend(apiKey);
+  const subject = `Your ${month} usage summary`;
+
+  try {
+    const html = await render(
+      MonthlyUsageSummary({
+        userName: user.full_name || 'there',
+        month,
+        tier: user.subscription_tier === 'pro' ? 'pro' : 'free',
+        usage,
+        dashboardUrl: `${env.FRONTEND_URL || 'https://gethiredpoc.pages.dev'}/dashboard`,
+        upgradeUrl: user.subscription_tier !== 'pro'
+          ? `${env.FRONTEND_URL || 'https://gethiredpoc.pages.dev'}/subscription`
+          : undefined,
+      })
+    );
+
+    await resend.emails.send({
+      from: 'GetHiredPOC <noreply@gethiredpoc.com>',
+      to: user.email,
+      subject,
+      html,
+    });
+
+    console.log(`Monthly usage summary sent to ${user.email}`);
+    await logEmail(env.DB, user.email, 'monthly_summary', subject, 'sent');
+  } catch (error: any) {
+    console.error('Failed to send monthly summary email:', error.message);
+    await logEmail(env.DB, user.email, 'monthly_summary', subject, 'failed');
+  }
 }

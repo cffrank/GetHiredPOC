@@ -5,6 +5,9 @@ import { Button } from './ui/Button';
 export function Navigation() {
   const { user, logout } = useAuth();
 
+  const isFree = user?.membership_tier === 'trial' || !user?.membership_tier;
+  const isPro = user?.membership_tier === 'paid';
+
   return (
     <nav className="border-b bg-white">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
@@ -40,11 +43,30 @@ export function Navigation() {
                     </Button>
                   </Link>
                 )}
+                {isFree && (
+                  <Link to="/subscription">
+                    <Button className="bg-green-600 hover:bg-green-700 text-white text-sm font-semibold">
+                      Upgrade to PRO
+                    </Button>
+                  </Link>
+                )}
                 <Link to="/settings">
                   <Button variant="ghost">Settings</Button>
                 </Link>
-                <Link to="/profile">
-                  <Button variant="ghost">{user.email}</Button>
+                <Link to="/profile" className="flex items-center space-x-2">
+                  <Button variant="ghost" className="flex items-center space-x-2">
+                    <span>{user.email}</span>
+                    {isPro && (
+                      <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-semibold bg-green-100 text-green-700 border border-green-600">
+                        PRO
+                      </span>
+                    )}
+                    {isFree && (
+                      <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-semibold bg-gray-100 text-gray-600 border border-gray-300">
+                        FREE
+                      </span>
+                    )}
+                  </Button>
                 </Link>
                 <Button onClick={() => logout()} variant="outline">
                   Logout

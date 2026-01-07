@@ -9,6 +9,15 @@ import {
   type ResumeData,
   type CoverLetterData
 } from '../services/document-export.service';
+import {
+  canPerformAction,
+  incrementUsage,
+} from '../services/subscription.service';
+import {
+  sendLimitWarningEmail,
+  sendLimitReachedEmail,
+  shouldSendLimitWarning,
+} from '../services/email.service';
 
 const exportRoutes = new Hono<{ Bindings: Env }>();
 
@@ -23,6 +32,18 @@ exportRoutes.get('/resume/:format', async (c) => {
     const format = c.req.param('format') as 'pdf' | 'docx';
     if (format !== 'pdf' && format !== 'docx') {
       return c.json({ error: 'Invalid format. Use pdf or docx' }, 400);
+    }
+
+    // Check subscription tier and resume generation limits
+    const tierCheck = await canPerformAction(c.env.DB, user.id, 'resume');
+    if (!tierCheck.allowed) {
+      return c.json({
+        error: 'Subscription limit reached',
+        message: tierCheck.reason,
+        current: tierCheck.current,
+        limit: tierCheck.limit,
+        upgradeUrl: '/subscription/upgrade',
+      }, 402); // 402 Payment Required
     }
 
     // Get user's primary resume or latest resume
@@ -97,6 +118,33 @@ exportRoutes.get('/resume/:format', async (c) => {
       filename = `resume_${user.full_name?.replace(/\s+/g, '_') || 'resume'}.docx`;
     }
 
+    // Increment resume generation counter after successful generation
+    await incrementUsage(c.env.DB, user.id, 'resume', 1);
+
+    // Check if limit warning or limit reached email should be sent
+    if (tierCheck.current !== undefined && tierCheck.limit) {
+      const newCurrent = tierCheck.current + 1;
+
+      if (shouldSendLimitWarning(newCurrent, tierCheck.limit)) {
+        // Send warning at 80%
+        await sendLimitWarningEmail(
+          c.env,
+          user,
+          'resumes',
+          newCurrent,
+          tierCheck.limit
+        ).catch(err => console.error('Failed to send limit warning email:', err));
+      } else if (newCurrent >= tierCheck.limit) {
+        // Send limit reached at 100%
+        await sendLimitReachedEmail(
+          c.env,
+          user,
+          'resumes',
+          tierCheck.limit
+        ).catch(err => console.error('Failed to send limit reached email:', err));
+      }
+    }
+
     return new Response(fileBuffer, {
       headers: {
         'Content-Type': contentType,
@@ -122,6 +170,18 @@ exportRoutes.post('/cover-letter/:format', async (c) => {
     const format = c.req.param('format') as 'pdf' | 'docx';
     if (format !== 'pdf' && format !== 'docx') {
       return c.json({ error: 'Invalid format. Use pdf or docx' }, 400);
+    }
+
+    // Check subscription tier and cover letter generation limits
+    const tierCheck = await canPerformAction(c.env.DB, user.id, 'cover_letter');
+    if (!tierCheck.allowed) {
+      return c.json({
+        error: 'Subscription limit reached',
+        message: tierCheck.reason,
+        current: tierCheck.current,
+        limit: tierCheck.limit,
+        upgradeUrl: '/subscription/upgrade',
+      }, 402); // 402 Payment Required
     }
 
     const body = await c.req.json();
@@ -165,6 +225,33 @@ exportRoutes.post('/cover-letter/:format', async (c) => {
       fileBuffer = await generateCoverLetterDOCX(coverLetterData);
       contentType = 'application/vnd.openxmlformats-officedocument.wordprocessingml.document';
       filename = `cover_letter_${companyName.replace(/\s+/g, '_')}.docx`;
+    }
+
+    // Increment cover letter generation counter after successful generation
+    await incrementUsage(c.env.DB, user.id, 'cover_letter', 1);
+
+    // Check if limit warning or limit reached email should be sent
+    if (tierCheck.current !== undefined && tierCheck.limit) {
+      const newCurrent = tierCheck.current + 1;
+
+      if (shouldSendLimitWarning(newCurrent, tierCheck.limit)) {
+        // Send warning at 80%
+        await sendLimitWarningEmail(
+          c.env,
+          user,
+          'cover letters',
+          newCurrent,
+          tierCheck.limit
+        ).catch(err => console.error('Failed to send limit warning email:', err));
+      } else if (newCurrent >= tierCheck.limit) {
+        // Send limit reached at 100%
+        await sendLimitReachedEmail(
+          c.env,
+          user,
+          'cover letters',
+          tierCheck.limit
+        ).catch(err => console.error('Failed to send limit reached email:', err));
+      }
     }
 
     return new Response(fileBuffer, {

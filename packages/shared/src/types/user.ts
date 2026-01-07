@@ -13,6 +13,13 @@ export interface User {
   membership_started_at?: number;
   membership_expires_at?: number;
   trial_started_at?: number;
+  // Subscription tier system
+  subscription_tier?: 'free' | 'pro';
+  subscription_status?: 'active' | 'canceled' | 'expired';
+  subscription_started_at?: number;
+  subscription_expires_at?: number;
+  stripe_customer_id?: string;
+  stripe_subscription_id?: string;
   created_at: number;
   updated_at: number;
 }

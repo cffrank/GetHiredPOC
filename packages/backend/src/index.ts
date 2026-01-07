@@ -15,6 +15,9 @@ import aiJobs from './routes/ai-jobs';
 import recommendations from './routes/recommendations';
 import linkedin from './routes/linkedin';
 import chat from './routes/chat';
+import subscription from './routes/subscription';
+import webhooks from './routes/webhooks';
+import analytics from './routes/analytics';
 import { getFile } from './services/storage.service';
 
 const app = new Hono<{ Bindings: Env }>();
@@ -52,6 +55,9 @@ app.route('/api/ai/jobs', aiJobs);
 app.route('/api/recommendations', recommendations);
 app.route('/api/linkedin', linkedin);
 app.route('/api/chat', chat);
+app.route('/api/subscription', subscription);
+app.route('/api/webhooks', webhooks);
+app.route('/api/admin/analytics', analytics);
 
 // File serving endpoint
 app.get('/api/files/*', async (c) => {
@@ -94,7 +100,8 @@ app.onError((err, c) => {
 export default {
   fetch: app.fetch,
   async scheduled(event: ScheduledEvent, env: Env, ctx: ExecutionContext) {
-    console.log('[Cron] Daily job import triggered at', new Date().toISOString());
+    const now = new Date();
+    console.log('[Cron] Daily job import triggered at', now.toISOString());
 
     // Import jobs for all users with rate limiting
     const { importJobsForAllUsers } = await import('./services/apify.service');
@@ -116,6 +123,74 @@ export default {
 
         // Record the run
         await recordDailyScraperRun(env.DB, 'all');
+
+        // If it's the 1st of the month, send monthly usage summaries
+        if (now.getDate() === 1) {
+          console.log('[Cron] First day of month - sending monthly usage summaries');
+          const { sendMonthlyUsageSummary } = await import('./services/email.service');
+
+          // Get last month's name
+          const lastMonth = new Date(now.getFullYear(), now.getMonth() - 1, 1);
+          const monthName = lastMonth.toLocaleDateString('en-US', { month: 'long', year: 'numeric' });
+
+          // Get all active users
+          const users = await env.DB.prepare(`
+            SELECT id, email, full_name, subscription_tier
+            FROM users
+            WHERE email IS NOT NULL
+            ORDER BY id
+          `).all();
+
+          console.log(`[Cron] Sending monthly summaries to ${users.results.length} users`);
+
+          // Send summary to each user
+          for (const user of users.results) {
+            try {
+              // Get last month's usage
+              const lastMonthStart = Math.floor(lastMonth.getTime() / 1000);
+              const lastMonthEnd = Math.floor(now.getTime() / 1000);
+
+              const usage = await env.DB.prepare(`
+                SELECT
+                  SUM(CASE WHEN action_type = 'job_import' THEN count ELSE 0 END) as job_searches,
+                  SUM(CASE WHEN action_type = 'jobs_imported' THEN count ELSE 0 END) as jobs_imported,
+                  SUM(CASE WHEN action_type = 'application' THEN count ELSE 0 END) as applications,
+                  SUM(CASE WHEN action_type = 'resume' THEN count ELSE 0 END) as resumes_generated,
+                  SUM(CASE WHEN action_type = 'cover_letter' THEN count ELSE 0 END) as cover_letters_generated
+                FROM usage_tracking
+                WHERE user_id = ?
+                  AND updated_at >= ?
+                  AND updated_at < ?
+              `)
+                .bind(user.id, lastMonthStart, lastMonthEnd)
+                .first<{
+                  job_searches: number;
+                  jobs_imported: number;
+                  applications: number;
+                  resumes_generated: number;
+                  cover_letters_generated: number;
+                }>();
+
+              if (usage) {
+                await sendMonthlyUsageSummary(
+                  env,
+                  user as any,
+                  monthName,
+                  {
+                    jobSearches: usage.job_searches || 0,
+                    jobsImported: usage.jobs_imported || 0,
+                    applications: usage.applications || 0,
+                    resumesGenerated: usage.resumes_generated || 0,
+                    coverLettersGenerated: usage.cover_letters_generated || 0,
+                  }
+                );
+                console.log(`[Cron] Monthly summary sent to ${user.email}`);
+              }
+            } catch (error: any) {
+              console.error(`[Cron] Failed to send monthly summary to ${user.email}:`, error.message);
+            }
+          }
+        }
       })().catch(error => {
         console.error('[Cron] Daily job import failed:', error);
       })

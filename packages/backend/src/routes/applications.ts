@@ -8,8 +8,17 @@ import {
   updateApplication,
   deleteApplication,
 } from '../services/db.service';
-import { sendStatusUpdateEmail } from '../services/email.service';
+import {
+  sendStatusUpdateEmail,
+  sendLimitWarningEmail,
+  sendLimitReachedEmail,
+  shouldSendLimitWarning,
+} from '../services/email.service';
 import type { User } from '@gethiredpoc/shared';
+import {
+  canPerformAction,
+  incrementUsage,
+} from '../services/subscription.service';
 
 type Variables = {
   env: Env;
@@ -57,8 +66,55 @@ applications.post('/', async (c) => {
       return c.json({ error: "job_id is required" }, 400);
     }
 
+    // Check subscription tier and application limits
+    const tierCheck = await canPerformAction(c.env.DB, user.id, 'application');
+    if (!tierCheck.allowed) {
+      return c.json({
+        error: 'Subscription limit reached',
+        message: tierCheck.reason,
+        current: tierCheck.current,
+        limit: tierCheck.limit,
+        upgradeUrl: '/subscription/upgrade',
+      }, 402); // 402 Payment Required
+    }
+
     const application = await createApplication(c.env, user.id, job_id, status);
-    return c.json({ application }, 201);
+
+    // Increment application counter after successful creation
+    await incrementUsage(c.env.DB, user.id, 'application', 1);
+
+    // Check if limit warning or limit reached email should be sent
+    if (tierCheck.current !== undefined && tierCheck.limit) {
+      const newCurrent = tierCheck.current + 1;
+
+      if (shouldSendLimitWarning(newCurrent, tierCheck.limit)) {
+        // Send warning at 80%
+        await sendLimitWarningEmail(
+          c.env,
+          user,
+          'applications',
+          newCurrent,
+          tierCheck.limit
+        ).catch(err => console.error('Failed to send limit warning email:', err));
+      } else if (newCurrent >= tierCheck.limit) {
+        // Send limit reached at 100%
+        await sendLimitReachedEmail(
+          c.env,
+          user,
+          'applications',
+          tierCheck.limit
+        ).catch(err => console.error('Failed to send limit reached email:', err));
+      }
+    }
+
+    return c.json({
+      application,
+      usage: {
+        current: (tierCheck.current || 0) + 1,
+        limit: tierCheck.limit,
+        remaining: tierCheck.limit ? tierCheck.limit - (tierCheck.current || 0) - 1 : undefined,
+      }
+    }, 201);
   } catch (error: any) {
     if (error.message === 'Unauthorized' || error.message === 'Session expired') {
       return c.json({ error: error.message }, 401);

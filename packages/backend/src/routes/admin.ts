@@ -16,6 +16,17 @@ import {
   upsertPrompt,
   deletePrompt,
 } from '../services/ai-prompt.service';
+import {
+  getUserTier,
+  canPerformAction,
+  incrementUsage,
+  getSubscriptionStatus,
+} from '../services/subscription.service';
+import {
+  sendLimitWarningEmail,
+  sendLimitReachedEmail,
+  shouldSendLimitWarning,
+} from '../services/email.service';
 
 const admin = new Hono<{ Bindings: Env }>();
 
@@ -80,8 +91,25 @@ admin.put('/users/:userId/role', async (c) => {
 // Trigger job import from Apify scrapers
 admin.post('/import-jobs', async (c) => {
   try {
+    const currentUser = c.get('user') as User;
     const body = await c.req.json().catch(() => ({}));
     const { queries, scrapers, location, radius } = body;
+
+    // Check subscription tier and limits
+    const tierCheck = await canPerformAction(c.env.DB, currentUser.id, 'job_import');
+    if (!tierCheck.allowed) {
+      return c.json({
+        error: 'Subscription limit reached',
+        message: tierCheck.reason,
+        current: tierCheck.current,
+        limit: tierCheck.limit,
+        upgradeUrl: '/subscription/upgrade',
+      }, 402); // 402 Payment Required
+    }
+
+    // Get user's tier limits to apply jobsPerSearch
+    const { tier, limits } = await getUserTier(c.env.DB, currentUser.id);
+    const jobsPerSearch = limits.jobsPerSearch;
 
     const searchQueries = queries || [
       'software engineer remote',
@@ -98,18 +126,48 @@ admin.post('/import-jobs', async (c) => {
     const searchLocation = location || 'United States';
     const searchRadius = radius || '25';
 
-    console.log(`Starting job import with ${searchQueries.length} search queries in ${searchLocation} (${searchRadius} miles)`);
+    console.log(`[${tier.toUpperCase()}] Starting job import with ${searchQueries.length} search queries in ${searchLocation} (${searchRadius} miles), limit: ${jobsPerSearch} jobs per search`);
 
-    // Call Apify import (searches all three sources)
-    const result = await importJobsFromApify(c.env, searchQueries, searchLocation, 100, searchRadius);
+    // Call Apify import with tier-based job limit
+    const result = await importJobsFromApify(c.env, searchQueries, searchLocation, jobsPerSearch, searchRadius);
+
+    // Increment usage counters
+    await incrementUsage(c.env.DB, currentUser.id, 'job_import', 1);
+    await incrementUsage(c.env.DB, currentUser.id, 'jobs_imported', result.imported);
+
+    // Check if limit warning or limit reached email should be sent
+    if (tierCheck.current !== undefined && tierCheck.limit) {
+      const newCurrent = tierCheck.current + 1;
+
+      if (shouldSendLimitWarning(newCurrent, tierCheck.limit)) {
+        // Send warning at 80%
+        await sendLimitWarningEmail(
+          c.env,
+          currentUser,
+          'job searches',
+          newCurrent,
+          tierCheck.limit
+        ).catch(err => console.error('Failed to send limit warning email:', err));
+      } else if (newCurrent >= tierCheck.limit) {
+        // Send limit reached at 100%
+        await sendLimitReachedEmail(
+          c.env,
+          currentUser,
+          'job searches',
+          tierCheck.limit
+        ).catch(err => console.error('Failed to send limit reached email:', err));
+      }
+    }
+
+    // Get subscription status for response
+    const subscription = await getSubscriptionStatus(c.env.DB, currentUser.id);
 
     // Record audit log
-    const currentUser = c.get('user') as User;
     await recordAuditLog(
       c.env,
       currentUser.id,
       'import_jobs',
-      `Imported ${result.imported} jobs with ${searchQueries.length} queries from LinkedIn, Indeed, and Dice`,
+      `[${tier.toUpperCase()}] Imported ${result.imported} jobs with ${searchQueries.length} queries from LinkedIn, Indeed, and Dice`,
       c.req.header('CF-Connecting-IP')
     );
 
@@ -123,7 +181,12 @@ admin.post('/import-jobs', async (c) => {
         indeed: { imported: result.sources.indeed, updated: 0, errors: 0 },
         dice: { imported: result.sources.dice, updated: 0, errors: 0 }
       },
-      message: `Imported ${result.imported} new jobs, updated ${result.updated} existing jobs.`
+      message: `Imported ${result.imported} new jobs, updated ${result.updated} existing jobs.`,
+      subscription: {
+        tier: subscription.tier,
+        jobsPerSearch: jobsPerSearch,
+        searchesRemaining: tierCheck.limit ? tierCheck.limit - (tierCheck.current || 0) - 1 : undefined,
+      }
     });
   } catch (error: any) {
     console.error('Job import error:', error);
