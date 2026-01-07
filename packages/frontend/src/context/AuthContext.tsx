@@ -26,6 +26,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     mutationFn: ({ email, password }: { email: string; password: string }) =>
       apiClient.login(email, password),
     onSuccess: (data) => {
+      // Store sessionId in localStorage for Authorization header fallback
+      if (data.sessionId) {
+        localStorage.setItem('sessionToken', data.sessionId);
+      }
       // Immediately set user data from login response instead of refetching
       queryClient.setQueryData(['auth', 'me'], data);
     },
@@ -35,6 +39,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     mutationFn: ({ email, password }: { email: string; password: string }) =>
       apiClient.signup(email, password),
     onSuccess: (data) => {
+      // Store sessionId in localStorage for Authorization header fallback
+      if (data.sessionId) {
+        localStorage.setItem('sessionToken', data.sessionId);
+      }
       // Immediately set user data from signup response instead of refetching
       queryClient.setQueryData(['auth', 'me'], data);
     },
@@ -43,6 +51,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const logoutMutation = useMutation({
     mutationFn: () => apiClient.logout(),
     onSuccess: () => {
+      // Clear session token from localStorage
+      localStorage.removeItem('sessionToken');
       queryClient.setQueryData(['auth', 'me'], { user: null });
       queryClient.clear();
     },

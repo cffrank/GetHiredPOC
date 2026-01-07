@@ -167,10 +167,20 @@ export function clearSessionCookie(isProduction: boolean = false): string {
 }
 
 /**
- * Get current user from session cookie in Hono context
+ * Get current user from session cookie OR Authorization header in Hono context
  */
 export async function getCurrentUser(c: any): Promise<User | null> {
-  const sessionId = getCookie(c.req.raw, 'session');
+  // Try cookie first (for same-origin or browsers that support Partitioned cookies)
+  let sessionId = getCookie(c.req.raw, 'session');
+
+  // Fallback to Authorization header (for cross-origin when cookies are blocked)
+  if (!sessionId) {
+    const authHeader = c.req.header('Authorization');
+    if (authHeader && authHeader.startsWith('Bearer ')) {
+      sessionId = authHeader.substring(7); // Remove "Bearer " prefix
+    }
+  }
+
   if (!sessionId) {
     return null;
   }

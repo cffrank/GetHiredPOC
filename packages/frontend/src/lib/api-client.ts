@@ -2,11 +2,16 @@ const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:8787';
 
 export const apiClient = {
   async request(endpoint: string, options?: RequestInit) {
+    // Get session token from localStorage (fallback when cookies don't work cross-origin)
+    const sessionToken = localStorage.getItem('sessionToken');
+
     const response = await fetch(`${API_URL}${endpoint}`, {
       ...options,
-      credentials: 'include',
+      credentials: 'include', // Still try cookies for same-origin
       headers: {
         'Content-Type': 'application/json',
+        // Add Authorization header if we have a session token
+        ...(sessionToken ? { 'Authorization': `Bearer ${sessionToken}` } : {}),
         ...options?.headers,
       },
     });
@@ -20,10 +25,16 @@ export const apiClient = {
   },
 
   async requestFormData(endpoint: string, formData: FormData) {
+    const sessionToken = localStorage.getItem('sessionToken');
+
     const response = await fetch(`${API_URL}${endpoint}`, {
       method: 'PUT',
       body: formData,
       credentials: 'include',
+      headers: {
+        // Add Authorization header if we have a session token
+        ...(sessionToken ? { 'Authorization': `Bearer ${sessionToken}` } : {}),
+      },
     });
 
     if (!response.ok) {
