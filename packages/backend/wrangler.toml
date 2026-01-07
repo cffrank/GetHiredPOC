@@ -3,6 +3,9 @@ main = "src/index.ts"
 compatibility_date = "2024-01-01"
 compatibility_flags = ["nodejs_compat"]
 
+# Disable workers.dev subdomain (only use custom domain)
+workers_dev = false
+
 # CORS allowed origins (update with production frontend URL)
 [vars]
 FRONTEND_URL = "https://app.allfrontoffice.com"
