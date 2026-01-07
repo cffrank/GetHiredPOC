@@ -5,8 +5,10 @@ import { Button } from './ui/Button';
 export function Navigation() {
   const { user, logout } = useAuth();
 
-  const isFree = user?.membership_tier === 'trial' || !user?.membership_tier;
-  const isPro = user?.membership_tier === 'paid';
+  // Use subscription_tier (new Polar system) with fallback to membership_tier (old system)
+  const subscriptionTier = user?.subscription_tier || user?.membership_tier;
+  const isFree = subscriptionTier === 'free' || subscriptionTier === 'trial' || !subscriptionTier;
+  const isPro = subscriptionTier === 'pro' || subscriptionTier === 'paid';
 
   return (
     <nav className="border-b bg-white">

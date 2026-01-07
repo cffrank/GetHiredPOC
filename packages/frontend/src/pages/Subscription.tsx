@@ -6,7 +6,7 @@ import { useAuth } from '../context/AuthContext';
 import PolarCheckout from '../components/PolarCheckout';
 
 interface SubscriptionStatus {
-  tier: 'trial' | 'paid';
+  tier: 'free' | 'pro' | 'trial' | 'paid'; // Support both old and new tier values
   usage: {
     job_imports_today: number;
     applications_this_month: number;
@@ -77,8 +77,9 @@ export default function Subscription() {
     );
   }
 
-  const isFree = status?.tier === 'trial';
-  const isPro = status?.tier === 'paid';
+  // Support both new subscription_tier ('free'/'pro') and old membership_tier ('trial'/'paid')
+  const isFree = status?.tier === 'free' || status?.tier === 'trial';
+  const isPro = status?.tier === 'pro' || status?.tier === 'paid';
 
   const UsageBar = ({
     label,
