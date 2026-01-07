@@ -26,12 +26,19 @@ export default function AdminJobs() {
   const [linkedinCookie, setLinkedinCookie] = useState('');
   const [cookieConfigured, setCookieConfigured] = useState(false);
   const [showCookieInput, setShowCookieInput] = useState(false);
+  const [location, setLocation] = useState('United States');
+  const [radius, setRadius] = useState('25');
 
   const bulkImportMutation = useMutation({
-    mutationFn: (searchQueries: string[]) =>
+    mutationFn: (params: { queries: string[], location: string, radius: string }) =>
       apiClient.request('/api/admin/import-jobs', {
         method: 'POST',
-        body: JSON.stringify({ queries: searchQueries, scrapers: selectedScrapers }),
+        body: JSON.stringify({
+          queries: params.queries,
+          scrapers: selectedScrapers,
+          location: params.location,
+          radius: params.radius
+        }),
       }),
     onMutate: () => {
       setIsImporting(true);
@@ -127,8 +134,8 @@ export default function AdminJobs() {
       return;
     }
 
-    if (confirm(`Import jobs with ${searchQueries.length} search queries?`)) {
-      bulkImportMutation.mutate(searchQueries);
+    if (confirm(`Import jobs with ${searchQueries.length} search queries in ${location} (${radius} miles)?`)) {
+      bulkImportMutation.mutate({ queries: searchQueries, location, radius });
     }
   };
 
@@ -302,6 +309,45 @@ export default function AdminJobs() {
                 <span className="capitalize">{scraper}</span>
               </label>
             ))}
+          </div>
+        </div>
+
+        <div className="grid grid-cols-2 gap-4 mb-4">
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-2">
+              Location
+            </label>
+            <input
+              type="text"
+              value={location}
+              onChange={(e) => setLocation(e.target.value)}
+              placeholder="e.g., Madison, WI"
+              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+            />
+            <p className="text-xs text-gray-500 mt-1">
+              City, state, or "United States" for nationwide
+            </p>
+          </div>
+
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-2">
+              Search Radius
+            </label>
+            <select
+              value={radius}
+              onChange={(e) => setRadius(e.target.value)}
+              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+            >
+              <option value="10">Within 10 miles</option>
+              <option value="25">Within 25 miles</option>
+              <option value="30">Within 30 miles</option>
+              <option value="50">Within 50 miles</option>
+              <option value="75">Within 75 miles</option>
+              <option value="100">Within 100 miles</option>
+            </select>
+            <p className="text-xs text-gray-500 mt-1">
+              Distance from location (LinkedIn only)
+            </p>
           </div>
         </div>
 

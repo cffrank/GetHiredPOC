@@ -430,7 +430,8 @@ export async function searchLinkedInJobs(
   env: Env,
   query: string,
   location: string = 'United States',
-  maxResults: number = 50
+  maxResults: number = 50,
+  radius: string = '25'
 ): Promise<JobData[]> {
   if (!env.APIFY_API_TOKEN || !env.APIFY_LINKEDIN_ACTOR_ID) {
     throw new Error('Apify LinkedIn credentials not configured');
@@ -458,10 +459,10 @@ export async function searchLinkedInJobs(
   }
 
   // Build LinkedIn search URL (curious_coder requires full URL)
-  // Format: https://www.linkedin.com/jobs/search/?keywords=query&location=location
+  // Format: https://www.linkedin.com/jobs/search/?keywords=query&location=location&distance=radius
   const encodedQuery = encodeURIComponent(query);
   const encodedLocation = encodeURIComponent(location);
-  const searchUrl = `https://www.linkedin.com/jobs/search/?keywords=${encodedQuery}&location=${encodedLocation}`;
+  const searchUrl = `https://www.linkedin.com/jobs/search/?keywords=${encodedQuery}&location=${encodedLocation}&distance=${radius}`;
 
   // Build input for curious_coder LinkedIn scraper
   const scraperInput: Record<string, any> = {
@@ -763,7 +764,8 @@ export async function importJobsFromApify(
     'full stack developer'
   ],
   location: string = 'United States',
-  maxResultsPerSource: number = 20
+  maxResultsPerSource: number = 20,
+  radius: string = '25'
 ): Promise<{ imported: number; updated: number; errors: number; sources: Record<string, number> }> {
   const { embedNewJob } = await import('./job-embedding.service');
   let imported = 0;
@@ -781,7 +783,7 @@ export async function importJobsFromApify(
 
       // Search all sources in parallel
       const [linkedInJobs, indeedJobs, diceJobs] = await Promise.allSettled([
-        searchLinkedInJobs(env, query, location, maxResultsPerSource).catch(err => {
+        searchLinkedInJobs(env, query, location, maxResultsPerSource, radius).catch(err => {
           console.error('[LinkedIn] Search failed:', err.message);
           return [];
         }),

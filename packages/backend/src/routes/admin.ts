@@ -81,7 +81,7 @@ admin.put('/users/:userId/role', async (c) => {
 admin.post('/import-jobs', async (c) => {
   try {
     const body = await c.req.json().catch(() => ({}));
-    const { queries, scrapers } = body;
+    const { queries, scrapers, location, radius } = body;
 
     const searchQueries = queries || [
       'software engineer remote',
@@ -95,11 +95,13 @@ admin.post('/import-jobs', async (c) => {
     ];
 
     const scraperTypes = scrapers || ['linkedin', 'indeed', 'dice'];
+    const searchLocation = location || 'United States';
+    const searchRadius = radius || '25';
 
-    console.log(`Starting job import with ${searchQueries.length} search queries`);
+    console.log(`Starting job import with ${searchQueries.length} search queries in ${searchLocation} (${searchRadius} miles)`);
 
     // Call Apify import (searches all three sources)
-    const result = await importJobsFromApify(c.env, searchQueries, 'United States', 100);
+    const result = await importJobsFromApify(c.env, searchQueries, searchLocation, 100, searchRadius);
 
     // Record audit log
     const currentUser = c.get('user') as User;
