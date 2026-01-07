@@ -169,11 +169,9 @@ export default function Jobs() {
                       <div className="flex-1">
                         <div className="flex items-start gap-3 mb-2">
                           <CardTitle className="text-xl sm:text-2xl flex-1">{job.title}</CardTitle>
-                          {job.similarity_score && (
-                            <Badge className="bg-primary-600 text-white px-3 py-1">
-                              {job.similarity_score}% Match
-                            </Badge>
-                          )}
+                          <Badge className="bg-gradient-to-r from-primary-600 to-purple-600 text-white px-3 py-1 shadow-sm">
+                            ✨ AI Recommended
+                          </Badge>
                         </div>
                         <CardDescription className="text-base mt-1">{job.company}</CardDescription>
                       </div>
