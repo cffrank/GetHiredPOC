@@ -68,6 +68,12 @@ workExperience.post('/', async (c) => {
 
     const experienceId = result.meta.last_row_id?.toString() || '';
 
+    // Trigger embedding update (non-blocking)
+    const { invalidateUserEmbeddingCache } = await import('../services/user-embedding.service');
+    await invalidateUserEmbeddingCache(c.env, user.id).catch(err => {
+      console.error('[Route] Failed to invalidate embedding cache:', err);
+    });
+
     return c.json({
       id: experienceId,
       userId: user.id,
@@ -119,6 +125,12 @@ workExperience.put('/:id', async (c) => {
       description || null,
       experienceId
     ).run();
+
+    // Trigger embedding update (non-blocking)
+    const { invalidateUserEmbeddingCache } = await import('../services/user-embedding.service');
+    await invalidateUserEmbeddingCache(c.env, user.id).catch(err => {
+      console.error('[Route] Failed to invalidate embedding cache:', err);
+    });
 
     return c.json({
       id: experienceId,

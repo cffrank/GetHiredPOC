@@ -185,6 +185,37 @@ admin.post('/backfill-embeddings', async (c) => {
   }
 });
 
+// POST /api/admin/backfill-user-embeddings
+// Backfill embeddings for all user profiles
+admin.post('/backfill-user-embeddings', async (c) => {
+  try {
+    const limit = c.req.query('limit') ? parseInt(c.req.query('limit')) : undefined;
+    const currentUser = c.get('user') as User;
+
+    const { backfillUserEmbeddings } = await import('../services/backfill.service');
+
+    const result = await backfillUserEmbeddings(c.env, limit);
+
+    // Record audit log
+    await recordAuditLog(
+      c.env,
+      currentUser.id,
+      'backfill_user_embeddings',
+      `Backfilled ${result.processed} user profiles with embeddings. Skipped ${result.skipped}. Estimated cost: $${result.estimatedCost.toFixed(4)}`,
+      c.req.header('CF-Connecting-IP')
+    );
+
+    return c.json({
+      success: true,
+      ...result,
+      message: `Backfilled ${result.processed} user profiles successfully. Skipped ${result.skipped} users with no profile data. Estimated cost: $${result.estimatedCost.toFixed(4)}`
+    });
+  } catch (error: any) {
+    console.error('[Admin] Backfill user embeddings error:', error);
+    return c.json({ error: error.message }, 500);
+  }
+});
+
 // ============================================================================
 // AI PROMPT MANAGEMENT ENDPOINTS
 // ============================================================================

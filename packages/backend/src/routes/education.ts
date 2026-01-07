@@ -68,6 +68,12 @@ education.post('/', async (c) => {
 
     const educationId = result.meta.last_row_id?.toString() || '';
 
+    // Trigger embedding update (non-blocking)
+    const { invalidateUserEmbeddingCache } = await import('../services/user-embedding.service');
+    await invalidateUserEmbeddingCache(c.env, user.id).catch(err => {
+      console.error('[Route] Failed to invalidate embedding cache:', err);
+    });
+
     return c.json({
       id: educationId,
       user_id: user.id,
@@ -119,6 +125,12 @@ education.put('/:id', async (c) => {
       gpa || null,
       educationId
     ).run();
+
+    // Trigger embedding update (non-blocking)
+    const { invalidateUserEmbeddingCache } = await import('../services/user-embedding.service');
+    await invalidateUserEmbeddingCache(c.env, user.id).catch(err => {
+      console.error('[Route] Failed to invalidate embedding cache:', err);
+    });
 
     return c.json({
       id: educationId,

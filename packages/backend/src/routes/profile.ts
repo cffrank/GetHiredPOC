@@ -112,6 +112,12 @@ profile.put('/', async (c) => {
 
     console.log('[Profile Update] Updated user data:', JSON.stringify(updatedUser));
 
+    // Trigger embedding update (non-blocking)
+    const { invalidateUserEmbeddingCache } = await import('../services/user-embedding.service');
+    await invalidateUserEmbeddingCache(c.env, user.id).catch(err => {
+      console.error('[Route] Failed to invalidate embedding cache:', err);
+    });
+
     return c.json({ profile: updatedUser }, 200);
   } catch (error: any) {
     if (error.message === 'Unauthorized' || error.message === 'Session expired') {
@@ -181,11 +187,46 @@ profile.patch('/', async (c) => {
       .bind(user.id)
       .first<User>();
 
+    // Trigger embedding update (non-blocking)
+    const { invalidateUserEmbeddingCache } = await import('../services/user-embedding.service');
+    await invalidateUserEmbeddingCache(c.env, user.id).catch(err => {
+      console.error('[Route] Failed to invalidate embedding cache:', err);
+    });
+
     return c.json({ profile: updatedUser }, 200);
   } catch (error: any) {
     if (error.message === 'Unauthorized' || error.message === 'Session expired') {
       return c.json({ error: error.message }, 401);
     }
+    return c.json({ error: error.message }, 500);
+  }
+});
+
+// POST /api/profile/refresh-embedding
+profile.post('/refresh-embedding', async (c) => {
+  try {
+    const sessionId = getCookie(c.req.raw, 'session');
+    if (!sessionId) {
+      return c.json({ error: 'Unauthorized' }, 401);
+    }
+
+    const user = await getSession(c.env, sessionId);
+    if (!user) {
+      return c.json({ error: 'Session expired' }, 401);
+    }
+
+    // Import from user-embedding.service
+    const { updateUserEmbedding } = await import('../services/user-embedding.service');
+
+    await updateUserEmbedding(c.env, user.id);
+
+    return c.json({
+      success: true,
+      message: 'User embedding refreshed successfully',
+      updated_at: Date.now()
+    }, 200);
+  } catch (error: any) {
+    console.error('[Profile] Error refreshing embedding:', error);
     return c.json({ error: error.message }, 500);
   }
 });

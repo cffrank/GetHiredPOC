@@ -38,6 +38,13 @@ jobPreferences.put('/', async (c) => {
     await updateJobSearchPreferences(c.env.DB, user.id, body);
 
     const updatedPreferences = await getJobSearchPreferences(c.env.DB, user.id);
+
+    // Trigger embedding update (non-blocking)
+    const { invalidateUserEmbeddingCache } = await import('../services/user-embedding.service');
+    await invalidateUserEmbeddingCache(c.env, user.id).catch(err => {
+      console.error('[Route] Failed to invalidate embedding cache:', err);
+    });
+
     return c.json(updatedPreferences);
   } catch (error: any) {
     console.error('Update job preferences error:', error);

@@ -124,17 +124,108 @@ jobs.get('/', async (c) => {
         });
       }
     } else {
-      // No query provided, use regular filter-based search
-      jobsList = await getJobs(c.env, {
-        title: undefined,
-        remote: remote === "true" ? true : remote === "false" ? false : undefined,
-        location,
-        userId: user?.id, // Pass userId to exclude hidden jobs
-      });
+      // No query provided - use vector pre-filtering if user is logged in
+      if (user) {
+        try {
+          console.log('[API] Attempting vector pre-filtering for user:', user.id);
+          const { getCachedUserEmbedding } = await import('../services/user-embedding.service');
+          const { searchSimilarJobs } = await import('../services/vector.service');
+
+          // Get user's profile embedding
+          const userEmbedding = await getCachedUserEmbedding(c.env, user.id);
+
+          if (userEmbedding) {
+            console.log('[API] Using vector pre-filtering for personalized feed');
+
+            // Search for jobs similar to user profile
+            const similarJobs = await searchSimilarJobs(c.env, userEmbedding, 100, {
+              remote: remote === 'true' ? true : undefined,
+            });
+
+            console.log(`[API] Vector pre-filtering found ${similarJobs.length} matching jobs`);
+
+            if (similarJobs.length > 0) {
+              // Get job IDs from vector search results
+              const jobIds = similarJobs.map(j => j.id);
+
+              // Fetch full job details
+              const placeholders = jobIds.map(() => '?').join(',');
+              let dbQuery = `SELECT * FROM jobs WHERE id IN (${placeholders})`;
+              const params: any[] = [...jobIds];
+
+              // Apply location filter if provided
+              if (location) {
+                dbQuery += ' AND location LIKE ?';
+                params.push(`%${location}%`);
+              }
+
+              // Exclude hidden jobs
+              dbQuery += ` AND id NOT IN (
+                SELECT job_id FROM hidden_jobs WHERE user_id = ?
+              )`;
+              params.push(user.id);
+
+              dbQuery += ' ORDER BY created_at DESC LIMIT 50';
+
+              const result = await c.env.DB.prepare(dbQuery).bind(...params).all();
+              jobsList = result.results || [];
+
+              // Add similarity scores to jobs
+              jobsList = jobsList.map((job: any) => {
+                const match = similarJobs.find(s => s.id === job.id);
+                return {
+                  ...job,
+                  vector_match_score: match ? Math.round(match.score * 100) : 0
+                };
+              });
+
+              console.log(`[API] Retrieved ${jobsList.length} personalized jobs via vector pre-filtering`);
+            } else {
+              // Fallback to regular search
+              console.log('[API] Vector pre-filtering returned 0 results, falling back to regular search');
+              jobsList = await getJobs(c.env, {
+                title: undefined,
+                remote: remote === "true" ? true : remote === "false" ? false : undefined,
+                location,
+                userId: user.id,
+              });
+            }
+          } else {
+            // No user embedding available, fall back to regular search
+            console.log('[API] No user embedding available, using regular search');
+            jobsList = await getJobs(c.env, {
+              title: undefined,
+              remote: remote === "true" ? true : remote === "false" ? false : undefined,
+              location,
+              userId: user.id,
+            });
+          }
+        } catch (error: any) {
+          console.error('[API] Vector pre-filtering error, falling back to regular search:', error.message);
+          // Fall back to regular search
+          jobsList = await getJobs(c.env, {
+            title: undefined,
+            remote: remote === "true" ? true : remote === "false" ? false : undefined,
+            location,
+            userId: user.id,
+          });
+        }
+      } else {
+        // User not logged in, use regular filter-based search
+        jobsList = await getJobs(c.env, {
+          title: undefined,
+          remote: remote === "true" ? true : remote === "false" ? false : undefined,
+          location,
+          userId: undefined,
+        });
+      }
     }
 
-    // Filter jobs based on user preferences if logged in and not using semantic search
-    if (user && !query) {
+    // Check if vector pre-filtering was used
+    const usedVectorPrefiltering = user && !query && jobsList.length > 0 && jobsList[0]?.vector_match_score !== undefined;
+
+    // Filter jobs based on user preferences if logged in, not using query search, and not using vector pre-filtering
+    if (user && !query && !usedVectorPrefiltering) {
       const { getJobSearchPreferences } = await import('../services/job-preferences.service');
       const preferences = await getJobSearchPreferences(c.env.DB, user.id);
 
@@ -219,6 +310,22 @@ jobs.get('/', async (c) => {
           return true;
         });
       }
+    }
+
+    // Track cost metrics for job browsing
+    if (user && !query) {
+      const { trackJobBrowsing } = await import('../services/cost-tracking.service');
+
+      // Get total job count for cost calculation
+      const totalJobsResult = await c.env.DB.prepare('SELECT COUNT(*) as count FROM jobs').first<{ count: number }>();
+      const totalJobs = totalJobsResult?.count || 0;
+
+      trackJobBrowsing(c.env, {
+        userId: user.id,
+        vectorPrefilteringUsed: usedVectorPrefiltering,
+        jobsReturned: jobsList.length,
+        totalJobsInDb: totalJobs,
+      });
     }
 
     return c.json({ jobs: jobsList }, 200);
