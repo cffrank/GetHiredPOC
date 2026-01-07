@@ -37,8 +37,13 @@ export default function JobDetail() {
   };
 
   const handleAnalyze = async () => {
-    const result = await analyzeJobMutation.mutateAsync(id!);
-    setAnalysis(result);
+    try {
+      const result = await analyzeJobMutation.mutateAsync(id!);
+      console.log('[JobDetail] Analysis result:', result);
+      setAnalysis(result);
+    } catch (error) {
+      console.error('[JobDetail] Analysis error:', error);
+    }
   };
 
   const handleGenerateResume = async () => {

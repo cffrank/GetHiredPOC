@@ -39,14 +39,16 @@ interface JobData {
  */
 interface LinkedInRawJob {
   title?: string;
-  company?: string;
+  companyName?: string;
   location?: string;
-  description?: string;
-  url?: string;
-  salary?: string | { min?: number; max?: number; currency?: string };
+  descriptionText?: string;
+  link?: string;
+  salaryInsights?: string | { min?: number; max?: number; currency?: string };
   postedAt?: string;
-  employmentType?: string;
-  workMode?: string;
+  postedAtTimestamp?: number;
+  employmentStatus?: string;
+  workRemoteAllowed?: boolean;
+  workplaceTypes?: string[];
   skills?: string[];
 }
 
@@ -459,20 +461,20 @@ export async function searchLinkedInJobs(
   // Format: https://www.linkedin.com/jobs/search/?keywords=query&location=location
   const encodedQuery = encodeURIComponent(query);
   const encodedLocation = encodeURIComponent(location);
-  const jobsSearchUrl = `https://www.linkedin.com/jobs/search/?keywords=${encodedQuery}&location=${encodedLocation}`;
+  const searchUrl = `https://www.linkedin.com/jobs/search/?keywords=${encodedQuery}&location=${encodedLocation}`;
 
   // Build input for curious_coder LinkedIn scraper
   const scraperInput: Record<string, any> = {
-    cookies: cookies, // JSON array format
-    jobsSearchUrl: jobsSearchUrl,
-    totalNumberOfRecords: maxResults,
-    scrapeJobDetails: true,
-    scrapeSkillsRequirements: true,
-    scrapeCompanyDetails: false,
-    userAgent: 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/121.0.0.0 Safari/537.36'
+    searchUrl: searchUrl,
+    cookies: cookies,
+    userAgent: 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/121.0.0.0 Safari/537.36',
+    proxy: {
+      useApifyProxy: true,
+      apifyProxyCountry: 'US'
+    }
   };
 
-  console.log(`[LinkedIn] Using search URL: ${jobsSearchUrl}`);
+  console.log(`[LinkedIn] Using search URL: ${searchUrl}`);
 
   // Start LinkedIn scraper
   const runId = await startActorRun(env, env.APIFY_LINKEDIN_ACTOR_ID, scraperInput);
@@ -552,41 +554,51 @@ export async function searchDiceJobs(
 }
 
 /**
- * Map LinkedIn job data to internal format
+ * Map LinkedIn job data to internal format (curious_coder scraper)
  */
 function mapLinkedInJob(rawJob: LinkedInRawJob): JobData | null {
   try {
-    if (!rawJob.title || !rawJob.company || !rawJob.url) {
+    if (!rawJob.title || !rawJob.companyName || !rawJob.link) {
       console.warn('[LinkedIn] Skipping job with missing required fields');
       return null;
     }
 
     const location = rawJob.location || 'Remote';
     const state = extractState(location);
-    const remote = detectWorkMode({
-      title: rawJob.title,
-      location: rawJob.location,
-      description: rawJob.description,
-      workMode: rawJob.workMode
-    });
 
-    const salary = parseSalary(rawJob.salary);
-    const requirements = extractRequirements(rawJob.description, rawJob.skills);
-    const postedDate = parsePostedDate(rawJob.postedAt);
+    // Detect work mode from curious_coder fields
+    let remote = 0; // default on-site
+    if (rawJob.workRemoteAllowed) {
+      remote = 1; // remote
+    } else if (location.toLowerCase().includes('hybrid')) {
+      remote = 2; // hybrid
+    } else if (rawJob.workplaceTypes && rawJob.workplaceTypes.some(t => t.toLowerCase().includes('remote'))) {
+      remote = 1;
+    } else if (rawJob.workplaceTypes && rawJob.workplaceTypes.some(t => t.toLowerCase().includes('hybrid'))) {
+      remote = 2;
+    }
+
+    const salary = parseSalary(rawJob.salaryInsights);
+    const requirements = extractRequirements(rawJob.descriptionText, rawJob.skills);
+
+    // Use postedAtTimestamp if available, otherwise parse postedAt
+    const postedDate = rawJob.postedAtTimestamp
+      ? Math.floor(rawJob.postedAtTimestamp / 1000) // Convert ms to seconds
+      : parsePostedDate(rawJob.postedAt);
 
     return {
       title: rawJob.title,
-      company: rawJob.company,
+      company: rawJob.companyName,
       location,
       state,
       remote,
-      description: rawJob.description || '',
+      description: rawJob.descriptionText || '',
       requirements: JSON.stringify(requirements),
       salary_min: salary.min,
       salary_max: salary.max,
       posted_date: postedDate,
       source: 'linkedin',
-      external_url: rawJob.url
+      external_url: rawJob.link
     };
   } catch (error: any) {
     console.error('[LinkedIn] Error mapping job:', error.message);

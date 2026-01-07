@@ -14,9 +14,9 @@ CLOUDFLARE_ACCOUNT_ID = "280c58ea17d9fe3235c33bd0a52a256b"
 ADMIN_EMAILS = "carl.f.frank@gmail.com,admin@example.com"
 
 # Apify Scraper Configuration (Uses APIFY_API_TOKEN)
-APIFY_LINKEDIN_ACTOR_ID = "curious_coder/linkedin-jobs-search-scraper"
-APIFY_INDEED_ACTOR_ID = "misceres/indeed-scraper"
-APIFY_DICE_ACTOR_ID = "worldunboxer/dice-jobs-scraper"
+APIFY_LINKEDIN_ACTOR_ID = "curious_coder~linkedin-jobs-search-scraper"
+APIFY_INDEED_ACTOR_ID = "misceres~indeed-scraper"
+APIFY_DICE_ACTOR_ID = "worldunboxer~dice-jobs-scraper"
 
 # Cost Controls
 MAX_DAILY_SCRAPER_RUNS = "10"

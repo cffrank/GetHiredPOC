@@ -9,7 +9,6 @@ import {
   unsaveJob,
   isSaved,
 } from '../services/db.service';
-import { mockJobAnalysis } from '../services/ai.service';
 import { findSimilarJobs } from '../services/vector.service';
 import type { User } from '@gethiredpoc/shared';
 
@@ -446,32 +445,17 @@ jobs.post('/:id/analyze', async (c) => {
     const user = await requireAuth(c);
     const jobId = c.req.param('id');
 
-    // Check cache first
-    const cacheKey = `job-analysis:${user.id}:${jobId}`;
-    const cached = await c.env.KV_CACHE.get(cacheKey);
-    if (cached) {
-      return c.json({ analysis: JSON.parse(cached), cached: true }, 200);
-    }
-
     // Get job
     const job = await getJobById(c.env, jobId);
     if (!job) {
       return c.json({ error: "Job not found" }, 404);
     }
 
-    // Parse skills and requirements
-    const userSkills = user.skills ? JSON.parse(user.skills) : [];
-    const jobRequirements = job.requirements ? JSON.parse(job.requirements) : [];
+    // Use the real AI job matching service
+    const { analyzeJobMatch } = await import('../services/job-matching.service');
+    const match = await analyzeJobMatch(c.env, user, job);
 
-    // Generate analysis
-    const analysis = await mockJobAnalysis(userSkills, jobRequirements);
-
-    // Cache the result
-    await c.env.KV_CACHE.put(cacheKey, JSON.stringify(analysis), {
-      expirationTtl: 7 * 24 * 60 * 60,
-    });
-
-    return c.json({ analysis, cached: false }, 200);
+    return c.json(match, 200);
   } catch (error: any) {
     if (error.message === 'Unauthorized' || error.message === 'Session expired') {
       return c.json({ error: error.message }, 401);

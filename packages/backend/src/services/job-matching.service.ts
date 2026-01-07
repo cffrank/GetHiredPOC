@@ -88,7 +88,20 @@ export async function analyzeJobMatch(
       } : undefined
     });
 
-    const result = parseMatchJSON(response.response);
+    console.log(`[Job Match] Full response object:`, JSON.stringify(response));
+    console.log(`[Job Match] Response keys:`, Object.keys(response));
+
+    // Extract text from response (different AI models return different formats)
+    const responseText = response.response || response.generated_text || response.output?.text || response.result || response.text || (typeof response === 'string' ? response : null);
+    console.log(`[Job Match] Raw LLM response text:`, responseText);
+
+    if (!responseText || (typeof responseText === 'object' && !responseText.score)) {
+      console.error(`[Job Match] Invalid response format. Full response:`, JSON.stringify(response, null, 2));
+      throw new Error('LLM returned empty or invalid response. The model may not be supported or the response format changed.');
+    }
+
+    const result = parseMatchJSON(responseText);
+    console.log(`[Job Match] Parsed result:`, JSON.stringify(result, null, 2));
 
     // Ensure score is within 0-100
     result.score = Math.max(0, Math.min(100, result.score));
@@ -104,6 +117,8 @@ export async function analyzeJobMatch(
       ...result
     };
 
+    console.log(`[Job Match] Final match object:`, JSON.stringify(match, null, 2));
+
     // Cache for 7 days
     await env.KV_CACHE.put(cacheKey, JSON.stringify(match), {
       expirationTtl: 7 * 24 * 60 * 60
@@ -117,9 +132,18 @@ export async function analyzeJobMatch(
   }
 }
 
-function parseMatchJSON(text: string): any {
+function parseMatchJSON(text: string | any): any {
   try {
-    let jsonText = text.trim();
+    if (!text) {
+      throw new Error('Empty response from LLM');
+    }
+
+    // Handle if text is already an object
+    if (typeof text === 'object') {
+      return text;
+    }
+
+    let jsonText = String(text).trim();
 
     // Remove markdown code blocks
     const codeBlockMatch = jsonText.match(/```(?:json)?\s*\n?([\s\S]*?)\n?```/);
