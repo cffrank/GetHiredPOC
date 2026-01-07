@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { useJobs } from '../hooks/useJobs';
 import { useRecommendations } from '../hooks/useRecommendations';
-import { useProfile } from '../hooks/useProfile';
+import { useAuth } from '../context/AuthContext';
 import { Button } from '../components/ui/Button';
 import { Input } from '../components/ui/Input';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '../components/ui/Card';
@@ -16,8 +16,8 @@ export default function Jobs() {
   const [remote, setRemote] = useState<boolean | undefined>();
   const [location, setLocation] = useState('');
 
-  const { data: profileData } = useProfile();
-  const isLoggedIn = !!profileData?.user;
+  const { user } = useAuth();
+  const isLoggedIn = !!user;
 
   const { data, isLoading } = useJobs({ title, remote, location });
   const { data: recommendationsData, isLoading: recommendationsLoading } = useRecommendations(20);
