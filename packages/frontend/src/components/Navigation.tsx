@@ -18,9 +18,6 @@ export function Navigation() {
                 <Link to="/jobs" className="text-gray-700 hover:text-gray-900">
                   Jobs
                 </Link>
-                <Link to="/recommendations" className="text-gray-700 hover:text-gray-900">
-                  Recommendations
-                </Link>
                 <Link to="/saved" className="text-gray-700 hover:text-gray-900">
                   Saved
                 </Link>
