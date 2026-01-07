@@ -5,8 +5,8 @@ compatibility_flags = ["nodejs_compat"]
 
 # CORS allowed origins (update with production frontend URL)
 [vars]
-FRONTEND_URL = "https://gethiredpoc.pages.dev"
-BACKEND_URL = "https://gethiredpoc-api.carl-f-frank.workers.dev"
+FRONTEND_URL = "https://app.allfrontoffice.com"
+BACKEND_URL = "https://api.allfrontoffice.com"
 CLOUDFLARE_ACCOUNT_ID = "280c58ea17d9fe3235c33bd0a52a256b"
 
 # Admin emails (comma-separated list)
