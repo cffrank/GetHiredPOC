@@ -13,9 +13,16 @@ CLOUDFLARE_ACCOUNT_ID = "280c58ea17d9fe3235c33bd0a52a256b"
 # Note: Update this with actual admin email addresses
 ADMIN_EMAILS = "carl.f.frank@gmail.com,admin@example.com"
 
-# Adzuna API credentials
-ADZUNA_APP_ID = "65f2bced"
-# Note: Add ADZUNA_APP_KEY via: npx wrangler secret put ADZUNA_APP_KEY
+# Apify Scraper Configuration
+APIFY_LINKEDIN_ACTOR_ID = "curious_coder/linkedin-jobs-scraper"
+APIFY_INDEED_ACTOR_ID = "curious_coder/indeed-scraper"
+APIFY_DICE_ACTOR_ID = "orgupdate/dice-jobs-scraper"
+
+# Cost Controls
+MAX_DAILY_SCRAPER_RUNS = "10"
+MAX_USER_IMPORTS_PER_DAY = "1"
+
+# Note: Add APIFY_API_TOKEN via: npx wrangler secret put APIFY_API_TOKEN
 
 # Resend API key for email notifications
 # Note: Add RESEND_API_KEY via: npx wrangler secret put RESEND_API_KEY
@@ -59,4 +66,4 @@ index_name = "job-embeddings"
 
 # Cron triggers
 [triggers]
-crons = ["0 1 * * *"]  # Daily at 1 AM UTC for job imports
+crons = ["0 1 * * *"]  # Daily at 1 AM UTC for Apify scraper imports

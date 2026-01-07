@@ -23,7 +23,6 @@
   },
   "dependencies": {
     "bcryptjs": "^3.0.3",
-    "rwsdk": "^1.0.0-beta.46",
     "tailwind-merge": "^3.4.0"
   }
 }

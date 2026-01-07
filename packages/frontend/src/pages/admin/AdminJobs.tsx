@@ -9,21 +9,36 @@ interface ImportResult {
   updated: number;
   errors: number;
   message: string;
+  byScraper?: {
+    linkedin?: { imported: number; updated: number; errors: number };
+    indeed?: { imported: number; updated: number; errors: number };
+    dice?: { imported: number; updated: number; errors: number };
+  };
 }
 
 export default function AdminJobs() {
   const [queries, setQueries] = useState('software engineer remote\nweb developer remote\nfrontend engineer remote');
   const [userId, setUserId] = useState('');
   const [importResult, setImportResult] = useState<ImportResult | null>(null);
+  const [selectedScrapers, setSelectedScrapers] = useState<string[]>(['linkedin', 'indeed', 'dice']);
+  const [isImporting, setIsImporting] = useState(false);
+  const [currentScraper, setCurrentScraper] = useState<string | null>(null);
 
   const bulkImportMutation = useMutation({
     mutationFn: (searchQueries: string[]) =>
       apiClient.request('/api/admin/import-jobs', {
         method: 'POST',
-        body: JSON.stringify({ queries: searchQueries }),
+        body: JSON.stringify({ queries: searchQueries, scrapers: selectedScrapers }),
       }),
+    onMutate: () => {
+      setIsImporting(true);
+    },
     onSuccess: (data) => {
       setImportResult(data);
+      setIsImporting(false);
+    },
+    onError: () => {
+      setIsImporting(false);
     },
   });
 
@@ -31,9 +46,17 @@ export default function AdminJobs() {
     mutationFn: (targetUserId: string) =>
       apiClient.request(`/api/admin/import-jobs-for-user/${targetUserId}`, {
         method: 'POST',
+        body: JSON.stringify({ scrapers: selectedScrapers }),
       }),
+    onMutate: () => {
+      setIsImporting(true);
+    },
     onSuccess: (data) => {
       setImportResult(data);
+      setIsImporting(false);
+    },
+    onError: () => {
+      setIsImporting(false);
     },
   });
 
@@ -75,7 +98,7 @@ export default function AdminJobs() {
     <div>
       <div className="mb-8">
         <h1 className="text-3xl font-bold text-gray-900">Job Import Management</h1>
-        <p className="text-gray-600 mt-2">Import jobs from Adzuna API</p>
+        <p className="text-gray-600 mt-2">Import jobs from LinkedIn, Indeed, and Dice</p>
       </div>
 
       {/* Import Result */}
@@ -104,6 +127,25 @@ export default function AdminJobs() {
               )}
             </ul>
           </div>
+          {importResult?.byScraper && (
+            <div className="mt-4">
+              <h4 className="font-semibold mb-2 text-sm">Results by Scraper:</h4>
+              <div className="grid grid-cols-3 gap-3">
+                {Object.entries(importResult.byScraper).map(([scraper, stats]) => (
+                  <div key={scraper} className="p-3 bg-gray-50 border border-gray-200 rounded">
+                    <h5 className="font-semibold capitalize text-sm mb-2">{scraper}</h5>
+                    <div className="text-xs space-y-1">
+                      <p className="text-green-600">Imported: {stats.imported}</p>
+                      <p className="text-blue-600">Updated: {stats.updated}</p>
+                      {stats.errors > 0 && (
+                        <p className="text-red-600">Errors: {stats.errors}</p>
+                      )}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
           <button
             onClick={() => setImportResult(null)}
             className="mt-3 text-sm text-gray-600 hover:text-gray-900 underline"
@@ -117,8 +159,33 @@ export default function AdminJobs() {
       <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6 mb-6">
         <h2 className="text-xl font-semibold text-gray-800 mb-4">Bulk Job Import</h2>
         <p className="text-sm text-gray-600 mb-4">
-          Import jobs from Adzuna using custom search queries. Enter one query per line.
+          Import jobs from LinkedIn, Indeed, and Dice using custom search queries. Enter one query per line.
         </p>
+
+        <div className="mb-4">
+          <label className="block text-sm font-medium text-gray-700 mb-2">
+            Select Scrapers
+          </label>
+          <div className="flex gap-4">
+            {['linkedin', 'indeed', 'dice'].map(scraper => (
+              <label key={scraper} className="flex items-center">
+                <input
+                  type="checkbox"
+                  checked={selectedScrapers.includes(scraper)}
+                  onChange={(e) => {
+                    if (e.target.checked) {
+                      setSelectedScrapers([...selectedScrapers, scraper]);
+                    } else {
+                      setSelectedScrapers(selectedScrapers.filter(s => s !== scraper));
+                    }
+                  }}
+                  className="mr-2 h-4 w-4 rounded border-gray-300"
+                />
+                <span className="capitalize">{scraper}</span>
+              </label>
+            ))}
+          </div>
+        </div>
 
         <div className="mb-4">
           <label className="block text-sm font-medium text-gray-700 mb-2">
@@ -143,11 +210,14 @@ export default function AdminJobs() {
           {bulkImportMutation.isPending ? 'Importing...' : 'Start Bulk Import'}
         </Button>
 
-        {bulkImportMutation.isPending && (
+        {isImporting && (
           <div className="mt-4 p-3 bg-blue-50 border border-blue-200 rounded-lg">
             <p className="text-sm text-blue-800">
-              Importing jobs... This may take a few minutes.
+              Importing jobs from {selectedScrapers.join(', ')}... This may take several minutes.
             </p>
+            <div className="mt-2 w-full bg-gray-200 rounded-full h-2">
+              <div className="bg-blue-600 h-2 rounded-full animate-pulse" style={{width: '60%'}}></div>
+            </div>
           </div>
         )}
       </div>
@@ -196,10 +266,11 @@ export default function AdminJobs() {
       <div className="mt-6 bg-blue-50 border border-blue-200 rounded-lg p-4">
         <h3 className="text-sm font-semibold text-blue-800 mb-2">How Job Import Works</h3>
         <ul className="text-sm text-blue-700 space-y-1 list-disc list-inside">
-          <li>Bulk import searches Adzuna with the queries you provide</li>
-          <li>User-specific import uses the user's preferences (job title, location, etc.)</li>
+          <li>Bulk import searches LinkedIn, Indeed, and Dice with the queries you provide</li>
+          <li>User-specific import uses the user's preferences (job title, location, etc.) across all selected scrapers</li>
+          <li>User-specific imports are rate-limited to once every 24 hours per user</li>
           <li>Duplicate jobs are automatically detected and updated instead of creating new entries</li>
-          <li>Jobs are deduplicated by Adzuna ID to prevent duplicates</li>
+          <li>Jobs are deduplicated by external ID to prevent duplicates</li>
           <li>Import operations are logged in the audit log</li>
         </ul>
       </div>

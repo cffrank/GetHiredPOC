@@ -1,7 +1,8 @@
 import { Hono } from 'hono';
 import type { Env } from '../services/db.service';
 import type { User } from '@gethiredpoc/shared';
-import { importJobsFromAdzuna, importJobsForUser } from '../services/adzuna.service';
+import { importJobsFromApify, importJobsForUser, importJobsForAllUsers } from '../services/apify.service';
+import { canUserImport, recordImportRequest, updateImportStatus } from '../services/import-rate-limit.service';
 import { requireAuth, requireAdmin } from '../middleware/auth.middleware';
 import {
   getSystemMetrics,
@@ -76,11 +77,11 @@ admin.put('/users/:userId/role', async (c) => {
 });
 
 // POST /api/admin/import-jobs
-// Trigger job import from Adzuna API
+// Trigger job import from Apify scrapers
 admin.post('/import-jobs', async (c) => {
   try {
     const body = await c.req.json().catch(() => ({}));
-    const { queries } = body;
+    const { queries, scrapers } = body;
 
     const searchQueries = queries || [
       'software engineer remote',
@@ -93,9 +94,12 @@ admin.post('/import-jobs', async (c) => {
       'machine learning engineer remote'
     ];
 
+    const scraperTypes = scrapers || ['linkedin', 'indeed', 'dice'];
+
     console.log(`Starting job import with ${searchQueries.length} search queries`);
 
-    const result = await importJobsFromAdzuna(c.env, searchQueries);
+    // Call Apify import (searches all three sources)
+    const result = await importJobsFromApify(c.env, searchQueries, 'United States', 100);
 
     // Record audit log
     const currentUser = c.get('user') as User;
@@ -103,7 +107,7 @@ admin.post('/import-jobs', async (c) => {
       c.env,
       currentUser.id,
       'import_jobs',
-      `Imported ${result.imported} jobs with ${searchQueries.length} queries`,
+      `Imported ${result.imported} jobs with ${searchQueries.length} queries from LinkedIn, Indeed, and Dice`,
       c.req.header('CF-Connecting-IP')
     );
 
@@ -112,7 +116,12 @@ admin.post('/import-jobs', async (c) => {
       imported: result.imported,
       updated: result.updated,
       errors: result.errors,
-      message: `Imported ${result.imported} new jobs, updated ${result.updated} existing jobs. ${result.errors} errors.`
+      byScraper: {
+        linkedin: { imported: result.sources.linkedin, updated: 0, errors: 0 },
+        indeed: { imported: result.sources.indeed, updated: 0, errors: 0 },
+        dice: { imported: result.sources.dice, updated: 0, errors: 0 }
+      },
+      message: `Imported ${result.imported} new jobs, updated ${result.updated} existing jobs.`
     });
   } catch (error: any) {
     console.error('Job import error:', error);
@@ -125,29 +134,69 @@ admin.post('/import-jobs', async (c) => {
 admin.post('/import-jobs-for-user/:userId', async (c) => {
   try {
     const userId = c.req.param('userId');
+    const body = await c.req.json().catch(() => ({}));
+    const { scrapers } = body;
 
-    console.log(`Starting personalized job import for user ${userId}`);
+    // Check rate limiting
+    const rateLimitCheck = await canUserImport(c.env.DB, userId);
+    if (!rateLimitCheck.allowed) {
+      return c.json({
+        error: 'Rate limit exceeded',
+        message: 'User can import jobs once per 24 hours',
+        nextAllowedAt: rateLimitCheck.nextAllowedAt
+      }, 429);
+    }
 
-    const result = await importJobsForUser(c.env, userId);
+    const scraperTypes = scrapers || ['linkedin', 'indeed', 'dice'];
 
-    // Record audit log
-    const currentUser = c.get('user') as User;
-    await recordAuditLog(
-      c.env,
-      currentUser.id,
-      'import_jobs_for_user',
-      `Imported ${result.imported} jobs for user ${userId}`,
-      c.req.header('CF-Connecting-IP')
-    );
+    console.log(`Starting personalized job import for user ${userId} with scrapers: ${scraperTypes.join(', ')}`);
 
-    return c.json({
-      success: true,
-      userId,
-      imported: result.imported,
-      updated: result.updated,
-      errors: result.errors,
-      message: `Imported ${result.imported} new jobs, updated ${result.updated} existing jobs based on user preferences. ${result.errors} errors.`
-    });
+    // Record import request - use 'all' if multiple scrapers, otherwise use the single scraper type
+    const scraperType = scraperTypes.length > 1 ? 'all' : scraperTypes[0];
+    const requestId = await recordImportRequest(c.env.DB, userId, scraperType);
+
+    try {
+      // Update status to running
+      await updateImportStatus(c.env.DB, requestId, 'running');
+
+      // Perform import (importJobsForUser uses all scrapers automatically)
+      const result = await importJobsForUser(c.env, userId);
+
+      // Update status to completed with stats
+      await updateImportStatus(c.env.DB, requestId, 'completed', {
+        imported: result.imported,
+        updated: result.updated,
+        errors: result.errors
+      });
+
+      // Record audit log
+      const currentUser = c.get('user') as User;
+      await recordAuditLog(
+        c.env,
+        currentUser.id,
+        'import_jobs_for_user',
+        `Imported ${result.imported} jobs for user ${userId} from LinkedIn, Indeed, and Dice`,
+        c.req.header('CF-Connecting-IP')
+      );
+
+      return c.json({
+        success: true,
+        userId,
+        imported: result.imported,
+        updated: result.updated,
+        errors: result.errors,
+        byScraper: {
+          linkedin: { imported: result.sources.linkedin, updated: 0, errors: 0 },
+          indeed: { imported: result.sources.indeed, updated: 0, errors: 0 },
+          dice: { imported: result.sources.dice, updated: 0, errors: 0 }
+        },
+        message: `Imported ${result.imported} new jobs, updated ${result.updated} existing jobs based on user preferences.`
+      });
+    } catch (importError: any) {
+      // Update status to failed
+      await updateImportStatus(c.env.DB, requestId, 'failed');
+      throw importError;
+    }
   } catch (error: any) {
     console.error('User job import error:', error);
     return c.json({ error: error.message }, 500);

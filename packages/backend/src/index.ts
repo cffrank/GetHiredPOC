@@ -96,13 +96,27 @@ export default {
   async scheduled(event: ScheduledEvent, env: Env, ctx: ExecutionContext) {
     console.log('[Cron] Daily job import triggered at', new Date().toISOString());
 
-    // Import jobs for all users with deduplicated queries
-    const { importJobsForAllUsers } = await import('./services/adzuna.service');
+    // Import jobs for all users with rate limiting
+    const { importJobsForAllUsers } = await import('./services/apify.service');
+    const { canRunDailyScraper, recordDailyScraperRun } = await import('./services/import-rate-limit.service');
 
     ctx.waitUntil(
-      importJobsForAllUsers(env).then(result => {
+      (async () => {
+        // Check if daily limit has been reached
+        const canRun = await canRunDailyScraper(env.DB, 'all', parseInt(env.MAX_DAILY_SCRAPER_RUNS || '10'));
+        if (!canRun) {
+          console.log('[Cron] Daily scraper limit reached, skipping import');
+          return;
+        }
+
+        // Run imports
+        const result = await importJobsForAllUsers(env);
         console.log('[Cron] Daily job import completed:', result);
-      }).catch(error => {
+        console.log('[Cron] Breakdown by source:', result.sources);
+
+        // Record the run
+        await recordDailyScraperRun(env.DB, 'all');
+      })().catch(error => {
         console.error('[Cron] Daily job import failed:', error);
       })
     );

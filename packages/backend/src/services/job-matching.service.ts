@@ -5,8 +5,9 @@ export interface JobMatch {
   jobId: string;
   score: number; // 0-100
   strengths: string[];
-  concerns: string[];
+  gaps: string[];
   recommendation: 'strong' | 'good' | 'fair' | 'weak';
+  tip?: string;
 }
 
 export async function analyzeJobMatch(
@@ -134,9 +135,20 @@ function parseMatchJSON(text: string): any {
 
     const parsed = JSON.parse(jsonText);
 
-    // Validate structure
-    if (typeof parsed.score !== 'number' || !parsed.strengths || !parsed.concerns || !parsed.recommendation) {
+    // Validate structure (support both "gaps" and "concerns" for backward compatibility)
+    if (typeof parsed.score !== 'number' || !parsed.strengths || !parsed.recommendation) {
       throw new Error('Missing required fields in AI response');
+    }
+
+    // Support both "gaps" (new) and "concerns" (old) field names
+    if (!parsed.gaps && !parsed.concerns) {
+      throw new Error('Missing gaps/concerns field in AI response');
+    }
+
+    // Normalize to "gaps"
+    if (parsed.concerns && !parsed.gaps) {
+      parsed.gaps = parsed.concerns;
+      delete parsed.concerns;
     }
 
     return parsed;

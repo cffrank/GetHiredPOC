@@ -9,8 +9,6 @@ export interface Env {
   VECTORIZE: VectorizeIndex;
   FRONTEND_URL?: string;
   BACKEND_URL?: string;
-  ADZUNA_APP_ID?: string;
-  ADZUNA_APP_KEY?: string;
   RESEND_API_KEY?: string;
   LINKEDIN_CLIENT_ID?: string;
   LINKEDIN_CLIENT_SECRET?: string;
@@ -19,6 +17,16 @@ export interface Env {
   OPENAI_API_KEY?: string;
   CLOUDFLARE_API_TOKEN?: string;
   ADMIN_EMAILS?: string;
+
+  // Apify Configuration
+  APIFY_API_TOKEN?: string;
+  APIFY_LINKEDIN_ACTOR_ID?: string;
+  APIFY_INDEED_ACTOR_ID?: string;
+  APIFY_DICE_ACTOR_ID?: string;
+
+  // Cost Controls
+  MAX_DAILY_SCRAPER_RUNS?: string;
+  MAX_USER_IMPORTS_PER_DAY?: string;
 }
 
 // Jobs

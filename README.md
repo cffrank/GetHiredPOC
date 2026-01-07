@@ -1,6 +1,6 @@
 # JobMatch AI - POC
 
-A proof-of-concept job matching application with AI-powered recommendations, built with RW SDK (RedwoodSDK), React 19, and Cloudflare infrastructure.
+A modern job search SaaS platform built with React 19, Vite, Hono, and Cloudflare's edge infrastructure.
 
 ## Features
 
@@ -14,7 +14,8 @@ A proof-of-concept job matching application with AI-powered recommendations, bui
 
 ## Tech Stack
 
-- **Framework**: RW SDK (RedwoodSDK) - Server-first React with RSC
+- **Frontend**: React 19 with Vite for fast HMR and optimized builds
+- **Backend**: Hono web framework on Cloudflare Workers
 - **Runtime**: Cloudflare Workers (local development with Miniflare)
 - **Database**: D1 (SQLite) - Cloudflare's SQL database
 - **Storage**: R2 (local filesystem) - Cloudflare's object storage
@@ -175,10 +176,10 @@ In a production app, this would connect to actual AI services like OpenAI or Ant
 ## Development Notes
 
 - **100% Local**: Everything runs locally via Miniflare - no cloud accounts needed
-- **Hot Reloading**: Code changes update instantly
+- **Hot Reloading**: Code changes update instantly with Vite's HMR
 - **Type Safe**: Full TypeScript coverage
 - **Component Library**: shadcn/ui-inspired components with Tailwind
-- **RW SDK**: Leverages React Server Components for optimal performance
+- **Modern Stack**: React 19 with Vite and Hono for optimal performance
 
 ## Seeded Data
 
