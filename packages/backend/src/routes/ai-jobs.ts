@@ -117,7 +117,7 @@ aiJobs.post('/:id/analyze-match', async (c) => {
     if (app) {
       await c.env.DB.prepare(
         'UPDATE applications SET ai_match_score = ?, ai_analysis = ? WHERE id = ?'
-      ).bind(match.score, JSON.stringify({ strengths: match.strengths, concerns: match.concerns, recommendation: match.recommendation }), app.id).run();
+      ).bind(match.score, JSON.stringify({ strengths: match.strengths, gaps: match.gaps, recommendation: match.recommendation, tip: match.tip }), app.id).run();
     }
 
     return c.json(match);

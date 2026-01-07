@@ -38,7 +38,7 @@ export default function JobDetail() {
 
   const handleAnalyze = async () => {
     const result = await analyzeJobMutation.mutateAsync(id!);
-    setAnalysis(result.analysis);
+    setAnalysis(result);
   };
 
   const handleGenerateResume = async () => {
@@ -151,31 +151,52 @@ export default function JobDetail() {
                 <Card className="bg-blue-50 border-blue-200 shadow-soft">
                   <CardHeader>
                     <CardTitle className="text-lg sm:text-xl">AI Match Analysis</CardTitle>
-                    <CardDescription>Match Score: {analysis.match_score}%</CardDescription>
+                    <CardDescription>
+                      Match Score: {analysis.score}%
+                      <span className="ml-3 text-sm font-semibold">
+                        {analysis.recommendation === 'strong' && '🎯 Strong Match'}
+                        {analysis.recommendation === 'good' && '✅ Good Match'}
+                        {analysis.recommendation === 'fair' && '⚖️ Fair Match'}
+                        {analysis.recommendation === 'weak' && '⚠️ Weak Match'}
+                      </span>
+                    </CardDescription>
                   </CardHeader>
                   <CardContent className="space-y-4">
-                    <div>
-                      <h4 className="font-semibold mb-1 text-base">Summary</h4>
-                      <p className="text-sm leading-relaxed">{analysis.summary}</p>
-                    </div>
-                    {analysis.matching_skills?.length > 0 && (
-                      <div>
-                        <h4 className="font-semibold mb-2 text-base">Your Matching Skills</h4>
-                        <div className="flex flex-wrap gap-2">
-                          {analysis.matching_skills.map((skill: string, i: number) => (
-                            <Badge key={i} className="bg-green-100 text-green-800">{skill}</Badge>
-                          ))}
-                        </div>
+                    {analysis.tip && (
+                      <div className="bg-purple-50 border border-purple-200 rounded-lg p-3">
+                        <h4 className="font-semibold mb-1 text-base text-purple-900 flex items-center gap-2">
+                          <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z" />
+                          </svg>
+                          Key Action
+                        </h4>
+                        <p className="text-sm text-purple-800 leading-relaxed">{analysis.tip}</p>
                       </div>
                     )}
-                    {analysis.missing_skills?.length > 0 && (
+                    {analysis.strengths?.length > 0 && (
                       <div>
-                        <h4 className="font-semibold mb-2 text-base">Skills to Develop</h4>
-                        <div className="flex flex-wrap gap-2">
-                          {analysis.missing_skills.map((skill: string, i: number) => (
-                            <Badge key={i} className="bg-orange-100 text-orange-800">{skill}</Badge>
+                        <h4 className="font-semibold mb-2 text-base text-green-900">✨ Your Strengths for This Role</h4>
+                        <ul className="space-y-2">
+                          {analysis.strengths.map((strength: string, i: number) => (
+                            <li key={i} className="text-sm text-gray-700 leading-relaxed flex items-start gap-2">
+                              <span className="text-green-600 mt-0.5">✓</span>
+                              <span>{strength}</span>
+                            </li>
                           ))}
-                        </div>
+                        </ul>
+                      </div>
+                    )}
+                    {analysis.gaps?.length > 0 && (
+                      <div>
+                        <h4 className="font-semibold mb-2 text-base text-orange-900">📊 Areas to Develop</h4>
+                        <ul className="space-y-2">
+                          {analysis.gaps.map((gap: string, i: number) => (
+                            <li key={i} className="text-sm text-gray-700 leading-relaxed flex items-start gap-2">
+                              <span className="text-orange-600 mt-0.5">•</span>
+                              <span>{gap}</span>
+                            </li>
+                          ))}
+                        </ul>
                       </div>
                     )}
                   </CardContent>
