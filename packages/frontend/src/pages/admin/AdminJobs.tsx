@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useMutation } from '@tanstack/react-query';
 import { apiClient } from '../../lib/api-client';
 import { Button } from '../../components/ui/Button';
@@ -23,6 +23,9 @@ export default function AdminJobs() {
   const [selectedScrapers, setSelectedScrapers] = useState<string[]>(['linkedin', 'indeed', 'dice']);
   const [isImporting, setIsImporting] = useState(false);
   const [currentScraper, setCurrentScraper] = useState<string | null>(null);
+  const [linkedinCookie, setLinkedinCookie] = useState('');
+  const [cookieConfigured, setCookieConfigured] = useState(false);
+  const [showCookieInput, setShowCookieInput] = useState(false);
 
   const bulkImportMutation = useMutation({
     mutationFn: (searchQueries: string[]) =>
@@ -59,6 +62,54 @@ export default function AdminJobs() {
       setIsImporting(false);
     },
   });
+
+  const updateCookieMutation = useMutation({
+    mutationFn: (cookie: string) =>
+      apiClient.request('/api/admin/linkedin-cookie', {
+        method: 'PUT',
+        body: JSON.stringify({ cookie }),
+      }),
+    onSuccess: () => {
+      setCookieConfigured(true);
+      setShowCookieInput(false);
+      alert('LinkedIn cookie updated successfully');
+    },
+  });
+
+  const deleteCookieMutation = useMutation({
+    mutationFn: () =>
+      apiClient.request('/api/admin/linkedin-cookie', {
+        method: 'DELETE',
+      }),
+    onSuccess: () => {
+      setCookieConfigured(false);
+      setLinkedinCookie('');
+      alert('LinkedIn cookie deleted successfully');
+    },
+  });
+
+  const handleSaveCookie = () => {
+    if (!linkedinCookie.trim()) {
+      alert('Please enter a LinkedIn cookie');
+      return;
+    }
+    updateCookieMutation.mutate(linkedinCookie);
+  };
+
+  // Check cookie status on component mount
+  useEffect(() => {
+    const checkCookieStatus = async () => {
+      try {
+        const response = await apiClient.request('/api/admin/linkedin-cookie/status', {
+          method: 'GET',
+        });
+        setCookieConfigured(response.configured);
+      } catch (error) {
+        console.error('Failed to check cookie status:', error);
+      }
+    };
+    checkCookieStatus();
+  }, []);
 
   const handleBulkImport = () => {
     if (!queries.trim()) {
@@ -99,6 +150,73 @@ export default function AdminJobs() {
       <div className="mb-8">
         <h1 className="text-3xl font-bold text-gray-900">Job Import Management</h1>
         <p className="text-gray-600 mt-2">Import jobs from LinkedIn, Indeed, and Dice</p>
+      </div>
+
+      {/* LinkedIn Cookie Configuration */}
+      <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6 mb-6">
+        <h2 className="text-xl font-semibold text-gray-800 mb-4">LinkedIn Cookie Configuration</h2>
+        <p className="text-sm text-gray-600 mb-4">
+          LinkedIn scraper requires a valid cookie for better data quality. Use the Cookie-Editor Chrome extension to export your LinkedIn cookie.
+        </p>
+
+        <div className="mb-4">
+          <div className="flex items-center justify-between mb-2">
+            <span className="text-sm font-medium text-gray-700">Status:</span>
+            <span className={`px-3 py-1 rounded-full text-sm ${
+              cookieConfigured
+                ? 'bg-green-100 text-green-800'
+                : 'bg-gray-100 text-gray-800'
+            }`}>
+              {cookieConfigured ? 'Configured' : 'Not Configured'}
+            </span>
+          </div>
+        </div>
+
+        <div className="flex gap-3 mb-4">
+          <Button
+            onClick={() => setShowCookieInput(!showCookieInput)}
+            variant="outline"
+          >
+            {showCookieInput ? 'Hide Cookie Input' : 'Configure Cookie'}
+          </Button>
+          {cookieConfigured && (
+            <Button
+              onClick={() => {
+                if (confirm('Are you sure you want to delete the LinkedIn cookie?')) {
+                  deleteCookieMutation.mutate();
+                }
+              }}
+              variant="outline"
+              disabled={deleteCookieMutation.isPending}
+            >
+              {deleteCookieMutation.isPending ? 'Deleting...' : 'Delete Cookie'}
+            </Button>
+          )}
+        </div>
+
+        {showCookieInput && (
+          <div className="border-t pt-4">
+            <label className="block text-sm font-medium text-gray-700 mb-2">
+              LinkedIn Cookie Value
+            </label>
+            <textarea
+              value={linkedinCookie}
+              onChange={(e) => setLinkedinCookie(e.target.value)}
+              rows={6}
+              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent font-mono text-xs"
+              placeholder="Paste your LinkedIn cookie here (JSON format from Cookie-Editor extension)"
+            />
+            <p className="text-xs text-gray-500 mt-2 mb-4">
+              Get your cookie: Install Cookie-Editor Chrome extension → Visit linkedin.com → Click extension → Export → Paste here
+            </p>
+            <Button
+              onClick={handleSaveCookie}
+              disabled={updateCookieMutation.isPending || !linkedinCookie.trim()}
+            >
+              {updateCookieMutation.isPending ? 'Saving...' : 'Save Cookie'}
+            </Button>
+          </div>
+        )}
       </div>
 
       {/* Import Result */}

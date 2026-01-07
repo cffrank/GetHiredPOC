@@ -436,12 +436,29 @@ export async function searchLinkedInJobs(
 
   console.log(`[LinkedIn] Searching for "${query}" in "${location}"`);
 
-  // Start LinkedIn scraper
-  const runId = await startActorRun(env, env.APIFY_LINKEDIN_ACTOR_ID, {
+  // Retrieve LinkedIn cookie from KV storage (if configured)
+  const linkedinCookie = await env.KV_CACHE.get('linkedin_scraper_cookie');
+
+  if (linkedinCookie) {
+    console.log('[LinkedIn] Using configured cookie for authentication');
+  } else {
+    console.log('[LinkedIn] No cookie configured - scraper may return limited data');
+  }
+
+  // Build input for LinkedIn scraper
+  const scraperInput: Record<string, any> = {
     keywords: query,
     location: location,
     maxResults: maxResults
-  });
+  };
+
+  // Add cookie if available
+  if (linkedinCookie) {
+    scraperInput.cookie = linkedinCookie;
+  }
+
+  // Start LinkedIn scraper
+  const runId = await startActorRun(env, env.APIFY_LINKEDIN_ACTOR_ID, scraperInput);
 
   // Poll until completion
   const { datasetId } = await pollRunStatus(env, runId);

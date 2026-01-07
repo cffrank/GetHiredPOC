@@ -451,4 +451,81 @@ admin.delete('/prompts/:key', async (c) => {
   }
 });
 
+// GET /api/admin/linkedin-cookie/status
+// Check if LinkedIn cookie is configured
+admin.get('/linkedin-cookie/status', async (c) => {
+  try {
+    const cookie = await c.env.KV_CACHE.get('linkedin_scraper_cookie');
+    return c.json({
+      configured: !!cookie,
+      lastUpdated: cookie ? await c.env.KV_CACHE.get('linkedin_scraper_cookie_updated') : null
+    });
+  } catch (error: any) {
+    console.error('Failed to check LinkedIn cookie status:', error);
+    return c.json({ error: error.message }, 500);
+  }
+});
+
+// PUT /api/admin/linkedin-cookie
+// Update LinkedIn cookie for scraping
+admin.put('/linkedin-cookie', async (c) => {
+  try {
+    const { cookie } = await c.req.json();
+
+    if (!cookie || typeof cookie !== 'string') {
+      return c.json({ error: 'Cookie is required and must be a string' }, 400);
+    }
+
+    // Store cookie in KV (encrypted at rest by Cloudflare)
+    await c.env.KV_CACHE.put('linkedin_scraper_cookie', cookie);
+    await c.env.KV_CACHE.put('linkedin_scraper_cookie_updated', new Date().toISOString());
+
+    // Record audit log
+    const currentUser = c.get('user') as User;
+    await recordAuditLog(
+      c.env,
+      currentUser.id,
+      'update_linkedin_cookie',
+      'Updated LinkedIn scraper cookie',
+      c.req.header('CF-Connecting-IP')
+    );
+
+    return c.json({
+      success: true,
+      message: 'LinkedIn cookie updated successfully',
+      updatedAt: new Date().toISOString()
+    });
+  } catch (error: any) {
+    console.error('Failed to update LinkedIn cookie:', error);
+    return c.json({ error: error.message }, 500);
+  }
+});
+
+// DELETE /api/admin/linkedin-cookie
+// Remove LinkedIn cookie
+admin.delete('/linkedin-cookie', async (c) => {
+  try {
+    await c.env.KV_CACHE.delete('linkedin_scraper_cookie');
+    await c.env.KV_CACHE.delete('linkedin_scraper_cookie_updated');
+
+    // Record audit log
+    const currentUser = c.get('user') as User;
+    await recordAuditLog(
+      c.env,
+      currentUser.id,
+      'delete_linkedin_cookie',
+      'Deleted LinkedIn scraper cookie',
+      c.req.header('CF-Connecting-IP')
+    );
+
+    return c.json({
+      success: true,
+      message: 'LinkedIn cookie deleted successfully'
+    });
+  } catch (error: any) {
+    console.error('Failed to delete LinkedIn cookie:', error);
+    return c.json({ error: error.message }, 500);
+  }
+});
+
 export default admin;
