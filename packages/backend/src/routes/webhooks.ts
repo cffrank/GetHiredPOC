@@ -34,12 +34,11 @@ webhooks.post('/polar', async (c) => {
     const rawBody = await c.req.text();
 
     // Verify webhook signature (security-critical)
-    // TODO: Implement actual signature verification when webhook secret is available
-    // const isValid = verifyWebhookSignature(rawBody, signature, c.env.POLAR_WEBHOOK_SECRET || '');
-    // if (!isValid) {
-    //   console.error('Invalid webhook signature');
-    //   return c.json({ error: 'Invalid signature' }, 401);
-    // }
+    const isValid = verifyWebhookSignature(rawBody, signature, c.env.POLAR_WEBHOOK_SECRET || '');
+    if (!isValid) {
+      console.error('Invalid webhook signature');
+      return c.json({ error: 'Invalid signature' }, 401);
+    }
 
     // Parse webhook payload
     const payload = JSON.parse(rawBody);
