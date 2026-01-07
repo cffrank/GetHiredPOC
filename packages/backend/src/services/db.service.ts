@@ -30,7 +30,7 @@ export interface Env {
 
   // Polar.sh Payment Processing
   POLAR_ACCESS_TOKEN?: string;
-  POLAR_PRODUCT_PRICE_ID?: string;
+  POLAR_PRODUCT_ID?: string;
 }
 
 // Jobs

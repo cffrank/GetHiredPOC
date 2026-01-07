@@ -149,8 +149,8 @@ subscription.post('/upgrade', async (c) => {
       return c.json({ error: 'Polar.sh not configured' }, 500);
     }
 
-    if (!c.env.POLAR_PRODUCT_PRICE_ID) {
-      return c.json({ error: 'Polar product price ID not configured' }, 500);
+    if (!c.env.POLAR_PRODUCT_ID) {
+      return c.json({ error: 'Polar product ID not configured' }, 500);
     }
 
     // Create Polar checkout session
@@ -158,7 +158,7 @@ subscription.post('/upgrade', async (c) => {
       c.env,
       user.id,
       user.email,
-      c.env.POLAR_PRODUCT_PRICE_ID
+      c.env.POLAR_PRODUCT_ID
     );
 
     return c.json({

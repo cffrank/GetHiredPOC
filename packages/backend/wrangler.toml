@@ -34,9 +34,8 @@ LINKEDIN_CLIENT_ID = "86gnb581r70q6j"
 # Note: OpenAI API key for chat is configured in the AI Gateway dashboard
 
 # Polar.sh API Token for subscription payment processing
-# Note: Add POLAR_ACCESS_TOKEN via: npx wrangler secret put POLAR_ACCESS_TOKEN
-# Note: Add POLAR_PRODUCT_PRICE_ID via vars once you create the product in Polar dashboard
-# POLAR_PRODUCT_PRICE_ID = "price_xxx" # Update with actual product price ID from Polar
+# Note: Add POLAR_ACCESS_TOKEN via: npx wrangler secret put POLAR_ACCESS_TOKEN (DONE)
+POLAR_PRODUCT_ID = "fbfe9261-44b5-4a08-99b8-e094af09aa8f" # PRO product (has $39/month price)
 
 # D1 Database
 [[d1_databases]]

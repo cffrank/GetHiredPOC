@@ -28,14 +28,14 @@ export function createPolarClient(accessToken: string): Polar {
  * @param env - Environment bindings
  * @param userId - User ID for metadata
  * @param email - User email
- * @param productPriceId - Polar product price ID
+ * @param productId - Polar product ID (not price ID)
  * @returns Checkout session with URL for redirect
  */
 export async function createCheckoutSession(
   env: Env,
   userId: string,
   email: string,
-  productPriceId: string
+  productId: string
 ): Promise<{
   id: string;
   url: string;
@@ -45,14 +45,13 @@ export async function createCheckoutSession(
 
   try {
     const checkout = await polar.checkouts.create({
-      productPriceId,
+      products: [productId],
       customerEmail: email,
       metadata: {
         userId,
         source: 'gethiredpoc',
       },
       successUrl: `${env.FRONTEND_URL}/subscription?success=true`,
-      cancelUrl: `${env.FRONTEND_URL}/subscription`,
     });
 
     if (!checkout.url) {
