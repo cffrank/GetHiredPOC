@@ -4,7 +4,7 @@
 
 import { Polar } from '@polar-sh/sdk';
 
-const POLAR_ACCESS_TOKEN = 'polar_oat_l6yAElW8qidrXIugfTzTISRqOr58vBORTW4Et3PNBIy';
+const POLAR_ACCESS_TOKEN = 'polar_oat_QI5eRBOLZR0izR7a8kQYNbYVYt8qjjpS53EyT2UQRoP';
 
 async function listProducts() {
   const polar = new Polar({

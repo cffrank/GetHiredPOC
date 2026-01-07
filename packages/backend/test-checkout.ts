@@ -4,9 +4,9 @@
 
 import { Polar } from '@polar-sh/sdk';
 
-const POLAR_ACCESS_TOKEN = 'polar_oat_l6yAElW8qidrXIugfTzTISRqOr58vBORTW4Et3PNBIy';
-const POLAR_PRODUCT_ID = 'fbfe9261-44b5-4a08-99b8-e094af09aa8f'; // Product ID (not price ID)
-const POLAR_PRODUCT_PRICE_ID = 'd11b05ca-3f6d-4a15-8eb2-672a7e3866ab';
+const POLAR_ACCESS_TOKEN = 'polar_oat_QI5eRBOLZR0izR7a8kQYNbYVYt8qjjpS53EyT2UQRoP';
+const POLAR_PRODUCT_ID = 'e866b778-608d-41fb-a308-78cdef850f92'; // Sandbox Product ID
+const POLAR_PRODUCT_PRICE_ID = '0865b3bd-dd30-44e7-989d-123565fbb034'; // Sandbox Price ID
 const FRONTEND_URL = 'https://gethiredpoc.pages.dev';
 
 async function testCheckout() {
