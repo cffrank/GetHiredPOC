@@ -18,8 +18,8 @@ export interface User {
   subscription_status?: 'active' | 'canceled' | 'expired';
   subscription_started_at?: number;
   subscription_expires_at?: number;
-  stripe_customer_id?: string;
-  stripe_subscription_id?: string;
+  polar_customer_id?: string;
+  polar_subscription_id?: string;
   created_at: number;
   updated_at: number;
 }

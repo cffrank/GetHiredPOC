@@ -105,7 +105,11 @@ profile.put('/', async (c) => {
     console.log('[Profile Update] SQL result:', JSON.stringify(result));
 
     const updatedUser = await c.env.DB.prepare(
-      "SELECT id, email, full_name, bio, location, skills, avatar_url, address, linkedin_url, created_at, updated_at FROM users WHERE id = ?"
+      `SELECT id, email, full_name, bio, location, skills, avatar_url, address, linkedin_url, role,
+       membership_tier, membership_started_at, membership_expires_at, trial_started_at,
+       subscription_tier, subscription_status, subscription_started_at, subscription_expires_at,
+       polar_customer_id, polar_subscription_id,
+       created_at, updated_at FROM users WHERE id = ?`
     )
       .bind(user.id)
       .first<User>();
@@ -182,7 +186,11 @@ profile.patch('/', async (c) => {
     await c.env.DB.prepare(query).bind(...params).run();
 
     const updatedUser = await c.env.DB.prepare(
-      "SELECT id, email, full_name, bio, location, skills, avatar_url, address, linkedin_url, created_at, updated_at FROM users WHERE id = ?"
+      `SELECT id, email, full_name, bio, location, skills, avatar_url, address, linkedin_url, role,
+       membership_tier, membership_started_at, membership_expires_at, trial_started_at,
+       subscription_tier, subscription_status, subscription_started_at, subscription_expires_at,
+       polar_customer_id, polar_subscription_id,
+       created_at, updated_at FROM users WHERE id = ?`
     )
       .bind(user.id)
       .first<User>();
