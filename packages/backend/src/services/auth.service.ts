@@ -150,8 +150,8 @@ export function setSessionCookie(sessionId: string, isProduction: boolean = fals
   const maxAge = 7 * 24 * 60 * 60; // 7 days in seconds
 
   if (isProduction) {
-    // Production: cross-origin cookies require SameSite=none and Secure
-    return `session=${sessionId}; Path=/; HttpOnly; Secure; SameSite=None; Max-Age=${maxAge}`;
+    // Production: cross-origin cookies require SameSite=None, Secure, and Partitioned (CHIPS)
+    return `session=${sessionId}; Path=/; HttpOnly; Secure; SameSite=None; Partitioned; Max-Age=${maxAge}`;
   } else {
     // Development: same-origin
     return `session=${sessionId}; Path=/; HttpOnly; SameSite=Lax; Max-Age=${maxAge}`;
@@ -160,7 +160,7 @@ export function setSessionCookie(sessionId: string, isProduction: boolean = fals
 
 export function clearSessionCookie(isProduction: boolean = false): string {
   if (isProduction) {
-    return "session=; Path=/; HttpOnly; Secure; SameSite=None; Max-Age=0";
+    return "session=; Path=/; HttpOnly; Secure; SameSite=None; Partitioned; Max-Age=0";
   } else {
     return "session=; Path=/; HttpOnly; SameSite=Lax; Max-Age=0";
   }
