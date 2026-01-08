@@ -2,11 +2,16 @@ import { useState, useEffect } from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import { useJobs } from '../hooks/useJobs';
 import { useRecommendations } from '../hooks/useRecommendations';
+import { useGamification } from '../hooks/useGamification';
 import { useAuth } from '../context/AuthContext';
 import { Button } from '../components/ui/Button';
 import { Input } from '../components/ui/Input';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '../components/ui/Card';
 import { Badge } from '../components/ui/Badge';
+import { JobCard3D } from '../components/JobCard3D';
+import { FloatingShapesBackground } from '../components/effects/FloatingShapesBackground';
+import { ProgressGamification } from '../components/gamification/ProgressGamification';
+import { CuteRobotLoader } from '../components/loaders/CuteRobotLoader';
 import { JobFilterPanel, JobFilters } from '../components/JobFilterPanel';
 import { ChevronDown, ChevronUp, Filter } from 'lucide-react';
 
@@ -29,6 +34,7 @@ export default function Jobs() {
 
   const { data, isLoading } = useJobs({ title, remote, location: locationFilter });
   const { data: recommendationsData, isLoading: recommendationsLoading } = useRecommendations(20);
+  const { data: gamificationData } = useGamification();
 
   // Advanced filter state
   const [filters, setFilters] = useState<JobFilters>({
@@ -130,21 +136,39 @@ export default function Jobs() {
   const { jobs: displayedJobs, loading: displayLoading } = getJobsToShow();
 
   return (
-    <div className="min-h-full bg-gray-50">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        <h1 className="text-3xl font-bold mb-6">Browse Jobs</h1>
+    <>
+      <FloatingShapesBackground />
+      <div className="relative z-10 min-h-full">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+          {/* Hero Section */}
+          <div className="text-center mb-8">
+            <h1 className="text-5xl sm:text-6xl font-extrabold text-purple-deep mb-4">
+              Find Your Dream Job <span className="inline-block animate-bounce-gentle">🚀</span>
+            </h1>
+            <p className="text-xl text-gray-600">AI-powered matching that makes job hunting fun!</p>
+          </div>
+
+          {/* Gamification Progress */}
+          {isLoggedIn && gamificationData && (
+            <ProgressGamification
+              level={gamificationData.level}
+              xp={gamificationData.xp}
+              xpMax={gamificationData.xpMax}
+              achievements={gamificationData.achievements}
+            />
+          )}
 
         {/* Chat Navigation Banner */}
         {navigatedFromChat && advancedSearchActive && (
-          <Card className="mb-6 bg-gradient-to-r from-blue-50 to-purple-50 border-blue-200">
+          <Card className="mb-6 bg-gradient-to-r from-violet-50 to-teal-50 border-violet-200 shadow-card-soft">
             <CardContent className="pt-6">
               <div className="flex items-start justify-between">
                 <div className="flex items-start gap-3">
-                  <div className="flex-shrink-0 w-10 h-10 bg-blue-600 rounded-lg flex items-center justify-center">
+                  <div className="flex-shrink-0 w-10 h-10 bg-gradient-to-br from-violet to-teal rounded-lg flex items-center justify-center shadow-3d-sm">
                     <Filter className="w-5 h-5 text-white" />
                   </div>
                   <div>
-                    <h3 className="font-semibold text-gray-900">AI Assistant found {displayedJobs.length} matching jobs</h3>
+                    <h3 className="font-semibold text-purple-deep">AI Assistant found {displayedJobs.length} matching jobs</h3>
                     <p className="text-sm text-gray-600 mt-1">
                       {location.state?.message || 'Results based on your search criteria'}
                     </p>
@@ -170,9 +194,9 @@ export default function Jobs() {
                 setActiveTab('all');
                 clearAdvancedSearch();
               }}
-              className={`px-4 py-2 font-medium text-sm transition-colors ${
+              className={`px-4 py-2 font-bold text-sm transition-colors ${
                 activeTab === 'all'
-                  ? 'border-b-2 border-primary-600 text-primary-600'
+                  ? 'border-b-2 border-violet text-violet'
                   : 'text-gray-600 hover:text-gray-900'
               }`}
             >
@@ -183,14 +207,14 @@ export default function Jobs() {
                 setActiveTab('for-you');
                 clearAdvancedSearch();
               }}
-              className={`px-4 py-2 font-medium text-sm transition-colors ${
+              className={`px-4 py-2 font-bold text-sm transition-colors ${
                 activeTab === 'for-you'
-                  ? 'border-b-2 border-primary-600 text-primary-600'
+                  ? 'border-b-2 border-violet text-violet'
                   : 'text-gray-600 hover:text-gray-900'
               }`}
             >
               For You
-              <span className="ml-2 px-2 py-0.5 text-xs font-semibold bg-primary-100 text-primary-700 rounded-full">
+              <span className="ml-2 px-2 py-0.5 text-xs font-semibold bg-violet-100 text-violet-dark rounded-full">
                 AI
               </span>
             </button>
@@ -237,7 +261,7 @@ export default function Jobs() {
               <div className="mt-4 pt-4 border-t border-gray-200">
                 <button
                   onClick={() => setShowAdvancedFilters(!showAdvancedFilters)}
-                  className="flex items-center gap-2 text-sm text-blue-600 hover:text-blue-700 font-medium"
+                  className="flex items-center gap-2 text-sm text-violet hover:text-violet-dark font-bold"
                 >
                   <Filter className="w-4 h-4" />
                   Advanced Filters
@@ -261,16 +285,16 @@ export default function Jobs() {
         {/* For You - Personalized Recommendations */}
         {activeTab === 'for-you' && (
           <div className="mb-6">
-            <Card className="bg-gradient-to-r from-primary-50 to-purple-50 border-primary-200 mb-6">
+            <Card className="bg-gradient-to-r from-violet-50 to-teal-50 border-violet-200 shadow-card-soft mb-6">
               <CardContent className="pt-6">
                 <div className="flex items-start gap-3">
-                  <div className="flex-shrink-0 w-10 h-10 bg-primary-600 rounded-lg flex items-center justify-center">
+                  <div className="flex-shrink-0 w-10 h-10 bg-gradient-to-br from-violet to-teal rounded-lg flex items-center justify-center shadow-3d-sm">
                     <svg className="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" />
                     </svg>
                   </div>
                   <div>
-                    <h3 className="font-semibold text-gray-900">AI-Powered Recommendations</h3>
+                    <h3 className="font-bold text-purple-deep">AI-Powered Recommendations ✨</h3>
                     <p className="text-sm text-gray-600 mt-1">
                       These jobs are personalized based on your profile, skills, experience, and preferences using semantic matching.
                     </p>
@@ -283,54 +307,18 @@ export default function Jobs() {
 
         {/* Jobs List */}
         {displayLoading ? (
-          <div className="text-center py-12">
-            <div className="inline-block animate-spin rounded-full h-12 w-12 border-b-2 border-primary-600"></div>
-            <p className="mt-4 text-gray-600">
-              {advancedSearchActive ? 'Searching jobs...' : 'Loading jobs...'}
-            </p>
-          </div>
+          <CuteRobotLoader
+            message={advancedSearchActive ? 'Searching for perfect matches...' : 'Finding amazing opportunities...'}
+          />
         ) : (
-          <div className="space-y-4">
+          <div className="space-y-6">
             {displayedJobs.map((job: any) => (
-              <Card key={job.id} className={`shadow-soft hover:shadow-soft-lg transition-shadow ${
-                activeTab === 'for-you' ? 'border-l-4 border-l-primary-500' : ''
-              }`}>
-                <CardHeader>
-                  <div className="flex flex-col sm:flex-row sm:justify-between sm:items-start gap-4">
-                    <div className="flex-1">
-                      <div className="flex items-start gap-3 mb-2">
-                        <CardTitle className="text-xl sm:text-2xl flex-1">{job.title}</CardTitle>
-                        {activeTab === 'for-you' && (
-                          <Badge className="bg-gradient-to-r from-primary-600 to-purple-600 text-white px-3 py-1 shadow-sm">
-                            ✨ AI Recommended
-                          </Badge>
-                        )}
-                        {advancedSearchActive && job.relevance_score && (
-                          <Badge className="bg-blue-100 text-blue-800">
-                            {job.relevance_score}% match
-                          </Badge>
-                        )}
-                      </div>
-                      <CardDescription className="text-base mt-1">{job.company}</CardDescription>
-                    </div>
-                    <Link to={`/jobs/${job.id}`} className="w-full sm:w-auto">
-                      <Button size="sm" className="w-full sm:w-auto">View Details</Button>
-                    </Link>
-                  </div>
-                </CardHeader>
-                <CardContent>
-                  <div className="flex flex-wrap gap-2 mb-3">
-                    {job.remote === 1 && <Badge className="bg-green-100 text-green-800">Remote</Badge>}
-                    {job.remote === 2 && <Badge className="bg-blue-100 text-blue-800">Hybrid</Badge>}
-                    {job.remote === 0 && <Badge className="bg-gray-100 text-gray-800">On-Site</Badge>}
-                    {job.location && <Badge className="bg-primary-100 text-primary-800">{job.location}</Badge>}
-                    {job.salary_min && job.salary_max && (
-                      <Badge className="bg-purple-100 text-purple-800">${job.salary_min.toLocaleString()} - ${job.salary_max.toLocaleString()}</Badge>
-                    )}
-                  </div>
-                  <p className="text-sm text-gray-600 line-clamp-2">{job.description}</p>
-                </CardContent>
-              </Card>
+              <JobCard3D
+                key={job.id}
+                job={job}
+                showMatchScore={activeTab === 'for-you' || (advancedSearchActive && !!job.relevance_score)}
+                isRecommended={activeTab === 'for-you'}
+              />
             ))}
 
             {displayedJobs.length === 0 && activeTab === 'all' && (
@@ -357,7 +345,8 @@ export default function Jobs() {
             )}
           </div>
         )}
+        </div>
       </div>
-    </div>
+    </>
   );
 }

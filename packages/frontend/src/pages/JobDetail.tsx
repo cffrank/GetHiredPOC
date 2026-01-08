@@ -3,9 +3,13 @@ import { useParams, useNavigate } from 'react-router-dom';
 import { useJob, useSaveJob, useUnsaveJob, useAnalyzeJob, useGenerateResume, useGenerateCoverLetter } from '../hooks/useJobs';
 import { useCreateApplication } from '../hooks/useApplications';
 import { Button } from '../components/ui/Button';
+import { Button3D } from '../components/ui/Button3D';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '../components/ui/Card';
 import { Badge } from '../components/ui/Badge';
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '../components/ui/Tabs';
+import { MatchScoreDial } from '../components/ui/MatchScoreDial';
+import { FloatingShapesBackground } from '../components/effects/FloatingShapesBackground';
+import { CuteRobotLoader } from '../components/loaders/CuteRobotLoader';
 import { MapPin, BarChart3, FileText, Mail, Briefcase, Loader2 } from 'lucide-react';
 
 interface GeneratedResume {
@@ -200,8 +204,24 @@ export default function JobDetail() {
     }
   };
 
-  if (isLoading) return <div className="p-8">Loading...</div>;
-  if (!data?.job) return <div className="p-8">Job not found</div>;
+  if (isLoading) return (
+    <>
+      <FloatingShapesBackground />
+      <div className="relative z-10">
+        <CuteRobotLoader message="Loading job details..." />
+      </div>
+    </>
+  );
+
+  if (!data?.job) return (
+    <>
+      <FloatingShapesBackground />
+      <div className="relative z-10 p-8 text-center">
+        <h2 className="text-2xl font-bold text-purple-deep">Job not found</h2>
+        <p className="text-gray-600 mt-2">This job posting may have been removed or doesn't exist.</p>
+      </div>
+    </>
+  );
 
   const job = data.job;
   const requirements = job.requirements ? JSON.parse(job.requirements) : [];
@@ -215,31 +235,60 @@ export default function JobDetail() {
   const hasTabs = analysis || resumes.length > 0 || coverLetters.length > 0 || similarJobs.length > 0;
 
   return (
-    <div className="min-h-full bg-gray-50">
-      <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        <Card className="shadow-soft">
-          <CardHeader>
-            <div className="flex flex-col sm:flex-row sm:justify-between sm:items-start gap-4">
-              <div className="flex-1">
-                <CardTitle className="text-2xl sm:text-3xl mb-2">{job.title}</CardTitle>
-                <CardDescription className="text-base sm:text-lg">{job.company}</CardDescription>
-              </div>
-              <div className="flex flex-col sm:flex-row gap-2 w-full sm:w-auto">
-                <Button onClick={handleSave} variant="outline" className="w-full sm:w-auto">
-                  {data.saved ? '★ Saved' : '☆ Save'}
-                </Button>
-                <Button onClick={handleApply} className="w-full sm:w-auto">Apply Now</Button>
+    <>
+      <FloatingShapesBackground />
+      <div className="relative z-10 min-h-full">
+        <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+          {/* Match Score Dial - Show if analysis exists */}
+          {analysis && (
+            <div className="flex justify-center mb-8">
+              <div className="text-center">
+                <MatchScoreDial score={analysis.score} size="lg" />
+                <p className="mt-4 text-xl font-bold text-purple-deep">
+                  {analysis.recommendation === 'strong' && '🎯 Strong Match!'}
+                  {analysis.recommendation === 'good' && '✅ Good Match'}
+                  {analysis.recommendation === 'fair' && '⚖️ Fair Match'}
+                  {analysis.recommendation === 'weak' && '⚠️ Weak Match'}
+                </p>
               </div>
             </div>
-          </CardHeader>
+          )}
+
+          <div className="relative group transition-transform duration-300 hover:-translate-y-3">
+            {/* Floating shadow */}
+            <div className="absolute -bottom-3 left-2 right-2 h-6 bg-gradient-radial from-violet/20 to-transparent blur-xl transition-all group-hover:-bottom-5 group-hover:opacity-40" />
+
+            {/* Card content */}
+            <Card className="relative z-10 bg-white rounded-3xl shadow-card-soft">
+              <CardHeader>
+                <div className="flex flex-col sm:flex-row sm:justify-between sm:items-start gap-4">
+                  <div className="flex-1">
+                    <CardTitle className="text-3xl sm:text-4xl font-extrabold text-purple-deep mb-2">{job.title}</CardTitle>
+                    <div className="flex items-center gap-2 text-gray-600 text-lg">
+                      <div className="w-8 h-8 bg-gradient-to-br from-violet to-teal rounded-lg flex items-center justify-center text-lg">
+                        🏢
+                      </div>
+                      <CardDescription className="text-base sm:text-lg">{job.company}</CardDescription>
+                    </div>
+                  </div>
+                  <div className="flex flex-col sm:flex-row gap-2 w-full sm:w-auto">
+                    <Button onClick={handleSave} variant="outline" className="w-full sm:w-auto">
+                      {data.saved ? '★ Saved' : '☆ Save'}
+                    </Button>
+                    <Button3D onClick={handleApply} icon="🚀" className="w-full sm:w-auto">
+                      Apply Now
+                    </Button3D>
+                  </div>
+                </div>
+              </CardHeader>
           <CardContent className="space-y-6">
-            <div className="flex flex-wrap gap-2">
-              {job.remote === 1 && <Badge className="bg-green-100 text-green-800">Remote</Badge>}
-              {job.remote === 2 && <Badge className="bg-blue-100 text-blue-800">Hybrid</Badge>}
-              {job.remote === 0 && <Badge className="bg-gray-100 text-gray-800">On-Site</Badge>}
-              {job.location && <Badge className="bg-primary-100 text-primary-800">{job.location}</Badge>}
+            <div className="flex flex-wrap gap-3">
+              {job.remote === 1 && <Badge variant="remote">Remote 🌍</Badge>}
+              {job.remote === 2 && <Badge variant="default">Hybrid 🏢</Badge>}
+              {job.remote === 0 && <Badge variant="default">On-Site 🏢</Badge>}
+              {job.location && <Badge variant="default">{job.location}</Badge>}
               {job.salary_min && job.salary_max && (
-                <Badge className="bg-purple-100 text-purple-800">${job.salary_min.toLocaleString()} - ${job.salary_max.toLocaleString()}</Badge>
+                <Badge variant="salary">${job.salary_min.toLocaleString()} - ${job.salary_max.toLocaleString()} 💰</Badge>
               )}
             </div>
 
@@ -259,60 +308,57 @@ export default function JobDetail() {
               </div>
             )}
 
-            <div className="space-y-3">
-              <Button onClick={handleAnalyze} variant="outline" className="w-full">
-                {analyzeJobMutation.isPending ? (
-                  <>
-                    <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                    Analyzing...
-                  </>
-                ) : (
-                  <>
-                    <BarChart3 className="w-4 h-4 mr-2" />
-                    Get AI Match Analysis
-                  </>
-                )}
-              </Button>
+            <div className="space-y-4">
+              {/* AI Analysis Button */}
+              {analyzeJobMutation.isPending ? (
+                <CuteRobotLoader message="Analyzing your match with this job..." />
+              ) : (
+                <Button3D onClick={handleAnalyze} icon="🎯" className="w-full">
+                  Get AI Match Analysis
+                </Button3D>
+              )}
+
+              {/* Resume & Cover Letter Generation */}
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                <Button
-                  onClick={handleGenerateResume}
-                  variant="outline"
-                  disabled={generateResumeMutation.isPending || !data.saved}
-                >
-                  {generateResumeMutation.isPending ? (
-                    <>
-                      <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                      Generating...
-                    </>
-                  ) : (
-                    <>
-                      <FileText className="w-4 h-4 mr-2" />
-                      Generate Tailored Resume
-                    </>
-                  )}
-                </Button>
-                <Button
-                  onClick={handleGenerateCoverLetter}
-                  variant="outline"
-                  disabled={generateCoverLetterMutation.isPending || !data.saved}
-                >
-                  {generateCoverLetterMutation.isPending ? (
-                    <>
-                      <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                      Generating...
-                    </>
-                  ) : (
-                    <>
-                      <Mail className="w-4 h-4 mr-2" />
-                      Generate Cover Letter
-                    </>
-                  )}
-                </Button>
+                {generateResumeMutation.isPending ? (
+                  <div className="col-span-2">
+                    <CuteRobotLoader message="Crafting your perfect resume..." />
+                  </div>
+                ) : (
+                  <Button3D
+                    onClick={handleGenerateResume}
+                    icon="📄"
+                    variant={data.saved ? 'primary' : 'secondary'}
+                    disabled={!data.saved}
+                    className="w-full"
+                  >
+                    Generate Tailored Resume
+                  </Button3D>
+                )}
+
+                {generateCoverLetterMutation.isPending ? (
+                  <div className="col-span-2">
+                    <CuteRobotLoader message="Writing your cover letter..." />
+                  </div>
+                ) : (
+                  <Button3D
+                    onClick={handleGenerateCoverLetter}
+                    icon="✉️"
+                    variant={data.saved ? 'primary' : 'secondary'}
+                    disabled={!data.saved}
+                    className="w-full"
+                  >
+                    Generate Cover Letter
+                  </Button3D>
+                )}
               </div>
+
               {!data.saved && (
-                <p className="text-sm text-gray-500 text-center">
-                  Save this job to generate tailored resume and cover letter
-                </p>
+                <div className="bg-yellow-50 border-2 border-yellow-200 rounded-2xl p-4 text-center">
+                  <p className="text-sm text-gray-700 font-medium">
+                    💡 Save this job to unlock AI-powered resume and cover letter generation
+                  </p>
+                </div>
               )}
             </div>
 
@@ -349,12 +395,13 @@ export default function JobDetail() {
                 {/* AI Analysis Tab */}
                 {analysis && (
                   <TabsContent value="analysis">
-                    <Card className="bg-blue-50 border-blue-200 shadow-soft">
+                    <Card className="bg-gradient-to-br from-violet-50 to-teal-50 border-violet-200 shadow-card-soft">
                       <CardHeader>
-                        <CardTitle className="text-lg sm:text-xl">AI Match Analysis</CardTitle>
+                        <CardTitle className="text-xl sm:text-2xl font-bold text-purple-deep flex items-center gap-2">
+                          🎯 AI Match Analysis
+                        </CardTitle>
                         <CardDescription>
-                          Match Score: {analysis.score}%
-                          <span className="ml-3 text-sm font-semibold">
+                          <span className="text-lg font-semibold text-violet">
                             {analysis.recommendation === 'strong' && '🎯 Strong Match'}
                             {analysis.recommendation === 'good' && '✅ Good Match'}
                             {analysis.recommendation === 'fair' && '⚖️ Fair Match'}
@@ -364,23 +411,22 @@ export default function JobDetail() {
                       </CardHeader>
                       <CardContent className="space-y-4">
                         {analysis.tip && (
-                          <div className="bg-purple-50 border border-purple-200 rounded-lg p-3">
-                            <h4 className="font-semibold mb-1 text-base text-purple-900 flex items-center gap-2">
-                              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z" />
-                              </svg>
-                              Key Action
+                          <div className="bg-white border-2 border-violet-200 rounded-2xl p-4 shadow-3d-sm">
+                            <h4 className="font-bold mb-2 text-base text-violet flex items-center gap-2">
+                              💡 Key Action
                             </h4>
-                            <p className="text-sm text-purple-800 leading-relaxed">{analysis.tip}</p>
+                            <p className="text-sm text-gray-700 leading-relaxed">{analysis.tip}</p>
                           </div>
                         )}
                         {analysis.strengths?.length > 0 && (
-                          <div>
-                            <h4 className="font-semibold mb-2 text-base text-green-900">✨ Your Strengths for This Role</h4>
+                          <div className="bg-white rounded-2xl p-4 border-2 border-green-200">
+                            <h4 className="font-bold mb-3 text-base text-green-900 flex items-center gap-2">
+                              ✨ Your Strengths for This Role
+                            </h4>
                             <ul className="space-y-2">
                               {analysis.strengths.map((strength: string, i: number) => (
                                 <li key={i} className="text-sm text-gray-700 leading-relaxed flex items-start gap-2">
-                                  <span className="text-green-600 mt-0.5">✓</span>
+                                  <span className="text-green-600 mt-0.5 text-lg">✓</span>
                                   <span>{strength}</span>
                                 </li>
                               ))}
@@ -388,12 +434,14 @@ export default function JobDetail() {
                           </div>
                         )}
                         {analysis.gaps?.length > 0 && (
-                          <div>
-                            <h4 className="font-semibold mb-2 text-base text-orange-900">📊 Areas to Develop</h4>
+                          <div className="bg-white rounded-2xl p-4 border-2 border-orange-200">
+                            <h4 className="font-bold mb-3 text-base text-orange-900 flex items-center gap-2">
+                              📊 Areas to Develop
+                            </h4>
                             <ul className="space-y-2">
                               {analysis.gaps.map((gap: string, i: number) => (
                                 <li key={i} className="text-sm text-gray-700 leading-relaxed flex items-start gap-2">
-                                  <span className="text-orange-600 mt-0.5">•</span>
+                                  <span className="text-orange-600 mt-0.5 text-lg">•</span>
                                   <span>{gap}</span>
                                 </li>
                               ))}
@@ -408,12 +456,14 @@ export default function JobDetail() {
                 {/* Resume Tab */}
                 {resumes.length > 0 && (
                   <TabsContent value="resume">
-                    <Card className="bg-green-50 border-green-200 shadow-soft">
+                    <Card className="bg-gradient-to-br from-green-50 to-teal-50 border-green-200 shadow-card-soft">
                       <CardHeader>
                         <div className="flex items-center justify-between">
                           <div>
-                            <CardTitle className="text-lg sm:text-xl">AI-Generated Tailored Resume</CardTitle>
-                            <CardDescription>Customized for this position</CardDescription>
+                            <CardTitle className="text-xl sm:text-2xl font-bold text-purple-deep flex items-center gap-2">
+                              📄 AI-Generated Tailored Resume
+                            </CardTitle>
+                            <CardDescription className="text-base font-medium">Customized for this position</CardDescription>
                           </div>
                           {resumes.length > 1 && (
                             <select
@@ -457,10 +507,10 @@ export default function JobDetail() {
                             )}
                             {resumeData.skills?.length > 0 && (
                               <div>
-                                <h4 className="font-semibold mb-2 text-base">Highlighted Skills</h4>
+                                <h4 className="font-bold mb-2 text-base">Highlighted Skills</h4>
                                 <div className="flex flex-wrap gap-2">
                                   {resumeData.skills.map((skill: string, i: number) => (
-                                    <Badge key={i} className="bg-green-100 text-green-800">{skill}</Badge>
+                                    <Badge key={i} className="bg-gradient-to-r from-green-500 to-teal text-white shadow-3d-sm">{skill}</Badge>
                                   ))}
                                 </div>
                               </div>
@@ -475,12 +525,14 @@ export default function JobDetail() {
                 {/* Cover Letter Tab */}
                 {coverLetters.length > 0 && (
                   <TabsContent value="coverLetter">
-                    <Card className="bg-purple-50 border-purple-200 shadow-soft">
+                    <Card className="bg-gradient-to-br from-violet-50 to-purple-100 border-violet-200 shadow-card-soft">
                       <CardHeader>
                         <div className="flex items-center justify-between">
                           <div>
-                            <CardTitle className="text-lg sm:text-xl">AI-Generated Cover Letter</CardTitle>
-                            <CardDescription>Personalized for {job.company}</CardDescription>
+                            <CardTitle className="text-xl sm:text-2xl font-bold text-purple-deep flex items-center gap-2">
+                              ✉️ AI-Generated Cover Letter
+                            </CardTitle>
+                            <CardDescription className="text-base font-medium">Personalized for {job.company}</CardDescription>
                           </div>
                           {coverLetters.length > 1 && (
                             <select
@@ -511,40 +563,46 @@ export default function JobDetail() {
                 {/* Similar Jobs Tab */}
                 {similarJobs.length > 0 && (
                   <TabsContent value="similar">
-                    <Card>
+                    <Card className="shadow-card-soft">
                       <CardHeader>
-                        <CardTitle>Similar Jobs</CardTitle>
+                        <CardTitle className="text-xl sm:text-2xl font-bold text-purple-deep flex items-center gap-2">
+                          💼 Similar Jobs
+                        </CardTitle>
                       </CardHeader>
                       <CardContent>
                         {loadingSimilar ? (
-                          <div className="text-center py-4">
-                            <p className="text-gray-500">Loading similar jobs...</p>
-                          </div>
+                          <CuteRobotLoader message="Finding similar opportunities..." />
                         ) : (
-                          <div className="space-y-3">
+                          <div className="space-y-4">
                             {similarJobs.map((similarJob: any) => (
                               <div
                                 key={similarJob.id}
-                                className="border rounded-lg p-4 hover:bg-gray-50 cursor-pointer transition-colors"
+                                className="relative group cursor-pointer"
                                 onClick={() => navigate(`/jobs/${similarJob.id}`)}
                               >
-                                <div className="flex items-start justify-between">
-                                  <div className="flex-1">
-                                    <h4 className="font-semibold text-gray-900">{similarJob.title}</h4>
-                                    <p className="text-sm text-gray-600">{similarJob.company}</p>
-                                    <div className="flex items-center gap-2 mt-1 text-sm text-gray-500">
-                                      <MapPin className="h-4 w-4" />
-                                      <span>{similarJob.location}</span>
-                                      {similarJob.remote && (
-                                        <Badge className="bg-blue-100 text-blue-800">Remote</Badge>
-                                      )}
+                                <div className="absolute -bottom-2 left-1 right-1 h-4 bg-gradient-radial from-violet/10 to-transparent blur-lg transition-all group-hover:-bottom-3 group-hover:opacity-60" />
+                                <div className="relative bg-white border-2 border-gray-200 rounded-2xl p-4 hover:border-violet transition-all group-hover:-translate-y-1">
+                                  <div className="flex items-start justify-between gap-3">
+                                    <div className="flex-1">
+                                      <h4 className="font-bold text-purple-deep text-lg">{similarJob.title}</h4>
+                                      <p className="text-sm text-gray-600 flex items-center gap-1 mt-1">
+                                        <span className="text-base">🏢</span>
+                                        {similarJob.company}
+                                      </p>
+                                      <div className="flex items-center gap-2 mt-2 text-sm text-gray-500">
+                                        <MapPin className="h-4 w-4" />
+                                        <span>{similarJob.location}</span>
+                                        {similarJob.remote === 1 && (
+                                          <Badge variant="remote" className="text-xs">Remote</Badge>
+                                        )}
+                                      </div>
                                     </div>
+                                    {similarJob.similarity_score && (
+                                      <Badge className="bg-violet-100 text-violet-dark font-bold">
+                                        {similarJob.similarity_score}% match
+                                      </Badge>
+                                    )}
                                   </div>
-                                  {similarJob.similarity_score && (
-                                    <Badge className="ml-2 bg-gray-100 text-gray-800">
-                                      {similarJob.similarity_score}% match
-                                    </Badge>
-                                  )}
                                 </div>
                               </div>
                             ))}
@@ -557,8 +615,10 @@ export default function JobDetail() {
               </Tabs>
             )}
           </CardContent>
-        </Card>
+            </Card>
+          </div>
+        </div>
       </div>
-    </div>
+    </>
   );
 }

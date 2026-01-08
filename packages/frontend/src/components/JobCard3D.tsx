@@ -6,11 +6,12 @@ import { MatchScoreDial } from './ui/MatchScoreDial';
 interface JobCard3DProps {
   job: any;
   showMatchScore?: boolean;
+  isRecommended?: boolean;
 }
 
-export function JobCard3D({ job, showMatchScore = false }: JobCard3DProps) {
-  // Calculate a mock match score if not provided (for demo purposes)
-  const matchScore = job.match_score || Math.floor(Math.random() * 30 + 70);
+export function JobCard3D({ job, showMatchScore = false, isRecommended = false }: JobCard3DProps) {
+  // Use relevance_score or match_score if available, otherwise calculate a mock score
+  const matchScore = job.relevance_score || job.match_score || Math.floor(Math.random() * 30 + 70);
 
   return (
     <div className="relative group transition-transform duration-300 hover:-translate-y-3">
@@ -38,6 +39,11 @@ export function JobCard3D({ job, showMatchScore = false }: JobCard3DProps) {
 
         {/* Badges */}
         <div className="flex gap-3 mb-6 flex-wrap">
+          {isRecommended && (
+            <Badge className="bg-gradient-to-r from-violet to-teal text-white shadow-3d-sm">
+              ✨ AI Recommended
+            </Badge>
+          )}
           {job.remote === 1 && <Badge variant="remote">Remote 🌍</Badge>}
           {job.remote === 2 && <Badge variant="default">Hybrid 🏢</Badge>}
           {job.remote === 0 && <Badge variant="default">On-Site 🏢</Badge>}
