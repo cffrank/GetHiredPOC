@@ -111,13 +111,13 @@ interviewQuestions.post('/', async (c) => {
     )
       .bind(
         userId,
-        body.application_id || null,
-        body.job_id || null,
+        body.application_id ?? null,
+        body.job_id ?? null,
         body.question,
-        body.answer || null,
+        body.answer ?? null,
         isBehavioral,
-        body.difficulty || null,
-        body.notes || null
+        body.difficulty ?? null,
+        body.notes ?? null
       )
       .first<InterviewQuestion>();
 
