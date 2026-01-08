@@ -103,6 +103,13 @@ interviewQuestions.post('/', async (c) => {
 
     const isBehavioral = body.is_behavioral ? 1 : 0;
 
+    // Explicitly convert undefined to null for D1
+    const applicationId = body.application_id !== undefined ? body.application_id : null;
+    const jobId = body.job_id !== undefined ? body.job_id : null;
+    const answer = body.answer !== undefined ? body.answer : null;
+    const difficulty = body.difficulty !== undefined ? body.difficulty : null;
+    const notes = body.notes !== undefined ? body.notes : null;
+
     const result = await c.env.DB.prepare(
       `INSERT INTO interview_questions (
         user_id, application_id, job_id, question, answer,
@@ -111,13 +118,13 @@ interviewQuestions.post('/', async (c) => {
     )
       .bind(
         userId,
-        body.application_id ?? null,
-        body.job_id ?? null,
+        applicationId,
+        jobId,
         body.question,
-        body.answer ?? null,
+        answer,
         isBehavioral,
-        body.difficulty ?? null,
-        body.notes ?? null
+        difficulty,
+        notes
       )
       .first<InterviewQuestion>();
 
