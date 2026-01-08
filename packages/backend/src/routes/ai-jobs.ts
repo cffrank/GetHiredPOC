@@ -17,6 +17,15 @@ aiJobs.post('/:id/generate-resume', async (c) => {
 
     const jobId = c.req.param('id');
 
+    // Check if job is saved (application exists) - REQUIRED
+    const app = await c.env.DB.prepare(
+      'SELECT id FROM applications WHERE user_id = ? AND job_id = ?'
+    ).bind(user.id, jobId).first();
+
+    if (!app) {
+      return c.json({ error: 'Job must be saved before generating resume' }, 400);
+    }
+
     // Get job
     const job = await c.env.DB.prepare(
       'SELECT * FROM jobs WHERE id = ?'
@@ -29,18 +38,22 @@ aiJobs.post('/:id/generate-resume', async (c) => {
     // Generate tailored resume
     const resume = await generateTailoredResume(c.env, user, job);
 
-    // Save to application if one exists
-    const app = await c.env.DB.prepare(
-      'SELECT id FROM applications WHERE user_id = ? AND job_id = ?'
-    ).bind(user.id, jobId).first();
+    // Count existing resume versions to auto-generate version name
+    const existingCount = await c.env.DB.prepare(
+      'SELECT COUNT(*) as count FROM generated_resumes WHERE user_id = ? AND job_id = ?'
+    ).bind(user.id, jobId).first<{ count: number }>();
 
-    if (app) {
-      await c.env.DB.prepare(
-        'UPDATE applications SET resume_content = ? WHERE id = ?'
-      ).bind(JSON.stringify(resume), app.id).run();
-    }
+    const versionNumber = (existingCount?.count || 0) + 1;
+    const versionName = `Version ${versionNumber}`;
 
-    return c.json(resume);
+    // Store in generated_resumes table
+    const resumeId = crypto.randomUUID();
+    await c.env.DB.prepare(
+      `INSERT INTO generated_resumes (id, user_id, job_id, application_id, version_name, resume_data, created_at, updated_at)
+       VALUES (?, ?, ?, ?, ?, ?, unixepoch(), unixepoch())`
+    ).bind(resumeId, user.id, jobId, app.id, versionName, JSON.stringify(resume)).run();
+
+    return c.json({ resume, version_name: versionName, id: resumeId });
   } catch (error: any) {
     console.error('Generate resume error:', error);
     return c.json({ error: error.message }, 500);
@@ -57,6 +70,15 @@ aiJobs.post('/:id/generate-cover-letter', async (c) => {
 
     const jobId = c.req.param('id');
 
+    // Check if job is saved (application exists) - REQUIRED
+    const app = await c.env.DB.prepare(
+      'SELECT id FROM applications WHERE user_id = ? AND job_id = ?'
+    ).bind(user.id, jobId).first();
+
+    if (!app) {
+      return c.json({ error: 'Job must be saved before generating cover letter' }, 400);
+    }
+
     // Get job
     const job = await c.env.DB.prepare(
       'SELECT * FROM jobs WHERE id = ?'
@@ -69,18 +91,22 @@ aiJobs.post('/:id/generate-cover-letter', async (c) => {
     // Generate cover letter
     const coverLetter = await generateCoverLetter(c.env, user, job);
 
-    // Save to application if one exists
-    const app = await c.env.DB.prepare(
-      'SELECT id FROM applications WHERE user_id = ? AND job_id = ?'
-    ).bind(user.id, jobId).first();
+    // Count existing cover letter versions to auto-generate version name
+    const existingCount = await c.env.DB.prepare(
+      'SELECT COUNT(*) as count FROM generated_cover_letters WHERE user_id = ? AND job_id = ?'
+    ).bind(user.id, jobId).first<{ count: number }>();
 
-    if (app) {
-      await c.env.DB.prepare(
-        'UPDATE applications SET cover_letter = ? WHERE id = ?'
-      ).bind(coverLetter, app.id).run();
-    }
+    const versionNumber = (existingCount?.count || 0) + 1;
+    const versionName = `Version ${versionNumber}`;
 
-    return c.json({ coverLetter });
+    // Store in generated_cover_letters table
+    const coverLetterId = crypto.randomUUID();
+    await c.env.DB.prepare(
+      `INSERT INTO generated_cover_letters (id, user_id, job_id, application_id, version_name, cover_letter_text, created_at, updated_at)
+       VALUES (?, ?, ?, ?, ?, ?, unixepoch(), unixepoch())`
+    ).bind(coverLetterId, user.id, jobId, app.id, versionName, coverLetter).run();
+
+    return c.json({ coverLetter, version_name: versionName, id: coverLetterId });
   } catch (error: any) {
     console.error('Generate cover letter error:', error);
     return c.json({ error: error.message }, 500);
@@ -109,15 +135,23 @@ aiJobs.post('/:id/analyze-match', async (c) => {
     // Analyze match
     const match = await analyzeJobMatch(c.env, user, job);
 
-    // Save to application if one exists
-    const app = await c.env.DB.prepare(
+    // Create or update application with analysis
+    const existingApp = await c.env.DB.prepare(
       'SELECT id FROM applications WHERE user_id = ? AND job_id = ?'
     ).bind(user.id, jobId).first();
 
-    if (app) {
+    if (existingApp) {
+      // Update existing application
       await c.env.DB.prepare(
-        'UPDATE applications SET ai_match_score = ?, ai_analysis = ? WHERE id = ?'
-      ).bind(match.score, JSON.stringify({ strengths: match.strengths, gaps: match.gaps, recommendation: match.recommendation, tip: match.tip }), app.id).run();
+        'UPDATE applications SET ai_match_score = ?, ai_analysis = ?, updated_at = unixepoch() WHERE id = ?'
+      ).bind(match.score, JSON.stringify({ strengths: match.strengths, gaps: match.gaps, recommendation: match.recommendation, tip: match.tip }), existingApp.id).run();
+    } else {
+      // Create new application with analysis (not saved yet, just has analysis)
+      const appId = crypto.randomUUID();
+      await c.env.DB.prepare(
+        `INSERT INTO applications (id, user_id, job_id, status, ai_match_score, ai_analysis, created_at, updated_at)
+         VALUES (?, ?, ?, 'analyzing', ?, ?, unixepoch(), unixepoch())`
+      ).bind(appId, user.id, jobId, match.score, JSON.stringify({ strengths: match.strengths, gaps: match.gaps, recommendation: match.recommendation, tip: match.tip })).run();
     }
 
     return c.json(match);

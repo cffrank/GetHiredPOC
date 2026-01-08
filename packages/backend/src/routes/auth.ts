@@ -21,17 +21,42 @@ const auth = new Hono<{ Bindings: Env; Variables: Variables }>();
 auth.post('/signup', async (c) => {
   try {
     const body = await c.req.json();
-    const { email, password } = body;
+    const {
+      email,
+      password,
+      first_name,
+      last_name,
+      phone,
+      street_address,
+      city,
+      state,
+      zip_code
+    } = body;
 
-    if (!email || !password) {
-      return c.json({ error: "Email and password are required" }, 400);
+    // Basic validation (detailed validation happens in signup service)
+    if (!email || !password || !first_name || !last_name ||
+        !phone || !street_address || !city || !state || !zip_code) {
+      return c.json({
+        error: "All fields are required: email, password, first_name, last_name, phone, street_address, city, state, zip_code"
+      }, 400);
     }
 
-    const { user, sessionId } = await signup(c.env, email, password);
+    const { user, sessionId } = await signup(c.env, {
+      email,
+      password,
+      first_name,
+      last_name,
+      phone,
+      street_address,
+      city,
+      state,
+      zip_code
+    });
     const isProduction = c.env.FRONTEND_URL?.includes('pages.dev');
 
     // Send welcome email (non-blocking)
-    sendWelcomeEmail(c.env, user.email, user.full_name).catch(err =>
+    const fullName = `${user.first_name} ${user.last_name}`.trim();
+    sendWelcomeEmail(c.env, user.email, fullName).catch(err =>
       console.error('Failed to send welcome email:', err)
     );
 

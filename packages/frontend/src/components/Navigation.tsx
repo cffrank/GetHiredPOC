@@ -30,9 +30,6 @@ export function Navigation() {
                 <Link to="/applications" className="text-gray-700 hover:text-gray-900">
                   Applications
                 </Link>
-                <Link to="/resume" className="text-gray-700 hover:text-gray-900">
-                  Resume
-                </Link>
               </>
             )}
           </div>
@@ -53,9 +50,6 @@ export function Navigation() {
                     </Button>
                   </Link>
                 )}
-                <Link to="/settings">
-                  <Button variant="ghost">Settings</Button>
-                </Link>
                 <Link to="/profile" className="flex items-center space-x-2">
                   <Button variant="ghost" className="flex items-center space-x-2">
                     <span>{user.email}</span>

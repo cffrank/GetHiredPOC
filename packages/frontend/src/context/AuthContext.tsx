@@ -7,7 +7,17 @@ interface AuthContextType {
   user: User | null | undefined;
   isLoading: boolean;
   login: (email: string, password: string) => Promise<void>;
-  signup: (email: string, password: string) => Promise<void>;
+  signup: (
+    email: string,
+    password: string,
+    firstName: string,
+    lastName: string,
+    phone: string,
+    streetAddress: string,
+    city: string,
+    state: string,
+    zipCode: string
+  ) => Promise<void>;
   logout: () => Promise<void>;
 }
 
@@ -36,8 +46,28 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   });
 
   const signupMutation = useMutation({
-    mutationFn: ({ email, password }: { email: string; password: string }) =>
-      apiClient.signup(email, password),
+    mutationFn: (data: {
+      email: string;
+      password: string;
+      firstName: string;
+      lastName: string;
+      phone: string;
+      streetAddress: string;
+      city: string;
+      state: string;
+      zipCode: string;
+    }) =>
+      apiClient.signup(
+        data.email,
+        data.password,
+        data.firstName,
+        data.lastName,
+        data.phone,
+        data.streetAddress,
+        data.city,
+        data.state,
+        data.zipCode
+      ),
     onSuccess: (data) => {
       // Store sessionId in localStorage for Authorization header fallback
       if (data.sessionId) {
@@ -64,8 +94,28 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     login: async (email: string, password: string) => {
       await loginMutation.mutateAsync({ email, password });
     },
-    signup: async (email: string, password: string) => {
-      await signupMutation.mutateAsync({ email, password });
+    signup: async (
+      email: string,
+      password: string,
+      firstName: string,
+      lastName: string,
+      phone: string,
+      streetAddress: string,
+      city: string,
+      state: string,
+      zipCode: string
+    ) => {
+      await signupMutation.mutateAsync({
+        email,
+        password,
+        firstName,
+        lastName,
+        phone,
+        streetAddress,
+        city,
+        state,
+        zipCode,
+      });
     },
     logout: async () => {
       await logoutMutation.mutateAsync();

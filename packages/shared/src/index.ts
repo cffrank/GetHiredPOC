@@ -20,6 +20,15 @@ export type {
   ApplicationWithJob,
   AIAnalysis,
   ApplicationWithAnalysis,
+  // Generated content types
+  ResumeSection,
+  GeneratedResume,
+  GeneratedResumeWithData,
+  GeneratedCoverLetter,
+  GeneratedContentResponse,
+  CreateGeneratedResumeRequest,
+  CreateGeneratedCoverLetterRequest,
+  UpdateVersionNameRequest,
 } from './types/application';
 
 // Chat types
@@ -33,7 +42,19 @@ export type {
   SendChatMessageResponse,
   CreateConversationRequest,
   CreateConversationResponse,
+  // Navigation and filtering
+  NavigationAction,
+  JobFilters,
 } from './types/chat';
+
+// Interview Question types
+export type {
+  InterviewQuestion,
+  CreateInterviewQuestionRequest,
+  UpdateInterviewQuestionRequest,
+  InterviewQuestionsListResponse,
+  InterviewQuestionWithJob,
+} from './types/interview';
 
 // API types
 export type {

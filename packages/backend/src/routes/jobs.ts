@@ -518,4 +518,159 @@ jobs.delete('/:id/hide', async (c) => {
   }
 });
 
+// POST /api/jobs/advanced-search - Advanced multi-criteria search
+jobs.post('/advanced-search', async (c) => {
+  try {
+    const user = await getOptionalUser(c);
+    const body = await c.req.json();
+
+    const {
+      keywords = [],
+      locations = [],
+      salary_min,
+      salary_max,
+      experience_level = [],
+      remote, // 'remote' | 'hybrid' | 'onsite' | 'any'
+      required_skills = [],
+      job_type = [],
+      limit = 20
+    } = body;
+
+    // Validate limit
+    const maxResults = Math.min(limit || 20, 100);
+
+    let jobsList: any[] = [];
+    let whereConditions: string[] = [];
+    let params: any[] = [];
+
+    // Build SQL query conditions
+    // Keywords - search in title and description
+    if (keywords.length > 0) {
+      const keywordConditions = keywords.map(() => '(title LIKE ? OR description LIKE ?)');
+      whereConditions.push(`(${keywordConditions.join(' OR ')})`);
+      keywords.forEach((keyword: string) => {
+        params.push(`%${keyword}%`, `%${keyword}%`);
+      });
+    }
+
+    // Locations
+    if (locations.length > 0) {
+      const locationConditions = locations.map(() => 'location LIKE ?');
+      whereConditions.push(`(${locationConditions.join(' OR ')})`);
+      locations.forEach((loc: string) => {
+        params.push(`%${loc}%`);
+      });
+    }
+
+    // Salary range
+    if (salary_min !== undefined) {
+      whereConditions.push('salary_max >= ?');
+      params.push(salary_min);
+    }
+    if (salary_max !== undefined) {
+      whereConditions.push('salary_min <= ?');
+      params.push(salary_max);
+    }
+
+    // Remote work type
+    if (remote && remote !== 'any') {
+      if (remote === 'remote') {
+        whereConditions.push('remote = 1');
+      } else if (remote === 'hybrid') {
+        whereConditions.push('remote = 2');
+      } else if (remote === 'onsite') {
+        whereConditions.push('remote = 0');
+      }
+    }
+
+    // Experience level (search in title or description)
+    if (experience_level.length > 0) {
+      const expConditions = experience_level.map(() => '(title LIKE ? OR description LIKE ?)');
+      whereConditions.push(`(${expConditions.join(' OR ')})`);
+      experience_level.forEach((level: string) => {
+        params.push(`%${level}%`, `%${level}%`);
+      });
+    }
+
+    // Required skills (search in description or requirements)
+    if (required_skills.length > 0) {
+      const skillConditions = required_skills.map(() => '(description LIKE ? OR requirements LIKE ?)');
+      whereConditions.push(`(${skillConditions.join(' OR ')})`);
+      required_skills.forEach((skill: string) => {
+        params.push(`%${skill}%`, `%${skill}%`);
+      });
+    }
+
+    // Job type (full-time, contract, etc.) - search in description
+    if (job_type.length > 0) {
+      const typeConditions = job_type.map(() => 'description LIKE ?');
+      whereConditions.push(`(${typeConditions.join(' OR ')})`);
+      job_type.forEach((type: string) => {
+        params.push(`%${type}%`);
+      });
+    }
+
+    // Exclude hidden jobs if user is logged in
+    if (user) {
+      whereConditions.push(`id NOT IN (SELECT job_id FROM hidden_jobs WHERE user_id = ?)`);
+      params.push(user.id);
+    }
+
+    // Build final query
+    let query = 'SELECT * FROM jobs';
+    if (whereConditions.length > 0) {
+      query += ` WHERE ${whereConditions.join(' AND ')}`;
+    }
+    query += ' ORDER BY created_at DESC LIMIT ?';
+    params.push(maxResults);
+
+    console.log('[Advanced Search] Query:', query);
+    console.log('[Advanced Search] Params:', params);
+
+    const result = await c.env.DB.prepare(query).bind(...params).all();
+    jobsList = result.results || [];
+
+    // Try to enhance with vector search if we have keywords
+    if (keywords.length > 0 && jobsList.length > 0) {
+      try {
+        const { generateEmbedding } = await import('../services/embedding.service');
+        const { searchSimilarJobs } = await import('../services/vector.service');
+
+        // Generate embedding for first keyword (most important)
+        const queryEmbedding = await generateEmbedding(c.env, keywords[0]);
+
+        // Get job IDs from current results
+        const jobIds = jobsList.map(j => j.id);
+
+        // Search vector DB for these specific jobs
+        const vectorResults = await searchSimilarJobs(c.env, queryEmbedding, 1000);
+
+        // Add similarity scores to matching jobs
+        jobsList = jobsList.map((job: any) => {
+          const match = vectorResults.find(v => v.id === job.id);
+          return {
+            ...job,
+            relevance_score: match ? Math.round(match.score * 100) : 0
+          };
+        });
+
+        // Sort by relevance score if available
+        jobsList.sort((a, b) => (b.relevance_score || 0) - (a.relevance_score || 0));
+      } catch (error: any) {
+        console.error('[Advanced Search] Vector enhancement error:', error.message);
+        // Continue without vector enhancement
+      }
+    }
+
+    return c.json({
+      jobs: jobsList,
+      count: jobsList.length,
+      filters: body
+    }, 200);
+  } catch (error: any) {
+    console.error('[Advanced Search] Error:', error);
+    return c.json({ error: error.message }, 500);
+  }
+});
+
 export default jobs;
