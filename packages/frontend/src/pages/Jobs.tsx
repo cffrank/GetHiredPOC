@@ -23,7 +23,7 @@ export default function Jobs() {
   const [title, setTitle] = useState('');
   const [remote, setRemote] = useState<boolean | undefined>();
   const [locationFilter, setLocationFilter] = useState('');
-  const [showAdvancedFilters, setShowAdvancedFilters] = useState(false);
+  const [showAdvancedFilters, setShowAdvancedFilters] = useState(true); // Default to open for AI-first experience
   const [advancedSearchActive, setAdvancedSearchActive] = useState(false);
   const [advancedSearchLoading, setAdvancedSearchLoading] = useState(false);
   const [advancedSearchResults, setAdvancedSearchResults] = useState<any[]>([]);

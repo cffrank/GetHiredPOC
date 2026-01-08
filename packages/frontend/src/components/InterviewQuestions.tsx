@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { apiClient } from '../lib/api-client';
 import { Button } from './ui/Button';
+import { Button3D } from './ui/Button3D';
 import { Input } from './ui/Input';
 import { Label } from './ui/Label';
 import { Card, CardContent, CardHeader, CardTitle } from './ui/Card';
@@ -111,16 +112,21 @@ export function InterviewQuestions() {
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
-          <h2 className="text-2xl font-bold">Interview Questions</h2>
-          <p className="text-gray-600 text-sm mt-1">
+          <h2 className="text-3xl font-extrabold bg-gradient-to-r from-violet to-purple-600 bg-clip-text text-transparent">
+            Interview Questions 💬
+          </h2>
+          <p className="text-gray-600 text-base mt-2">
             Prepare for interviews with common questions and your answers
           </p>
         </div>
         {!showForm && (
-          <Button onClick={() => setShowForm(true)} className="flex items-center gap-2">
-            <Plus className="w-4 h-4" />
+          <Button3D
+            onClick={() => setShowForm(true)}
+            icon={<Plus className="w-5 h-5" />}
+            variant="primary"
+          >
             Add Question
-          </Button>
+          </Button3D>
         )}
       </div>
 

@@ -76,7 +76,7 @@ jobs.get('/', async (c) => {
         if (jobIds.length > 0) {
           // Fetch full job details
           const placeholders = jobIds.map(() => '?').join(',');
-          let dbQuery = `SELECT * FROM jobs WHERE id IN (${placeholders})`;
+          let dbQuery = `SELECT * FROM jobs WHERE id IN (${placeholders}) AND (is_complete = 1 OR (description IS NOT NULL AND description != ''))`;
           const params: any[] = [...jobIds];
 
           // Apply location filter if provided
@@ -149,7 +149,7 @@ jobs.get('/', async (c) => {
 
               // Fetch full job details
               const placeholders = jobIds.map(() => '?').join(',');
-              let dbQuery = `SELECT * FROM jobs WHERE id IN (${placeholders})`;
+              let dbQuery = `SELECT * FROM jobs WHERE id IN (${placeholders}) AND (is_complete = 1 OR (description IS NOT NULL AND description != ''))`;
               const params: any[] = [...jobIds];
 
               // Apply location filter if provided
@@ -372,7 +372,7 @@ jobs.get('/:id/similar', async (c) => {
 
     const placeholders = jobIds.map(() => '?').join(',');
     const jobs = await c.env.DB.prepare(
-      `SELECT * FROM jobs WHERE id IN (${placeholders})`
+      `SELECT * FROM jobs WHERE id IN (${placeholders}) AND (is_complete = 1 OR (description IS NOT NULL AND description != ''))`
     )
       .bind(...jobIds)
       .all();
@@ -617,9 +617,9 @@ jobs.post('/advanced-search', async (c) => {
     }
 
     // Build final query
-    let query = 'SELECT * FROM jobs';
+    let query = 'SELECT * FROM jobs WHERE (is_complete = 1 OR (description IS NOT NULL AND description != \'\'))';
     if (whereConditions.length > 0) {
-      query += ` WHERE ${whereConditions.join(' AND ')}`;
+      query += ` AND ${whereConditions.join(' AND ')}`;
     }
     query += ' ORDER BY created_at DESC LIMIT ?';
     params.push(maxResults);

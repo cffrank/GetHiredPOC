@@ -45,7 +45,7 @@ export async function getJobs(
     userId?: string;
   }
 ): Promise<Job[]> {
-  let query = "SELECT * FROM jobs WHERE 1=1";
+  let query = "SELECT * FROM jobs WHERE 1=1 AND (is_complete = 1 OR (description IS NOT NULL AND description != ''))";
   const params: any[] = [];
 
   if (filters?.title) {
