@@ -24,7 +24,7 @@ export default function Signup() {
 
     try {
       await signup(email, password);
-      navigate('/profile');
+      navigate('/chat');
     } catch (err: any) {
       setError(err.message || 'Signup failed');
     } finally {

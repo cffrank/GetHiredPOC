@@ -1,4 +1,5 @@
 import OpenAI from 'openai';
+import Anthropic from '@anthropic-ai/sdk';
 import type { Env } from './db.service';
 import type {
   ChatMessage,
@@ -7,8 +8,22 @@ import type {
   ToolCall,
   ToolResult
 } from '@gethiredpoc/shared';
-import { getJobs, saveJob, getJobById } from './db.service';
-import { createApplication } from './db.service';
+import {
+  getJobs,
+  saveJob,
+  unsaveJob,
+  getJobById,
+  getSavedJobs,
+  createApplication,
+  getApplications,
+  updateApplication
+} from './db.service';
+import { generateTailoredResume } from './ai-resume.service';
+import { generateCoverLetter } from './ai-cover-letter.service';
+import { analyzeJobMatch } from './job-matching.service';
+
+// AI Provider types
+type AIProvider = 'openai' | 'anthropic';
 
 // OpenAI API message types
 interface OpenAIMessage {
@@ -212,13 +227,396 @@ const TOOL_DEFINITIONS = [
         required: ['job_text']
       }
     }
+  },
+  {
+    type: 'function',
+    function: {
+      name: 'generate_resume',
+      description: 'Generate a tailored resume optimized for a specific job posting. Uses AI to highlight relevant skills and experience.',
+      parameters: {
+        type: 'object',
+        properties: {
+          job_id: {
+            type: 'string',
+            description: 'The job ID to tailor the resume for'
+          }
+        },
+        required: ['job_id']
+      }
+    }
+  },
+  {
+    type: 'function',
+    function: {
+      name: 'generate_cover_letter',
+      description: 'Generate a personalized cover letter for a specific job posting.',
+      parameters: {
+        type: 'object',
+        properties: {
+          job_id: {
+            type: 'string',
+            description: 'The job ID to write the cover letter for'
+          }
+        },
+        required: ['job_id']
+      }
+    }
+  },
+  {
+    type: 'function',
+    function: {
+      name: 'analyze_job_match',
+      description: 'Analyze how well the user\'s profile matches a job posting. Returns match score, strengths, and gaps/areas to improve.',
+      parameters: {
+        type: 'object',
+        properties: {
+          job_id: {
+            type: 'string',
+            description: 'The job ID to analyze match for'
+          }
+        },
+        required: ['job_id']
+      }
+    }
+  },
+  {
+    type: 'function',
+    function: {
+      name: 'get_saved_jobs',
+      description: 'Get all jobs the user has bookmarked/saved for later review.',
+      parameters: {
+        type: 'object',
+        properties: {}
+      }
+    }
+  },
+  {
+    type: 'function',
+    function: {
+      name: 'unsave_job',
+      description: 'Remove a job from the user\'s saved/bookmarked jobs.',
+      parameters: {
+        type: 'object',
+        properties: {
+          job_id: {
+            type: 'string',
+            description: 'The job ID to unsave'
+          }
+        },
+        required: ['job_id']
+      }
+    }
+  },
+  {
+    type: 'function',
+    function: {
+      name: 'get_applications',
+      description: 'Get all job applications the user has submitted or is tracking.',
+      parameters: {
+        type: 'object',
+        properties: {
+          status: {
+            type: 'string',
+            enum: ['saved', 'applied', 'interviewing', 'offered', 'rejected'],
+            description: 'Filter by application status (optional)'
+          }
+        }
+      }
+    }
+  },
+  {
+    type: 'function',
+    function: {
+      name: 'update_application_status',
+      description: 'Update the status of a job application (e.g., mark as applied, interviewing, offered, rejected).',
+      parameters: {
+        type: 'object',
+        properties: {
+          application_id: {
+            type: 'string',
+            description: 'The application ID to update'
+          },
+          status: {
+            type: 'string',
+            enum: ['saved', 'applied', 'interviewing', 'offered', 'rejected'],
+            description: 'The new status'
+          },
+          notes: {
+            type: 'string',
+            description: 'Optional notes about the application'
+          }
+        },
+        required: ['application_id', 'status']
+      }
+    }
+  },
+  {
+    type: 'function',
+    function: {
+      name: 'get_job_details',
+      description: 'Get full details about a specific job posting including description, requirements, salary, etc.',
+      parameters: {
+        type: 'object',
+        properties: {
+          job_id: {
+            type: 'string',
+            description: 'The job ID to get details for'
+          }
+        },
+        required: ['job_id']
+      }
+    }
+  },
+  {
+    type: 'function',
+    function: {
+      name: 'get_work_experience',
+      description: 'Get the user\'s work experience history.',
+      parameters: {
+        type: 'object',
+        properties: {}
+      }
+    }
+  },
+  {
+    type: 'function',
+    function: {
+      name: 'add_work_experience',
+      description: 'Add a new work experience entry to the user\'s profile.',
+      parameters: {
+        type: 'object',
+        properties: {
+          company: {
+            type: 'string',
+            description: 'Company name'
+          },
+          title: {
+            type: 'string',
+            description: 'Job title'
+          },
+          location: {
+            type: 'string',
+            description: 'Work location'
+          },
+          start_date: {
+            type: 'string',
+            description: 'Start date (YYYY-MM-DD format)'
+          },
+          end_date: {
+            type: 'string',
+            description: 'End date (YYYY-MM-DD format, or null if current job)'
+          },
+          description: {
+            type: 'string',
+            description: 'Description of responsibilities and achievements'
+          }
+        },
+        required: ['company', 'title', 'start_date']
+      }
+    }
+  },
+  {
+    type: 'function',
+    function: {
+      name: 'update_work_experience',
+      description: 'Update an existing work experience entry.',
+      parameters: {
+        type: 'object',
+        properties: {
+          experience_id: {
+            type: 'string',
+            description: 'The work experience ID to update'
+          },
+          company: {
+            type: 'string',
+            description: 'Company name'
+          },
+          title: {
+            type: 'string',
+            description: 'Job title'
+          },
+          location: {
+            type: 'string',
+            description: 'Work location'
+          },
+          start_date: {
+            type: 'string',
+            description: 'Start date (YYYY-MM-DD format)'
+          },
+          end_date: {
+            type: 'string',
+            description: 'End date (YYYY-MM-DD format, or null if current job)'
+          },
+          description: {
+            type: 'string',
+            description: 'Description of responsibilities and achievements'
+          }
+        },
+        required: ['experience_id']
+      }
+    }
+  },
+  {
+    type: 'function',
+    function: {
+      name: 'delete_work_experience',
+      description: 'Delete a work experience entry from the user\'s profile.',
+      parameters: {
+        type: 'object',
+        properties: {
+          experience_id: {
+            type: 'string',
+            description: 'The work experience ID to delete'
+          }
+        },
+        required: ['experience_id']
+      }
+    }
+  },
+  {
+    type: 'function',
+    function: {
+      name: 'get_education',
+      description: 'Get the user\'s education history.',
+      parameters: {
+        type: 'object',
+        properties: {}
+      }
+    }
+  },
+  {
+    type: 'function',
+    function: {
+      name: 'add_education',
+      description: 'Add a new education entry to the user\'s profile.',
+      parameters: {
+        type: 'object',
+        properties: {
+          school: {
+            type: 'string',
+            description: 'School/University name'
+          },
+          degree: {
+            type: 'string',
+            description: 'Degree type (e.g., Bachelor\'s, Master\'s, PhD)'
+          },
+          field_of_study: {
+            type: 'string',
+            description: 'Field of study/major'
+          },
+          start_date: {
+            type: 'string',
+            description: 'Start date (YYYY-MM-DD format)'
+          },
+          end_date: {
+            type: 'string',
+            description: 'End/graduation date (YYYY-MM-DD format)'
+          },
+          gpa: {
+            type: 'number',
+            description: 'GPA (optional)'
+          }
+        },
+        required: ['school', 'degree', 'field_of_study']
+      }
+    }
+  },
+  {
+    type: 'function',
+    function: {
+      name: 'update_education',
+      description: 'Update an existing education entry.',
+      parameters: {
+        type: 'object',
+        properties: {
+          education_id: {
+            type: 'string',
+            description: 'The education ID to update'
+          },
+          school: {
+            type: 'string',
+            description: 'School/University name'
+          },
+          degree: {
+            type: 'string',
+            description: 'Degree type'
+          },
+          field_of_study: {
+            type: 'string',
+            description: 'Field of study/major'
+          },
+          start_date: {
+            type: 'string',
+            description: 'Start date (YYYY-MM-DD format)'
+          },
+          end_date: {
+            type: 'string',
+            description: 'End/graduation date (YYYY-MM-DD format)'
+          },
+          gpa: {
+            type: 'number',
+            description: 'GPA (optional)'
+          }
+        },
+        required: ['education_id']
+      }
+    }
+  },
+  {
+    type: 'function',
+    function: {
+      name: 'delete_education',
+      description: 'Delete an education entry from the user\'s profile.',
+      parameters: {
+        type: 'object',
+        properties: {
+          education_id: {
+            type: 'string',
+            description: 'The education ID to delete'
+          }
+        },
+        required: ['education_id']
+      }
+    }
   }
 ];
 
-// Simple system prompt - GPT-4o-mini handles tool calling natively
-const SYSTEM_PROMPT = `You are a helpful job search assistant. You help users find jobs, manage their profile, update preferences, and apply to positions.
+// Enhanced system prompt for chat-first experience
+const SYSTEM_PROMPT = `You are GetHired AI, an intelligent job search assistant. You are the primary interface for users to interact with the GetHired platform. You can help with ALL job search activities:
 
-Be conversational and helpful. Use the available tools when needed to help users accomplish their goals. When you receive tool results, explain them clearly to the user.`;
+**Job Search & Discovery:**
+- Search for jobs by title, location, or keywords
+- Get detailed information about specific jobs
+- Save/bookmark jobs for later review
+- Remove saved jobs
+
+**Profile & Experience Management:**
+- View and update user profile (name, bio, location, skills)
+- Manage work experience (add, update, delete entries)
+- Manage education history (add, update, delete entries)
+- Set and update job search preferences
+
+**Application Management:**
+- Create job applications
+- Track application status (saved, applied, interviewing, offered, rejected)
+- View all applications and their current status
+- Add notes to applications
+
+**AI-Powered Features:**
+- Generate tailored resumes optimized for specific jobs
+- Write personalized cover letters
+- Analyze job match scores with strengths and gaps
+- Parse job posting text to extract key information
+
+**Guidelines:**
+- Be conversational, helpful, and proactive in offering assistance
+- When showing job results, always include the job ID so users can reference it
+- When a user asks about their qualifications for a job, use analyze_job_match to provide detailed insights
+- Suggest next steps after completing actions (e.g., after saving a job, offer to generate a resume or cover letter)
+- If a user's profile is incomplete, gently suggest they add work experience or skills to get better job matches
+- Present information clearly with key details highlighted
+
+When you receive tool results, summarize them clearly for the user. If showing multiple items (like jobs or applications), format them as a numbered list for easy reference.`;
 
 // Execute a tool call
 async function executeTool(
@@ -452,6 +850,366 @@ ${toolInput.job_text}`;
         return aiResponse.response || JSON.stringify({ error: 'Failed to parse job posting' });
       }
 
+      case 'generate_resume': {
+        const job = await getJobById(env, toolInput.job_id);
+        if (!job) {
+          return JSON.stringify({ error: 'Job not found' });
+        }
+
+        const user = await env.DB.prepare('SELECT * FROM users WHERE id = ?')
+          .bind(userId)
+          .first();
+
+        if (!user) {
+          return JSON.stringify({ error: 'User not found' });
+        }
+
+        const resume = await generateTailoredResume(env, user, job);
+
+        return JSON.stringify({
+          success: true,
+          message: `Generated tailored resume for ${job.title} at ${job.company}`,
+          resume: {
+            summary: resume.summary,
+            experience: resume.experience,
+            skills: resume.skills,
+            education: resume.education
+          }
+        });
+      }
+
+      case 'generate_cover_letter': {
+        const job = await getJobById(env, toolInput.job_id);
+        if (!job) {
+          return JSON.stringify({ error: 'Job not found' });
+        }
+
+        const user = await env.DB.prepare('SELECT * FROM users WHERE id = ?')
+          .bind(userId)
+          .first();
+
+        if (!user) {
+          return JSON.stringify({ error: 'User not found' });
+        }
+
+        const coverLetter = await generateCoverLetter(env, user, job);
+
+        return JSON.stringify({
+          success: true,
+          message: `Generated cover letter for ${job.title} at ${job.company}`,
+          cover_letter: coverLetter
+        });
+      }
+
+      case 'analyze_job_match': {
+        const job = await getJobById(env, toolInput.job_id);
+        if (!job) {
+          return JSON.stringify({ error: 'Job not found' });
+        }
+
+        const user = await env.DB.prepare('SELECT * FROM users WHERE id = ?')
+          .bind(userId)
+          .first();
+
+        if (!user) {
+          return JSON.stringify({ error: 'User not found' });
+        }
+
+        const match = await analyzeJobMatch(env, user, job);
+
+        return JSON.stringify({
+          success: true,
+          job_title: job.title,
+          company: job.company,
+          match_score: match.score,
+          recommendation: match.recommendation,
+          strengths: match.strengths,
+          gaps: match.gaps,
+          tip: match.tip
+        });
+      }
+
+      case 'get_saved_jobs': {
+        const savedJobs = await getSavedJobs(env, userId);
+
+        const results = savedJobs.map(job => ({
+          id: job.id,
+          title: job.title,
+          company: job.company,
+          location: job.location,
+          remote: job.remote,
+          salary: job.salary_min && job.salary_max
+            ? `$${job.salary_min.toLocaleString()} - $${job.salary_max.toLocaleString()}`
+            : 'Not specified',
+          posted_date: job.posted_date
+        }));
+
+        return JSON.stringify({
+          count: savedJobs.length,
+          saved_jobs: results
+        });
+      }
+
+      case 'unsave_job': {
+        const job = await getJobById(env, toolInput.job_id);
+        await unsaveJob(env, userId, toolInput.job_id);
+
+        return JSON.stringify({
+          success: true,
+          message: `Removed ${job?.title} at ${job?.company} from saved jobs`
+        });
+      }
+
+      case 'get_applications': {
+        const applications = await getApplications(env, userId);
+
+        // Filter by status if provided
+        let filtered = applications;
+        if (toolInput.status) {
+          filtered = applications.filter(app => app.status === toolInput.status);
+        }
+
+        const results = filtered.map(app => ({
+          id: app.id,
+          job_id: app.job_id,
+          job_title: app.job?.title,
+          company: app.job?.company,
+          status: app.status,
+          notes: app.notes,
+          ai_match_score: app.ai_match_score,
+          applied_date: app.applied_date,
+          created_at: app.created_at
+        }));
+
+        return JSON.stringify({
+          count: results.length,
+          applications: results
+        });
+      }
+
+      case 'update_application_status': {
+        await updateApplication(env, toolInput.application_id, {
+          status: toolInput.status,
+          notes: toolInput.notes
+        });
+
+        return JSON.stringify({
+          success: true,
+          message: `Application status updated to "${toolInput.status}"`
+        });
+      }
+
+      case 'get_job_details': {
+        const job = await getJobById(env, toolInput.job_id);
+        if (!job) {
+          return JSON.stringify({ error: 'Job not found' });
+        }
+
+        return JSON.stringify({
+          id: job.id,
+          title: job.title,
+          company: job.company,
+          location: job.location,
+          remote: job.remote,
+          description: job.description,
+          requirements: job.requirements,
+          salary_min: job.salary_min,
+          salary_max: job.salary_max,
+          salary: job.salary_min && job.salary_max
+            ? `$${job.salary_min.toLocaleString()} - $${job.salary_max.toLocaleString()}`
+            : 'Not specified',
+          posted_date: job.posted_date,
+          url: job.url,
+          source: job.source
+        });
+      }
+
+      case 'get_work_experience': {
+        const experience = await env.DB.prepare(`
+          SELECT id, company, title, location, start_date, end_date, description
+          FROM work_experience
+          WHERE user_id = ?
+          ORDER BY start_date DESC
+        `).bind(userId).all();
+
+        return JSON.stringify({
+          count: experience.results?.length || 0,
+          work_experience: experience.results || []
+        });
+      }
+
+      case 'add_work_experience': {
+        const result = await env.DB.prepare(`
+          INSERT INTO work_experience (user_id, company, title, location, start_date, end_date, description)
+          VALUES (?, ?, ?, ?, ?, ?, ?)
+          RETURNING *
+        `).bind(
+          userId,
+          toolInput.company,
+          toolInput.title,
+          toolInput.location || null,
+          toolInput.start_date,
+          toolInput.end_date || null,
+          toolInput.description || null
+        ).first();
+
+        return JSON.stringify({
+          success: true,
+          message: `Added work experience: ${toolInput.title} at ${toolInput.company}`,
+          experience_id: result?.id
+        });
+      }
+
+      case 'update_work_experience': {
+        const fields: string[] = [];
+        const params: any[] = [];
+
+        if (toolInput.company) {
+          fields.push('company = ?');
+          params.push(toolInput.company);
+        }
+        if (toolInput.title) {
+          fields.push('title = ?');
+          params.push(toolInput.title);
+        }
+        if (toolInput.location !== undefined) {
+          fields.push('location = ?');
+          params.push(toolInput.location);
+        }
+        if (toolInput.start_date) {
+          fields.push('start_date = ?');
+          params.push(toolInput.start_date);
+        }
+        if (toolInput.end_date !== undefined) {
+          fields.push('end_date = ?');
+          params.push(toolInput.end_date);
+        }
+        if (toolInput.description !== undefined) {
+          fields.push('description = ?');
+          params.push(toolInput.description);
+        }
+
+        if (fields.length === 0) {
+          return JSON.stringify({ error: 'No fields to update' });
+        }
+
+        fields.push('updated_at = unixepoch()');
+        params.push(toolInput.experience_id, userId);
+
+        await env.DB.prepare(
+          `UPDATE work_experience SET ${fields.join(', ')} WHERE id = ? AND user_id = ?`
+        ).bind(...params).run();
+
+        return JSON.stringify({
+          success: true,
+          message: 'Work experience updated successfully'
+        });
+      }
+
+      case 'delete_work_experience': {
+        await env.DB.prepare(
+          'DELETE FROM work_experience WHERE id = ? AND user_id = ?'
+        ).bind(toolInput.experience_id, userId).run();
+
+        return JSON.stringify({
+          success: true,
+          message: 'Work experience deleted successfully'
+        });
+      }
+
+      case 'get_education': {
+        const education = await env.DB.prepare(`
+          SELECT id, school, degree, field_of_study, start_date, end_date, gpa
+          FROM education
+          WHERE user_id = ?
+          ORDER BY start_date DESC
+        `).bind(userId).all();
+
+        return JSON.stringify({
+          count: education.results?.length || 0,
+          education: education.results || []
+        });
+      }
+
+      case 'add_education': {
+        const result = await env.DB.prepare(`
+          INSERT INTO education (user_id, school, degree, field_of_study, start_date, end_date, gpa)
+          VALUES (?, ?, ?, ?, ?, ?, ?)
+          RETURNING *
+        `).bind(
+          userId,
+          toolInput.school,
+          toolInput.degree,
+          toolInput.field_of_study,
+          toolInput.start_date || null,
+          toolInput.end_date || null,
+          toolInput.gpa || null
+        ).first();
+
+        return JSON.stringify({
+          success: true,
+          message: `Added education: ${toolInput.degree} in ${toolInput.field_of_study} from ${toolInput.school}`,
+          education_id: result?.id
+        });
+      }
+
+      case 'update_education': {
+        const fields: string[] = [];
+        const params: any[] = [];
+
+        if (toolInput.school) {
+          fields.push('school = ?');
+          params.push(toolInput.school);
+        }
+        if (toolInput.degree) {
+          fields.push('degree = ?');
+          params.push(toolInput.degree);
+        }
+        if (toolInput.field_of_study) {
+          fields.push('field_of_study = ?');
+          params.push(toolInput.field_of_study);
+        }
+        if (toolInput.start_date !== undefined) {
+          fields.push('start_date = ?');
+          params.push(toolInput.start_date);
+        }
+        if (toolInput.end_date !== undefined) {
+          fields.push('end_date = ?');
+          params.push(toolInput.end_date);
+        }
+        if (toolInput.gpa !== undefined) {
+          fields.push('gpa = ?');
+          params.push(toolInput.gpa);
+        }
+
+        if (fields.length === 0) {
+          return JSON.stringify({ error: 'No fields to update' });
+        }
+
+        fields.push('updated_at = unixepoch()');
+        params.push(toolInput.education_id, userId);
+
+        await env.DB.prepare(
+          `UPDATE education SET ${fields.join(', ')} WHERE id = ? AND user_id = ?`
+        ).bind(...params).run();
+
+        return JSON.stringify({
+          success: true,
+          message: 'Education updated successfully'
+        });
+      }
+
+      case 'delete_education': {
+        await env.DB.prepare(
+          'DELETE FROM education WHERE id = ? AND user_id = ?'
+        ).bind(toolInput.education_id, userId).run();
+
+        return JSON.stringify({
+          success: true,
+          message: 'Education deleted successfully'
+        });
+      }
+
       default:
         return JSON.stringify({ error: `Unknown tool: ${toolName}` });
     }
@@ -459,6 +1217,203 @@ ${toolInput.job_text}`;
     console.error(`Error executing tool ${toolName}:`, error);
     return JSON.stringify({ error: error.message || 'Tool execution failed' });
   }
+}
+
+// Convert OpenAI tool definitions to Anthropic format
+function convertToAnthropicTools(openaiTools: typeof TOOL_DEFINITIONS): Anthropic.Tool[] {
+  return openaiTools.map(tool => ({
+    name: tool.function.name,
+    description: tool.function.description,
+    input_schema: tool.function.parameters as Anthropic.Tool.InputSchema
+  }));
+}
+
+// OpenAI-specific chat completion
+async function chatWithOpenAI(
+  env: Env,
+  messages: OpenAIMessage[],
+  userId: string
+): Promise<{ content: string; toolCalls: ToolCall[] }> {
+  const accountId = env.CLOUDFLARE_ACCOUNT_ID;
+  const gatewayId = 'jobmatch-ai-gateway-dev';
+  const modelName = 'openai/gpt-4o-mini';
+
+  const openai = new OpenAI({
+    apiKey: env.OPENAI_API_KEY,
+    baseURL: `https://gateway.ai.cloudflare.com/v1/${accountId}/${gatewayId}/compat`,
+    defaultHeaders: {
+      'cf-aig-authorization': `Bearer ${env.AI_GATEWAY_TOKEN}`,
+    },
+  });
+
+  let toolCalls: ToolCall[] = [];
+  let finalContent = '';
+  let iterations = 0;
+  const MAX_ITERATIONS = 5;
+
+  while (iterations < MAX_ITERATIONS) {
+    iterations++;
+
+    console.log(`[Chat-OpenAI] Iteration ${iterations}`);
+
+    const response = await openai.chat.completions.create({
+      model: modelName,
+      messages: messages as any,
+      tools: TOOL_DEFINITIONS as any,
+      max_tokens: 2048,
+      temperature: 0.7,
+    });
+
+    const aiMessage = response.choices[0].message;
+    const aiContent = aiMessage.content || '';
+    const aiToolCalls = aiMessage.tool_calls || [];
+
+    if (aiToolCalls && aiToolCalls.length > 0) {
+      console.log(`[Chat-OpenAI] Detected ${aiToolCalls.length} tool calls`);
+
+      messages.push({
+        role: 'assistant',
+        content: aiContent,
+        tool_calls: aiToolCalls
+      });
+
+      for (const toolCall of aiToolCalls) {
+        const toolName = toolCall.function.name;
+        const toolArgs = JSON.parse(toolCall.function.arguments);
+
+        console.log(`[Chat-OpenAI] Executing tool: ${toolName}`);
+
+        const result = await executeTool(env, userId, toolName, toolArgs);
+
+        toolCalls.push({
+          id: toolCall.id,
+          type: 'function',
+          function: {
+            name: toolName,
+            arguments: toolCall.function.arguments
+          }
+        });
+
+        messages.push({
+          role: 'tool',
+          tool_call_id: toolCall.id,
+          content: result
+        } as any);
+      }
+
+      continue;
+    }
+
+    finalContent = aiContent.trim();
+    break;
+  }
+
+  return { content: finalContent, toolCalls };
+}
+
+// Anthropic (Claude)-specific chat completion
+async function chatWithAnthropic(
+  env: Env,
+  conversationHistory: Array<{ role: 'user' | 'assistant'; content: string }>,
+  userId: string
+): Promise<{ content: string; toolCalls: ToolCall[] }> {
+  const anthropic = new Anthropic({
+    apiKey: env.ANTHROPIC_API_KEY,
+  });
+
+  let toolCalls: ToolCall[] = [];
+  let finalContent = '';
+  let iterations = 0;
+  const MAX_ITERATIONS = 5;
+
+  // Convert to Anthropic message format
+  const messages: Anthropic.MessageParam[] = conversationHistory.map(msg => ({
+    role: msg.role,
+    content: msg.content
+  }));
+
+  const anthropicTools = convertToAnthropicTools(TOOL_DEFINITIONS);
+
+  while (iterations < MAX_ITERATIONS) {
+    iterations++;
+
+    console.log(`[Chat-Anthropic] Iteration ${iterations}`);
+
+    const response = await anthropic.messages.create({
+      model: 'claude-sonnet-4-20250514',
+      max_tokens: 2048,
+      system: SYSTEM_PROMPT,
+      tools: anthropicTools,
+      messages: messages,
+    });
+
+    console.log(`[Chat-Anthropic] Stop reason: ${response.stop_reason}`);
+
+    // Process response content
+    let textContent = '';
+    const toolUseBlocks: Array<{ id: string; name: string; input: any }> = [];
+
+    for (const block of response.content) {
+      if (block.type === 'text') {
+        textContent += block.text;
+      } else if (block.type === 'tool_use') {
+        toolUseBlocks.push({
+          id: block.id,
+          name: block.name,
+          input: block.input
+        });
+      }
+    }
+
+    // If there are tool calls, execute them
+    if (toolUseBlocks.length > 0) {
+      console.log(`[Chat-Anthropic] Detected ${toolUseBlocks.length} tool calls`);
+
+      // Add assistant message with tool use
+      messages.push({
+        role: 'assistant',
+        content: response.content
+      });
+
+      // Execute tools and build tool results
+      const toolResults: Anthropic.ToolResultBlockParam[] = [];
+
+      for (const toolUse of toolUseBlocks) {
+        console.log(`[Chat-Anthropic] Executing tool: ${toolUse.name}`);
+
+        const result = await executeTool(env, userId, toolUse.name, toolUse.input);
+
+        toolCalls.push({
+          id: toolUse.id,
+          type: 'function',
+          function: {
+            name: toolUse.name,
+            arguments: JSON.stringify(toolUse.input)
+          }
+        });
+
+        toolResults.push({
+          type: 'tool_result',
+          tool_use_id: toolUse.id,
+          content: result
+        });
+      }
+
+      // Add tool results as user message
+      messages.push({
+        role: 'user',
+        content: toolResults
+      });
+
+      continue;
+    }
+
+    // No tool calls, we have the final response
+    finalContent = textContent.trim();
+    break;
+  }
+
+  return { content: finalContent, toolCalls };
 }
 
 // Send a chat message and get AI response
@@ -502,133 +1457,68 @@ export async function sendChatMessage(
     .bind(convId)
     .all<ChatMessage>();
 
-  // Build messages array in OpenAI format (reverse to get chronological order)
-  const messages: OpenAIMessage[] = [
-    { role: 'system', content: SYSTEM_PROMPT }
-  ];
+  // Determine which AI provider to use
+  const provider: AIProvider = (env.AI_PROVIDER as AIProvider) || 'openai';
+  console.log(`[Chat] Using AI provider: ${provider}`);
 
-  // Add conversation history in chronological order
+  // Validate environment variables based on provider
+  if (provider === 'anthropic') {
+    if (!env.ANTHROPIC_API_KEY) {
+      throw new Error('ANTHROPIC_API_KEY not configured. Please run: npx wrangler secret put ANTHROPIC_API_KEY');
+    }
+  } else {
+    // OpenAI provider
+    if (!env.CLOUDFLARE_ACCOUNT_ID) {
+      throw new Error('CLOUDFLARE_ACCOUNT_ID not configured');
+    }
+    if (!env.AI_GATEWAY_TOKEN) {
+      throw new Error('AI_GATEWAY_TOKEN not configured. Please run: npx wrangler secret put AI_GATEWAY_TOKEN');
+    }
+    if (!env.OPENAI_API_KEY) {
+      throw new Error('OPENAI_API_KEY not configured. Please run: npx wrangler secret put OPENAI_API_KEY');
+    }
+  }
+
+  // Build conversation history
   const reversedHistory = (history.results || []).reverse();
+  const conversationHistory: Array<{ role: 'user' | 'assistant'; content: string }> = [];
+
   for (const msg of reversedHistory) {
     if (msg.role === 'user' || msg.role === 'assistant') {
-      messages.push({
+      conversationHistory.push({
         role: msg.role,
         content: msg.content
       });
     }
   }
 
-  // Validate environment variables
-  if (!env.CLOUDFLARE_ACCOUNT_ID) {
-    throw new Error('CLOUDFLARE_ACCOUNT_ID not configured');
-  }
-
-  if (!env.AI_GATEWAY_TOKEN) {
-    throw new Error('AI_GATEWAY_TOKEN not configured. Please run: npx wrangler secret put AI_GATEWAY_TOKEN');
-  }
-
-  if (!env.OPENAI_API_KEY) {
-    throw new Error('OPENAI_API_KEY not configured. Please run: npx wrangler secret put OPENAI_API_KEY');
-  }
-
-  // Tool calling loop with OpenAI GPT-4o-mini through AI Gateway
   let toolCalls: ToolCall[] = [];
   let finalContent = '';
-  let iterations = 0;
-  const MAX_ITERATIONS = 5; // Prevent infinite loops
 
-  // AI Gateway configuration
-  const accountId = env.CLOUDFLARE_ACCOUNT_ID;
-  const gatewayId = 'jobmatch-ai-gateway-dev';
-  const modelName = 'openai/gpt-4o-mini'; // Unified API requires provider prefix
-
-  // Initialize OpenAI client with AI Gateway using Unified API (compat endpoint)
-  const openai = new OpenAI({
-    apiKey: env.OPENAI_API_KEY,
-    baseURL: `https://gateway.ai.cloudflare.com/v1/${accountId}/${gatewayId}/compat`,
-    defaultHeaders: {
-      'cf-aig-authorization': `Bearer ${env.AI_GATEWAY_TOKEN}`,
-    },
-  });
-
-  while (iterations < MAX_ITERATIONS) {
-    iterations++;
-
-    try {
-      console.log(`[Chat] Iteration ${iterations}, calling OpenAI GPT-4o-mini through AI Gateway...`);
-
-      // Call OpenAI API through Cloudflare AI Gateway using SDK
-      const response = await openai.chat.completions.create({
-        model: modelName,
-        messages: messages as any,
-        tools: TOOL_DEFINITIONS as any,
-        max_tokens: 2048,
-        temperature: 0.7,
-      });
-
-      console.log('[Chat] Raw OpenAI response:', JSON.stringify(response, null, 2));
-
-      // Extract the AI's response
-      const aiMessage = response.choices[0].message;
-      const aiContent = aiMessage.content || '';
-      const aiToolCalls = aiMessage.tool_calls || [];
-
-      // Check if AI wants to use tools
-      if (aiToolCalls && aiToolCalls.length > 0) {
-        console.log(`[Chat] Detected ${aiToolCalls.length} tool calls`);
-
-        // Add assistant message with tool calls to history
-        messages.push({
-          role: 'assistant',
-          content: aiContent,
-          tool_calls: aiToolCalls
-        });
-
-        // Execute tools and collect results
-        for (const toolCall of aiToolCalls) {
-          const toolName = toolCall.function.name;
-          const toolArgs = JSON.parse(toolCall.function.arguments);
-
-          console.log(`[Chat] Executing tool: ${toolName} with args:`, toolArgs);
-
-          const result = await executeTool(env, userId, toolName, toolArgs);
-
-          // Store tool call for database
-          toolCalls.push({
-            id: toolCall.id,
-            type: 'function',
-            function: {
-              name: toolName,
-              arguments: toolCall.function.arguments
-            }
-          });
-
-          // Add tool result to messages for next iteration (OpenAI format)
-          messages.push({
-            role: 'tool',
-            tool_call_id: toolCall.id,
-            content: result
-          } as any);
-        }
-
-        // Continue loop to get final response after tool execution
-        continue;
-      }
-
-      // No more tool calls, we have the final response
-      finalContent = aiContent.trim();
-      break;
-
-    } catch (error: any) {
-      console.error('[Chat] OpenAI API error:', error);
-      // Fallback to error message
-      finalContent = 'I apologize, but I encountered an error processing your request. Please try again.';
-      break;
+  try {
+    if (provider === 'anthropic') {
+      const result = await chatWithAnthropic(env, conversationHistory, userId);
+      finalContent = result.content;
+      toolCalls = result.toolCalls;
+    } else {
+      // OpenAI (default)
+      const messages: OpenAIMessage[] = [
+        { role: 'system', content: SYSTEM_PROMPT },
+        ...conversationHistory.map(msg => ({
+          role: msg.role as 'user' | 'assistant',
+          content: msg.content
+        }))
+      ];
+      const result = await chatWithOpenAI(env, messages, userId);
+      finalContent = result.content;
+      toolCalls = result.toolCalls;
     }
+  } catch (error: any) {
+    console.error(`[Chat] ${provider} API error:`, error);
+    finalContent = 'I apologize, but I encountered an error processing your request. Please try again.';
   }
 
-  // If we hit max iterations, use the last response
-  if (iterations >= MAX_ITERATIONS && !finalContent) {
+  if (!finalContent) {
     finalContent = 'I apologize, but I had trouble completing your request. Please try rephrasing or breaking it into smaller steps.';
   }
 

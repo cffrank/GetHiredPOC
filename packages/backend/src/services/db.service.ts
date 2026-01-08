@@ -15,6 +15,8 @@ export interface Env {
   CLOUDFLARE_ACCOUNT_ID?: string;
   AI_GATEWAY_TOKEN?: string;
   OPENAI_API_KEY?: string;
+  ANTHROPIC_API_KEY?: string;
+  AI_PROVIDER?: string; // 'openai' | 'anthropic' - defaults to 'openai'
   CLOUDFLARE_API_TOKEN?: string;
   ADMIN_EMAILS?: string;
 

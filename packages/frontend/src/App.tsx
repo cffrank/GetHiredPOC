@@ -1,10 +1,12 @@
 import { Routes, Route, Navigate } from 'react-router-dom';
 import { ProtectedRoute } from './components/ProtectedRoute';
 import { UserLayout } from './components/layouts/UserLayout';
+import { ChatLayout } from './components/layouts/ChatLayout';
 import { AdminLayout } from './components/layouts/AdminLayout';
 import Home from './pages/Home';
 import Login from './pages/Login';
 import Signup from './pages/Signup';
+import Chat from './pages/Chat';
 import Jobs from './pages/Jobs';
 import JobDetail from './pages/JobDetail';
 import SavedJobs from './pages/SavedJobs';
@@ -34,7 +36,11 @@ export default function App() {
       <Route path="/terms" element={<TermsOfService />} />
       <Route path="/privacy" element={<PrivacyPolicy />} />
 
+      {/* Chat-first experience - primary interface for logged-in users */}
       <Route element={<ProtectedRoute />}>
+        <Route element={<ChatLayout />}>
+          <Route path="/chat" element={<Chat />} />
+        </Route>
         <Route element={<UserLayout />}>
           <Route path="/onboarding" element={<Onboarding />} />
           <Route path="/preferences" element={<JobPreferences />} />
