@@ -2,6 +2,8 @@ import { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { Link } from 'react-router-dom';
 import { apiClient } from '../lib/api-client';
+import { Button3D } from './ui/Button3D';
+import { Bell, Mail, Download, Settings as SettingsIcon } from 'lucide-react';
 
 interface EmailPreferences {
   digestEnabled: boolean;
@@ -47,29 +49,40 @@ export function SettingsTab() {
   };
 
   if (isLoading) {
-    return <div className="text-center py-12">Loading settings...</div>;
+    return (
+      <div className="text-center py-12">
+        <div className="animate-pulse text-violet font-bold text-lg">Loading settings... ✨</div>
+      </div>
+    );
   }
 
   if (!preferences) {
-    return <div className="text-center py-12 text-red-600">Failed to load preferences</div>;
+    return <div className="text-center py-12 text-red-600 font-bold">Failed to load preferences ⚠️</div>;
   }
 
   return (
-    <div className="space-y-6">
-      <div>
-        <h2 className="text-2xl font-bold mb-2">Settings</h2>
-        <p className="text-gray-600">Manage your account preferences</p>
+    <div className="space-y-8">
+      <div className="text-center">
+        <h2 className="text-4xl font-extrabold mb-3 bg-gradient-to-r from-violet to-teal bg-clip-text text-transparent">
+          Settings ⚙️
+        </h2>
+        <p className="text-gray-600 text-lg">Manage your account preferences</p>
       </div>
 
       {saveMessage && (
-        <div className="p-4 bg-green-50 border border-green-200 rounded-lg text-green-700">
-          {saveMessage}
+        <div className="p-6 bg-gradient-to-r from-green-50 to-teal-50 border-2 border-green-300 rounded-3xl text-green-800 shadow-3d-sm animate-bounce-in">
+          <p className="font-bold flex items-center gap-2">
+            ✅ {saveMessage}
+          </p>
         </div>
       )}
 
       {/* Email Notifications */}
-      <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
-        <h3 className="text-xl font-semibold mb-4">Email Notifications</h3>
+      <div className="bg-white rounded-3xl shadow-3d border-2 border-gray-100 p-8 hover:shadow-3d-lg transition-all">
+        <h3 className="text-2xl font-extrabold mb-4 text-purple-deep flex items-center gap-3">
+          <Mail className="w-7 h-7 text-violet" />
+          Email Notifications 📧
+        </h3>
         <p className="text-gray-600 text-sm mb-6">
           Choose which emails you'd like to receive
         </p>
@@ -173,49 +186,51 @@ export function SettingsTab() {
       </div>
 
       {/* Job Search Preferences */}
-      <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
-        <h3 className="text-xl font-semibold mb-4">Job Search Preferences</h3>
-        <p className="text-gray-600 text-sm mb-6">
+      <div className="bg-white rounded-3xl shadow-3d border-2 border-gray-100 p-8 hover:shadow-3d-lg transition-all">
+        <h3 className="text-2xl font-extrabold mb-4 text-purple-deep flex items-center gap-3">
+          <SettingsIcon className="w-7 h-7 text-teal" />
+          Job Search Preferences 🎯
+        </h3>
+        <p className="text-gray-600 text-base mb-6">
           Update your job preferences to get better recommendations
         </p>
 
-        <Link
-          to="/preferences"
-          className="px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors inline-flex items-center gap-2"
-        >
-          <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" />
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
-          </svg>
-          Edit Preferences
+        <Link to="/preferences">
+          <Button3D
+            icon={<SettingsIcon className="w-5 h-5" />}
+            className="w-full justify-center"
+          >
+            Edit Preferences
+          </Button3D>
         </Link>
       </div>
 
       {/* Export Section */}
-      <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
-        <h3 className="text-xl font-semibold mb-4">Export Resume</h3>
-        <p className="text-gray-600 text-sm mb-6">
+      <div className="bg-white rounded-3xl shadow-3d border-2 border-gray-100 p-8 hover:shadow-3d-lg transition-all">
+        <h3 className="text-2xl font-extrabold mb-4 text-purple-deep flex items-center gap-3">
+          <Download className="w-7 h-7 text-coral" />
+          Export Resume 📄
+        </h3>
+        <p className="text-gray-600 text-base mb-6">
           Download your resume in different formats
         </p>
 
-        <div className="flex gap-3">
-          <a
-            href={`${import.meta.env.VITE_API_URL || 'http://localhost:8787'}/api/export/resume/pdf`}
-            className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors inline-flex items-center gap-2"
-          >
-            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
-            </svg>
-            Download as PDF
+        <div className="flex gap-3 flex-wrap">
+          <a href={`${import.meta.env.VITE_API_URL || 'http://localhost:8787'}/api/export/resume/pdf`}>
+            <Button3D
+              icon="📄"
+              variant="primary"
+            >
+              Download as PDF
+            </Button3D>
           </a>
-          <a
-            href={`${import.meta.env.VITE_API_URL || 'http://localhost:8787'}/api/export/resume/docx`}
-            className="px-4 py-2 bg-gray-700 text-white rounded-lg hover:bg-gray-800 transition-colors inline-flex items-center gap-2"
-          >
-            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
-            </svg>
-            Download as DOCX
+          <a href={`${import.meta.env.VITE_API_URL || 'http://localhost:8787'}/api/export/resume/docx`}>
+            <Button3D
+              icon="📝"
+              variant="secondary"
+            >
+              Download as DOCX
+            </Button3D>
           </a>
         </div>
       </div>
