@@ -1,0 +1,13 @@
+# Local Development Environment Variables
+# Copy this file to .dev.vars and fill in your actual values
+# .dev.vars is gitignored and will not be committed
+
+# Required for Chat Feature
+OPENAI_API_KEY=sk-proj-xxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+AI_GATEWAY_TOKEN=your-cloudflare-ai-gateway-token-here
+
+# Optional - Already set in other ways, but you can override here
+# ADZUNA_APP_KEY=your-adzuna-key
+# APIFY_API_TOKEN=your-apify-token
+
+# Note: CLOUDFLARE_ACCOUNT_ID is already in wrangler.toml

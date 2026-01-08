@@ -1,0 +1,486 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>JOBMATCH - Brutalist Design</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Archivo+Black&family=IBM+Plex+Mono:wght@400;700&display=swap" rel="stylesheet">
+
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    :root {
+      --black: #000000;
+      --white: #FFFFFF;
+      --off-white: #FAFAFA;
+      --yellow: #FAFF00;
+      --red: #FF0033;
+      --blue: #00F0FF;
+      --green: #00FF88;
+    }
+
+    body {
+      font-family: 'IBM Plex Mono', monospace;
+      background: var(--off-white);
+      color: var(--black);
+      overflow-x: hidden;
+    }
+
+    /* Grid Background */
+    .grid-bg {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background-image:
+        linear-gradient(var(--black) 1px, transparent 1px),
+        linear-gradient(90deg, var(--black) 1px, transparent 1px);
+      background-size: 50px 50px;
+      opacity: 0.03;
+      z-index: 0;
+    }
+
+    .container {
+      position: relative;
+      z-index: 10;
+      max-width: 1400px;
+      margin: 0 auto;
+      padding: 40px 20px;
+    }
+
+    /* Header */
+    header {
+      border: 4px solid var(--black);
+      background: var(--white);
+      padding: 20px 30px;
+      margin-bottom: 40px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      box-shadow: 8px 8px 0 var(--black);
+      flex-wrap: wrap;
+      gap: 20px;
+    }
+
+    .logo {
+      font-family: 'Archivo Black', sans-serif;
+      font-size: 32px;
+      letter-spacing: -2px;
+      text-transform: uppercase;
+    }
+
+    .nav-brutal {
+      display: flex;
+      gap: 20px;
+      flex-wrap: wrap;
+    }
+
+    .nav-brutal a {
+      color: var(--black);
+      text-decoration: none;
+      text-transform: uppercase;
+      font-weight: 700;
+      font-size: 14px;
+      letter-spacing: 1px;
+      position: relative;
+      padding: 10px 0;
+    }
+
+    .nav-brutal a.active::after {
+      content: '';
+      position: absolute;
+      bottom: 0;
+      left: 0;
+      width: 100%;
+      height: 4px;
+      background: var(--yellow);
+      animation: underlineExpand 0.3s ease-out;
+    }
+
+    @keyframes underlineExpand {
+      from { width: 0; }
+      to { width: 100%; }
+    }
+
+    /* Hero */
+    .hero-brutal {
+      margin-bottom: 60px;
+      text-align: center;
+    }
+
+    .mega-text {
+      font-family: 'Archivo Black', sans-serif;
+      font-size: clamp(48px, 10vw, 120px);
+      line-height: 0.9;
+      text-transform: uppercase;
+      letter-spacing: -4px;
+      margin-bottom: 20px;
+    }
+
+    .mega-text .highlight {
+      background: var(--yellow);
+      padding: 0 20px;
+      display: inline-block;
+      transform: skew(-5deg);
+      position: relative;
+    }
+
+    .mega-text .highlight::before {
+      content: '';
+      position: absolute;
+      top: -4px;
+      left: -4px;
+      right: -4px;
+      bottom: -4px;
+      border: 4px solid var(--black);
+      transform: skew(5deg);
+    }
+
+    .rotating-words {
+      font-family: 'Archivo Black', sans-serif;
+      font-size: clamp(24px, 5vw, 48px);
+      height: 60px;
+      overflow: hidden;
+      position: relative;
+    }
+
+    .rotating-words span {
+      display: block;
+      animation: wordRotate 6s infinite;
+      position: absolute;
+      width: 100%;
+    }
+
+    .rotating-words span:nth-child(2) { animation-delay: 2s; }
+    .rotating-words span:nth-child(3) { animation-delay: 4s; }
+
+    @keyframes wordRotate {
+      0%, 33.33% { transform: translateY(0); opacity: 1; }
+      33.34%, 100% { transform: translateY(-100%); opacity: 0; }
+    }
+
+    /* Jobs Grid */
+    .jobs-grid {
+      display: grid;
+      gap: 30px;
+    }
+
+    .job-card-brutal {
+      border: 4px solid var(--black);
+      background: var(--white);
+      padding: 30px;
+      position: relative;
+      transition: all 0.2s ease;
+      cursor: pointer;
+    }
+
+    .job-card-brutal::before {
+      content: '';
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background: var(--yellow);
+      transform: translate(8px, 8px);
+      z-index: -1;
+      transition: all 0.2s ease;
+    }
+
+    .job-card-brutal:hover {
+      transform: translate(4px, 4px);
+    }
+
+    .job-card-brutal:hover::before {
+      transform: translate(4px, 4px);
+    }
+
+    .job-card-brutal.featured::before {
+      background: var(--red);
+    }
+
+    .job-card-brutal.hot::before {
+      background: var(--blue);
+    }
+
+    .job-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-start;
+      margin-bottom: 20px;
+      gap: 20px;
+      flex-wrap: wrap;
+    }
+
+    .job-title-brutal {
+      font-family: 'Archivo Black', sans-serif;
+      font-size: clamp(24px, 4vw, 36px);
+      line-height: 1;
+      text-transform: uppercase;
+      letter-spacing: -1px;
+      margin-bottom: 10px;
+    }
+
+    .company-brutal {
+      font-size: 16px;
+      text-transform: uppercase;
+      letter-spacing: 2px;
+      font-weight: 700;
+    }
+
+    .match-brutal {
+      text-align: right;
+      min-width: 120px;
+    }
+
+    .score-brutal {
+      font-family: 'Archivo Black', sans-serif;
+      font-size: 64px;
+      line-height: 1;
+    }
+
+    .score-brutal .percent {
+      font-size: 32px;
+    }
+
+    .match-label-brutal {
+      font-size: 12px;
+      font-weight: 700;
+      letter-spacing: 1px;
+      text-transform: uppercase;
+    }
+
+    .badges-brutal {
+      display: flex;
+      gap: 10px;
+      flex-wrap: wrap;
+      margin-bottom: 20px;
+    }
+
+    .badge-brutal {
+      display: inline-block;
+      padding: 8px 16px;
+      border: 3px solid var(--black);
+      font-weight: 700;
+      text-transform: uppercase;
+      font-size: 12px;
+      letter-spacing: 1px;
+      transform: skew(-5deg);
+    }
+
+    .badge-brutal.yellow { background: var(--yellow); }
+    .badge-brutal.red { background: var(--red); color: var(--white); }
+    .badge-brutal.blue { background: var(--blue); }
+    .badge-brutal.green { background: var(--green); }
+    .badge-brutal.white { background: var(--white); }
+
+    .job-description {
+      font-size: 14px;
+      line-height: 1.8;
+      margin-bottom: 20px;
+    }
+
+    /* Buttons */
+    .btn-brutal {
+      background: var(--black);
+      color: var(--white);
+      border: none;
+      padding: 16px 32px;
+      font-family: 'IBM Plex Mono', monospace;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 2px;
+      cursor: pointer;
+      position: relative;
+      overflow: hidden;
+      transition: all 0.2s ease;
+    }
+
+    .btn-brutal::after {
+      content: '';
+      position: absolute;
+      bottom: 0;
+      left: 0;
+      width: 0;
+      height: 4px;
+      background: var(--yellow);
+      transition: width 0.3s ease;
+    }
+
+    .btn-brutal:hover::after {
+      width: 100%;
+    }
+
+    .btn-brutal:active {
+      transform: scale(0.98);
+    }
+
+    /* Ripple Effect */
+    .ripple {
+      position: absolute;
+      border: 3px solid var(--black);
+      border-radius: 50%;
+      transform: scale(0);
+      animation: ripple 0.6s ease-out;
+      pointer-events: none;
+    }
+
+    @keyframes ripple {
+      to {
+        transform: scale(4);
+        opacity: 0;
+      }
+    }
+
+    @media (max-width: 768px) {
+      header {
+        flex-direction: column;
+        align-items: flex-start;
+      }
+      .nav-brutal {
+        flex-direction: column;
+        gap: 10px;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="grid-bg"></div>
+
+  <div class="container">
+    <header>
+      <div class="logo">JOBMATCH</div>
+      <nav class="nav-brutal">
+        <a href="#" class="active">JOBS</a>
+        <a href="#">SAVED</a>
+        <a href="#">APPLICATIONS</a>
+        <a href="#">PROFILE</a>
+      </nav>
+      <button class="btn-brutal">UPGRADE</button>
+    </header>
+
+    <div class="hero-brutal">
+      <h1 class="mega-text">
+        FIND YOUR<br>
+        <span class="highlight">DREAM</span><br>
+        JOB
+      </h1>
+      <div class="rotating-words">
+        <span>FASTER</span>
+        <span>SMARTER</span>
+        <span>BETTER</span>
+      </div>
+    </div>
+
+    <!-- Jobs Grid -->
+    <div class="jobs-grid">
+      <div class="job-card-brutal featured">
+        <div class="job-header">
+          <div>
+            <h3 class="job-title-brutal">SENIOR FRONTEND DEV</h3>
+            <p class="company-brutal">TECHCORP INC</p>
+          </div>
+          <div class="match-brutal">
+            <div class="score-brutal">87<span class="percent">%</span></div>
+            <div class="match-label-brutal">MATCH</div>
+          </div>
+        </div>
+
+        <div class="badges-brutal">
+          <span class="badge-brutal yellow">REMOTE</span>
+          <span class="badge-brutal red">HOT</span>
+          <span class="badge-brutal white">$120K-$160K</span>
+        </div>
+
+        <p class="job-description">
+          BUILD THE FUTURE OF WEB WITH REACT, TYPESCRIPT, AND CUTTING-EDGE TOOLS.
+          JOIN A TEAM THAT VALUES CLEAN CODE AND INNOVATION.
+        </p>
+
+        <button class="btn-brutal">VIEW DETAILS →</button>
+      </div>
+
+      <div class="job-card-brutal">
+        <div class="job-header">
+          <div>
+            <h3 class="job-title-brutal">FULL STACK ENGINEER</h3>
+            <p class="company-brutal">STARTUP XYZ</p>
+          </div>
+          <div class="match-brutal">
+            <div class="score-brutal">72<span class="percent">%</span></div>
+            <div class="match-label-brutal">MATCH</div>
+          </div>
+        </div>
+
+        <div class="badges-brutal">
+          <span class="badge-brutal blue">HYBRID</span>
+          <span class="badge-brutal white">SAN FRANCISCO</span>
+          <span class="badge-brutal green">$140K-$180K</span>
+        </div>
+
+        <p class="job-description">
+          WORK ACROSS THE ENTIRE STACK: REACT, NODE.JS, POSTGRESQL, AWS.
+          HELP US BUILD COLLABORATIVE TOOLS FOR THE NEXT GENERATION.
+        </p>
+
+        <button class="btn-brutal">VIEW DETAILS →</button>
+      </div>
+
+      <div class="job-card-brutal hot">
+        <div class="job-header">
+          <div>
+            <h3 class="job-title-brutal">REACT DEVELOPER</h3>
+            <p class="company-brutal">GLOBAL SOLUTIONS</p>
+          </div>
+          <div class="match-brutal">
+            <div class="score-brutal">94<span class="percent">%</span></div>
+            <div class="match-label-brutal">MATCH</div>
+          </div>
+        </div>
+
+        <div class="badges-brutal">
+          <span class="badge-brutal yellow">REMOTE</span>
+          <span class="badge-brutal red">TRENDING</span>
+          <span class="badge-brutal white">COMPETITIVE</span>
+        </div>
+
+        <p class="job-description">
+          CLEAN CODE. CONTINUOUS LEARNING. PRODUCTS USED BY MILLIONS.
+          JOIN A TEAM THAT TAKES ENGINEERING SERIOUSLY.
+        </p>
+
+        <button class="btn-brutal">VIEW DETAILS →</button>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    // Add click ripple effect
+    document.querySelectorAll('.btn-brutal').forEach(button => {
+      button.addEventListener('click', function(e) {
+        const ripple = document.createElement('span');
+        ripple.classList.add('ripple');
+
+        const rect = this.getBoundingClientRect();
+        const size = Math.max(rect.width, rect.height);
+        const x = e.clientX - rect.left - size / 2;
+        const y = e.clientY - rect.top - size / 2;
+
+        ripple.style.width = ripple.style.height = size + 'px';
+        ripple.style.left = x + 'px';
+        ripple.style.top = y + 'px';
+
+        this.appendChild(ripple);
+
+        setTimeout(() => ripple.remove(), 600);
+      });
+    });
+  </script>
+</body>
+</html>
