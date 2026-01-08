@@ -19,6 +19,7 @@ export interface Job {
   longitude: number | null;
   source: string | null; // 'adzuna', 'manual', etc.
   external_url: string | null;
+  is_complete?: number; // 0 or 1 (whether job has complete description) - NEW
 }
 
 export interface SavedJob {

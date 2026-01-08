@@ -212,6 +212,90 @@ const TOOL_DEFINITIONS = [
         required: ['job_text']
       }
     }
+  },
+  {
+    type: 'function',
+    function: {
+      name: 'advanced_search_jobs',
+      description: 'Perform advanced multi-criteria job search with keywords, locations, salary range, experience level, skills, and more. Use this for complex search queries.',
+      parameters: {
+        type: 'object',
+        properties: {
+          keywords: {
+            type: 'array',
+            items: { type: 'string' },
+            description: 'Keywords to search for (e.g., ["senior", "react", "engineer"])'
+          },
+          locations: {
+            type: 'array',
+            items: { type: 'string' },
+            description: 'Locations to search in (e.g., ["San Francisco, CA", "Remote"])'
+          },
+          salary_min: {
+            type: 'number',
+            description: 'Minimum salary requirement'
+          },
+          salary_max: {
+            type: 'number',
+            description: 'Maximum salary requirement'
+          },
+          experience_level: {
+            type: 'array',
+            items: { type: 'string' },
+            description: 'Experience levels (e.g., ["Senior", "Lead"])'
+          },
+          remote: {
+            type: 'string',
+            enum: ['remote', 'hybrid', 'onsite', 'any'],
+            description: 'Remote work preference'
+          },
+          required_skills: {
+            type: 'array',
+            items: { type: 'string' },
+            description: 'Required technical skills (e.g., ["React", "TypeScript"])'
+          },
+          job_type: {
+            type: 'array',
+            items: { type: 'string' },
+            description: 'Job types (e.g., ["Full-time", "Contract"])'
+          },
+          limit: {
+            type: 'number',
+            description: 'Maximum number of results (default 20, max 100)'
+          }
+        }
+      }
+    }
+  },
+  {
+    type: 'function',
+    function: {
+      name: 'navigate_to_jobs',
+      description: 'Navigate the user to the Jobs page with optional filters applied. Use this after performing a search to show results to the user.',
+      parameters: {
+        type: 'object',
+        properties: {
+          filters: {
+            type: 'object',
+            description: 'Job filters to apply',
+            properties: {
+              keywords: { type: 'array', items: { type: 'string' } },
+              locations: { type: 'array', items: { type: 'string' } },
+              salary_min: { type: 'number' },
+              salary_max: { type: 'number' },
+              experience_level: { type: 'array', items: { type: 'string' } },
+              remote: { type: 'string' },
+              required_skills: { type: 'array', items: { type: 'string' } },
+              job_type: { type: 'array', items: { type: 'string' } }
+            }
+          },
+          message: {
+            type: 'string',
+            description: 'Message to display to the user about the results'
+          }
+        }
+      }
+    }
   }
 ];
 
@@ -452,6 +536,132 @@ ${toolInput.job_text}`;
         return aiResponse.response || JSON.stringify({ error: 'Failed to parse job posting' });
       }
 
+      case 'advanced_search_jobs': {
+        // Call the advanced search endpoint
+        const searchParams = {
+          keywords: toolInput.keywords || [],
+          locations: toolInput.locations || [],
+          salary_min: toolInput.salary_min,
+          salary_max: toolInput.salary_max,
+          experience_level: toolInput.experience_level || [],
+          remote: toolInput.remote || 'any',
+          required_skills: toolInput.required_skills || [],
+          job_type: toolInput.job_type || [],
+          limit: toolInput.limit || 20
+        };
+
+        // Execute search query (reusing the logic from the endpoint)
+        let whereConditions: string[] = [];
+        let params: any[] = [];
+
+        // Keywords
+        if (searchParams.keywords.length > 0) {
+          const keywordConditions = searchParams.keywords.map(() => '(title LIKE ? OR description LIKE ?)');
+          whereConditions.push(`(${keywordConditions.join(' OR ')})`);
+          searchParams.keywords.forEach((keyword: string) => {
+            params.push(`%${keyword}%`, `%${keyword}%`);
+          });
+        }
+
+        // Locations
+        if (searchParams.locations.length > 0) {
+          const locationConditions = searchParams.locations.map(() => 'location LIKE ?');
+          whereConditions.push(`(${locationConditions.join(' OR ')})`);
+          searchParams.locations.forEach((loc: string) => {
+            params.push(`%${loc}%`);
+          });
+        }
+
+        // Salary range
+        if (searchParams.salary_min) {
+          whereConditions.push('salary_max >= ?');
+          params.push(searchParams.salary_min);
+        }
+        if (searchParams.salary_max) {
+          whereConditions.push('salary_min <= ?');
+          params.push(searchParams.salary_max);
+        }
+
+        // Remote work type
+        if (searchParams.remote && searchParams.remote !== 'any') {
+          if (searchParams.remote === 'remote') whereConditions.push('remote = 1');
+          else if (searchParams.remote === 'hybrid') whereConditions.push('remote = 2');
+          else if (searchParams.remote === 'onsite') whereConditions.push('remote = 0');
+        }
+
+        // Experience level
+        if (searchParams.experience_level.length > 0) {
+          const expConditions = searchParams.experience_level.map(() => '(title LIKE ? OR description LIKE ?)');
+          whereConditions.push(`(${expConditions.join(' OR ')})`);
+          searchParams.experience_level.forEach((level: string) => {
+            params.push(`%${level}%`, `%${level}%`);
+          });
+        }
+
+        // Required skills
+        if (searchParams.required_skills.length > 0) {
+          const skillConditions = searchParams.required_skills.map(() => '(description LIKE ? OR requirements LIKE ?)');
+          whereConditions.push(`(${skillConditions.join(' OR ')})`);
+          searchParams.required_skills.forEach((skill: string) => {
+            params.push(`%${skill}%`, `%${skill}%`);
+          });
+        }
+
+        // Job type
+        if (searchParams.job_type.length > 0) {
+          const typeConditions = searchParams.job_type.map(() => 'description LIKE ?');
+          whereConditions.push(`(${typeConditions.join(' OR ')})`);
+          searchParams.job_type.forEach((type: string) => {
+            params.push(`%${type}%`);
+          });
+        }
+
+        // Exclude hidden jobs
+        whereConditions.push(`id NOT IN (SELECT job_id FROM hidden_jobs WHERE user_id = ?)`);
+        params.push(userId);
+
+        // Build and execute query
+        let query = 'SELECT * FROM jobs';
+        if (whereConditions.length > 0) {
+          query += ` WHERE ${whereConditions.join(' AND ')}`;
+        }
+        query += ' ORDER BY created_at DESC LIMIT ?';
+        params.push(Math.min(searchParams.limit, 100));
+
+        const result = await env.DB.prepare(query).bind(...params).all();
+        const jobs = result.results || [];
+
+        // Return results with summary
+        const results = jobs.slice(0, 10).map((job: any) => ({
+          id: job.id,
+          title: job.title,
+          company: job.company,
+          location: job.location,
+          remote: job.remote === 1 ? 'Remote' : job.remote === 2 ? 'Hybrid' : 'On-site',
+          salary: job.salary_min && job.salary_max
+            ? `$${job.salary_min.toLocaleString()} - $${job.salary_max.toLocaleString()}`
+            : 'Not specified'
+        }));
+
+        return JSON.stringify({
+          count: jobs.length,
+          results,
+          search_params: searchParams
+        });
+      }
+
+      case 'navigate_to_jobs': {
+        // Return navigation action for frontend to handle
+        return JSON.stringify({
+          navigation_action: {
+            type: 'navigate',
+            route: '/jobs',
+            filters: toolInput.filters || {},
+            message: toolInput.message || 'Here are the job results'
+          }
+        });
+      }
+
       default:
         return JSON.stringify({ error: `Unknown tool: ${toolName}` });
     }
@@ -527,8 +737,12 @@ export async function sendChatMessage(
     throw new Error('AI_GATEWAY_TOKEN not configured. Please run: npx wrangler secret put AI_GATEWAY_TOKEN');
   }
 
-  if (!env.OPENAI_API_KEY) {
-    throw new Error('OPENAI_API_KEY not configured. Please run: npx wrangler secret put OPENAI_API_KEY');
+  // OpenAI API Key is optional if the gateway has it configured
+  // If not provided, use a placeholder - the gateway will use its stored key
+  const useGatewayManagedKey = !env.OPENAI_API_KEY;
+
+  if (useGatewayManagedKey) {
+    console.log('[Chat] Using gateway-managed OpenAI key (OPENAI_API_KEY not provided)');
   }
 
   // Tool calling loop with OpenAI GPT-4o-mini through AI Gateway
@@ -543,8 +757,9 @@ export async function sendChatMessage(
   const modelName = 'openai/gpt-4o-mini'; // Unified API requires provider prefix
 
   // Initialize OpenAI client with AI Gateway using Unified API (compat endpoint)
+  // If gateway has OpenAI key configured, it will use that instead of the placeholder
   const openai = new OpenAI({
-    apiKey: env.OPENAI_API_KEY,
+    apiKey: env.OPENAI_API_KEY || 'gateway-managed-key',
     baseURL: `https://gateway.ai.cloudflare.com/v1/${accountId}/${gatewayId}/compat`,
     defaultHeaders: {
       'cf-aig-authorization': `Bearer ${env.AI_GATEWAY_TOKEN}`,

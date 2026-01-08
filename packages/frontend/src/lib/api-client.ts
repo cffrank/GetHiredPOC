@@ -46,10 +46,30 @@ export const apiClient = {
   },
 
   // Auth
-  signup: (email: string, password: string) =>
+  signup: (
+    email: string,
+    password: string,
+    firstName: string,
+    lastName: string,
+    phone: string,
+    streetAddress: string,
+    city: string,
+    state: string,
+    zipCode: string
+  ) =>
     apiClient.request('/api/auth/signup', {
       method: 'POST',
-      body: JSON.stringify({ email, password }),
+      body: JSON.stringify({
+        email,
+        password,
+        first_name: firstName,
+        last_name: lastName,
+        phone,
+        street_address: streetAddress,
+        city,
+        state,
+        zip_code: zipCode,
+      }),
     }),
 
   login: (email: string, password: string) =>
