@@ -2,6 +2,9 @@ import { useEffect, useState } from 'react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { apiClient } from '../lib/api-client';
 import { Button } from '../components/ui/Button';
+import { Button3D } from '../components/ui/Button3D';
+import { FloatingShapesBackground } from '../components/effects/FloatingShapesBackground';
+import { CuteRobotLoader } from '../components/loaders/CuteRobotLoader';
 import { useAuth } from '../context/AuthContext';
 import PolarCheckout from '../components/PolarCheckout';
 
@@ -87,9 +90,12 @@ export default function Subscription() {
 
   if (isLoading) {
     return (
-      <div className="flex items-center justify-center min-h-[60vh]">
-        <div className="text-lg text-gray-600">Loading subscription details...</div>
-      </div>
+      <>
+        <FloatingShapesBackground />
+        <div className="relative z-10">
+          <CuteRobotLoader message="Loading subscription details..." />
+        </div>
+      </>
     );
   }
 
@@ -127,24 +133,24 @@ export default function Subscription() {
 
     const colorClasses = {
       blue: {
-        bg: 'bg-blue-100',
-        fill: isNearLimit ? 'bg-red-500' : 'bg-blue-600',
-        text: 'text-blue-700'
+        bg: 'bg-violet-100',
+        fill: isNearLimit ? 'bg-red-500' : 'bg-gradient-to-r from-violet to-teal',
+        text: 'text-violet'
       },
       green: {
         bg: 'bg-green-100',
-        fill: isNearLimit ? 'bg-red-500' : 'bg-green-600',
+        fill: isNearLimit ? 'bg-red-500' : 'bg-gradient-to-r from-green-500 to-teal',
         text: 'text-green-700'
       },
       purple: {
         bg: 'bg-purple-100',
-        fill: isNearLimit ? 'bg-red-500' : 'bg-purple-600',
-        text: 'text-purple-700'
+        fill: isNearLimit ? 'bg-red-500' : 'bg-gradient-to-r from-violet to-purple-600',
+        text: 'text-violet-dark'
       },
       orange: {
         bg: 'bg-orange-100',
-        fill: isNearLimit ? 'bg-red-500' : 'bg-orange-600',
-        text: 'text-orange-700'
+        fill: isNearLimit ? 'bg-red-500' : 'bg-gradient-to-r from-coral to-orange-600',
+        text: 'text-coral'
       },
     };
 
@@ -156,11 +162,14 @@ export default function Subscription() {
             {current} / {isUnlimited ? 'Unlimited' : limit}
           </span>
         </div>
-        <div className={`w-full ${colorClasses[color].bg} rounded-full h-3 overflow-hidden`}>
+        <div className={`w-full ${colorClasses[color].bg} rounded-full h-4 overflow-hidden shadow-inner`}>
           <div
-            className={`h-full ${colorClasses[color].fill} transition-all duration-300 rounded-full`}
+            className={`h-full ${colorClasses[color].fill} transition-all duration-300 rounded-full relative overflow-hidden`}
             style={{ width: isUnlimited ? '100%' : `${percentage}%` }}
-          />
+          >
+            {/* Shimmer effect */}
+            <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/30 to-transparent animate-shimmer" />
+          </div>
         </div>
         {isNearLimit && (
           <p className="text-xs text-red-600 mt-1">
@@ -172,9 +181,11 @@ export default function Subscription() {
   };
 
   return (
-    <div className="max-w-4xl mx-auto space-y-8">
-      {/* Success message after Polar checkout */}
-      {showSuccessMessage && (
+    <>
+      <FloatingShapesBackground />
+      <div className="relative z-10 max-w-4xl mx-auto space-y-8 px-4 sm:px-6 lg:px-8 py-8">
+        {/* Success message after Polar checkout */}
+        {showSuccessMessage && (
         <div className="bg-green-50 border border-green-200 rounded-lg p-4">
           <div className="flex items-start">
             <svg
@@ -199,33 +210,35 @@ export default function Subscription() {
       )}
 
       {/* Header with Tier Badge */}
-      <div className="flex items-center justify-between">
+      <div className="flex items-center justify-between flex-wrap gap-4">
         <div>
-          <h1 className="text-3xl font-bold text-gray-900">Subscription</h1>
-          <p className="text-gray-600 mt-2">Manage your subscription and view usage</p>
+          <h1 className="text-4xl sm:text-5xl font-extrabold text-purple-deep">Your Subscription 💳</h1>
+          <p className="text-gray-600 mt-2 text-lg">Manage your plan and track usage</p>
         </div>
         <div>
           {isFree && (
-            <span className="inline-flex items-center px-4 py-2 rounded-full text-sm font-semibold bg-gray-100 text-gray-700 border border-gray-300">
-              FREE
+            <span className="inline-flex items-center px-5 py-3 rounded-2xl text-sm font-bold bg-gray-100 text-gray-700 border-2 border-gray-300 shadow-3d-sm">
+              FREE TIER
             </span>
           )}
           {isTrial && (
-            <span className="inline-flex items-center px-4 py-2 rounded-full text-sm font-semibold bg-blue-100 text-blue-700 border border-blue-600">
-              PRO TRIAL
+            <span className="inline-flex items-center px-5 py-3 rounded-2xl text-sm font-bold bg-gradient-to-r from-violet-100 to-teal-100 text-violet border-2 border-violet shadow-3d-sm">
+              ⚡ PRO TRIAL
             </span>
           )}
           {isPro && (
-            <span className="inline-flex items-center px-4 py-2 rounded-full text-sm font-semibold bg-green-100 text-green-700 border border-green-600">
-              PRO
+            <span className="inline-flex items-center px-5 py-3 rounded-2xl text-sm font-bold bg-gradient-to-r from-green-100 to-teal-100 text-green-700 border-2 border-green-600 shadow-3d-sm">
+              ⭐ PRO
             </span>
           )}
         </div>
       </div>
 
       {/* Current Tier Info */}
-      <div className="bg-white border border-gray-200 rounded-lg p-6 shadow-sm">
-        <h2 className="text-xl font-semibold text-gray-800 mb-4">Current Plan</h2>
+      <div className="bg-white rounded-3xl p-8 shadow-card-soft border-2 border-gray-100">
+        <h2 className="text-2xl font-bold text-purple-deep mb-6 flex items-center gap-2">
+          📋 Current Plan
+        </h2>
         <div className="space-y-3">
           <div className="flex justify-between">
             <span className="text-gray-600">Plan:</span>
@@ -273,8 +286,10 @@ export default function Subscription() {
       </div>
 
       {/* Usage Dashboard */}
-      <div className="bg-white border border-gray-200 rounded-lg p-6 shadow-sm">
-        <h2 className="text-xl font-semibold text-gray-800 mb-6">Usage Dashboard</h2>
+      <div className="bg-white rounded-3xl p-8 shadow-card-soft border-2 border-gray-100">
+        <h2 className="text-2xl font-bold text-purple-deep mb-6 flex items-center gap-2">
+          📊 Usage Dashboard
+        </h2>
         <div className="space-y-6">
           <UsageBar
             label="Job Imports Today"
@@ -305,22 +320,22 @@ export default function Subscription() {
 
       {/* Upgrade Section (show for free and trial users) */}
       {(isFree || isTrial) && (
-        <div className="bg-gradient-to-br from-blue-50 to-green-50 border border-blue-200 rounded-lg p-8 shadow-md">
+        <div className="bg-gradient-to-br from-violet-50 to-teal-50 border-2 border-violet-200 rounded-3xl p-8 shadow-card-soft">
           <div className="text-center mb-6">
-            <h2 className="text-2xl font-bold text-gray-900 mb-2">
-              {isTrial ? 'Keep Your PRO Access' : 'Upgrade to PRO'}
+            <h2 className="text-3xl sm:text-4xl font-extrabold text-purple-deep mb-2">
+              {isTrial ? 'Keep Your PRO Access ⚡' : 'Upgrade to PRO ⭐'}
             </h2>
-            <p className="text-gray-700">
+            <p className="text-gray-700 text-lg">
               {isTrial ? 'Continue enjoying unlimited access after your trial ends' : 'Unlock unlimited access to all features'}
             </p>
-            <div className="mt-4">
-              <span className="text-4xl font-bold text-green-600">$39</span>
-              <span className="text-gray-600 text-lg">/month</span>
+            <div className="mt-6">
+              <span className="text-5xl font-extrabold bg-gradient-to-r from-violet to-teal bg-clip-text text-transparent">$39</span>
+              <span className="text-gray-600 text-xl ml-2">/month</span>
             </div>
           </div>
 
-          <div className="bg-white rounded-lg p-6 mb-6">
-            <h3 className="font-semibold text-gray-900 mb-4">PRO Benefits:</h3>
+          <div className="bg-white rounded-2xl p-6 mb-6 border-2 border-gray-100">
+            <h3 className="font-bold text-purple-deep mb-4 text-lg">✨ PRO Benefits:</h3>
             <ul className="space-y-3">
               <li className="flex items-start">
                 <svg className="w-5 h-5 text-green-600 mr-3 mt-0.5 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
@@ -377,13 +392,15 @@ export default function Subscription() {
 
       {/* Current PRO member message */}
       {isPro && (
-        <div className="bg-green-50 border border-green-200 rounded-lg p-6 text-center">
-          <h3 className="text-lg font-semibold text-green-800 mb-2">You're a PRO member!</h3>
-          <p className="text-green-700">
-            Thank you for supporting JobMatch AI. Enjoy unlimited access to all features.
+        <div className="bg-gradient-to-br from-green-50 to-teal-50 border-2 border-green-200 rounded-3xl p-8 text-center shadow-card-soft">
+          <div className="text-6xl mb-4 animate-bounce-gentle">⭐</div>
+          <h3 className="text-2xl font-extrabold text-purple-deep mb-2">You're a PRO member!</h3>
+          <p className="text-gray-700 text-lg">
+            Thank you for supporting JobMatch AI. Enjoy unlimited access to all features! 🚀
           </p>
         </div>
       )}
-    </div>
+      </div>
+    </>
   );
 }
