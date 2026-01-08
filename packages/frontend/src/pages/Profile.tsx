@@ -2,11 +2,16 @@ import { useState, FormEvent, useEffect } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { useUpdateProfile, useUpdateProfileWithFile } from '../hooks/useProfile';
+import { useGamification } from '../hooks/useGamification';
 import { Button } from '../components/ui/Button';
+import { Button3D } from '../components/ui/Button3D';
 import { Input } from '../components/ui/Input';
 import { Label } from '../components/ui/Label';
 import { Card, CardContent, CardHeader, CardTitle } from '../components/ui/Card';
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '../components/ui/Tabs';
+import { FloatingShapesBackground } from '../components/effects/FloatingShapesBackground';
+import { ProgressGamification } from '../components/gamification/ProgressGamification';
+import { SuccessCelebration } from '../components/SuccessCelebration';
 import { WorkExperience } from '../components/WorkExperience';
 import { Education } from '../components/Education';
 import { InterviewQuestions } from '../components/InterviewQuestions';
@@ -20,9 +25,12 @@ export default function Profile() {
   const { user } = useAuth();
   const updateProfileMutation = useUpdateProfile();
   const updateProfileWithFileMutation = useUpdateProfileWithFile();
+  const { data: gamificationData } = useGamification();
   const [searchParams, setSearchParams] = useSearchParams();
 
   const [isEditing, setIsEditing] = useState(false);
+  const [showCelebration, setShowCelebration] = useState(false);
+  const [xpEarned, setXpEarned] = useState(0);
 
   // Updated profile form fields using new schema
   const [firstName, setFirstName] = useState(user?.first_name || '');
@@ -94,6 +102,9 @@ export default function Profile() {
   const handleSubmit = async (e: FormEvent) => {
     e.preventDefault();
 
+    // Calculate fields updated for XP determination
+    const fieldsUpdated = [firstName, lastName, phone, streetAddress, city, state, zipCode, bio, location, linkedInUrl, skills].filter(f => f && f.toString().trim()).length;
+
     if (avatarFile) {
       const formData = new FormData();
       formData.append('first_name', firstName);
@@ -126,6 +137,11 @@ export default function Profile() {
     }
 
     setIsEditing(false);
+
+    // Show celebration with XP (100 XP for substantial updates, 25 XP for minor)
+    const xp = fieldsUpdated >= 3 ? 100 : 25;
+    setXpEarned(xp);
+    setShowCelebration(true);
   };
 
   const handleLinkedInImport = () => {
@@ -193,9 +209,21 @@ export default function Profile() {
   };
 
   return (
-    <div className="min-h-full bg-gray-50">
-      <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        <h1 className="text-3xl font-bold mb-8">Profile</h1>
+    <>
+      <FloatingShapesBackground />
+      <div className="relative z-10 min-h-full">
+        <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+          <h1 className="text-4xl sm:text-5xl font-extrabold text-purple-deep mb-8">Your Profile 👤</h1>
+
+          {/* Gamification Progress */}
+          {gamificationData && (
+            <ProgressGamification
+              level={gamificationData.level}
+              xp={gamificationData.xp}
+              xpMax={gamificationData.xpMax}
+              achievements={gamificationData.achievements}
+            />
+          )}
 
         {/* LinkedIn Import Message */}
         {linkedInMessage && (
@@ -209,39 +237,39 @@ export default function Profile() {
         )}
 
         {/* Import Profile Card */}
-        <Card className="mb-8">
+        <Card className="mb-8 rounded-3xl shadow-card-soft border-2 border-gray-100">
           <CardHeader>
-            <CardTitle>Quick Import</CardTitle>
+            <CardTitle className="text-2xl font-extrabold text-purple-deep">Quick Import ⚡</CardTitle>
           </CardHeader>
           <CardContent>
-            <p className="text-sm text-gray-600 mb-4">
+            <p className="text-sm text-gray-600 mb-6">
               Import your profile information from LinkedIn or your resume to get started quickly
             </p>
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
               <button
                 onClick={handleLinkedInImport}
-                className="flex flex-col items-center p-4 border-2 border-gray-200 rounded-lg hover:border-blue-500 hover:bg-blue-50 transition-all"
+                className="flex flex-col items-center p-6 border-2 border-gray-200 rounded-2xl hover:border-violet hover:bg-violet/5 hover:-translate-y-1 transition-all shadow-3d-sm"
               >
-                <Linkedin className="w-8 h-8 text-[#0077B5] mb-2" />
-                <span className="font-medium text-sm">Connect LinkedIn</span>
+                <Linkedin className="w-10 h-10 text-[#0077B5] mb-3" />
+                <span className="font-bold text-sm text-purple-deep">Connect LinkedIn</span>
                 <span className="text-xs text-gray-500 mt-1 text-center">Official OAuth integration</span>
               </button>
 
               <button
                 onClick={() => setShowLinkedInPaste(true)}
-                className="flex flex-col items-center p-4 border-2 border-gray-200 rounded-lg hover:border-green-500 hover:bg-green-50 transition-all"
+                className="flex flex-col items-center p-6 border-2 border-gray-200 rounded-2xl hover:border-teal hover:bg-teal/5 hover:-translate-y-1 transition-all shadow-3d-sm"
               >
-                <Copy className="w-8 h-8 text-green-600 mb-2" />
-                <span className="font-medium text-sm">Paste Profile</span>
+                <Copy className="w-10 h-10 text-teal mb-3" />
+                <span className="font-bold text-sm text-purple-deep">Paste Profile</span>
                 <span className="text-xs text-gray-500 mt-1 text-center">Copy & paste LinkedIn text</span>
               </button>
 
               <button
                 onClick={() => setShowResumeUpload(true)}
-                className="flex flex-col items-center p-4 border-2 border-gray-200 rounded-lg hover:border-purple-500 hover:bg-purple-50 transition-all"
+                className="flex flex-col items-center p-6 border-2 border-gray-200 rounded-2xl hover:border-coral hover:bg-coral/5 hover:-translate-y-1 transition-all shadow-3d-sm"
               >
-                <FileText className="w-8 h-8 text-purple-600 mb-2" />
-                <span className="font-medium text-sm">Upload Resume</span>
+                <FileText className="w-10 h-10 text-coral mb-3" />
+                <span className="font-bold text-sm text-purple-deep">Upload Resume</span>
                 <span className="text-xs text-gray-500 mt-1 text-center">Import from PDF</span>
               </button>
             </div>
@@ -250,37 +278,38 @@ export default function Profile() {
 
         {/* LinkedIn Paste Modal */}
         {showLinkedInPaste && (
-          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-            <div className="bg-white rounded-lg max-w-2xl w-full max-h-[90vh] overflow-y-auto">
-              <div className="p-6">
-                <h2 className="text-2xl font-bold mb-4">Paste LinkedIn Profile</h2>
-                <p className="text-gray-600 mb-4">
+          <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4 animate-[fadeIn_0.3s]">
+            <div className="bg-white rounded-3xl max-w-2xl w-full max-h-[90vh] overflow-y-auto shadow-3d-lg animate-bounce-in">
+              <div className="p-8">
+                <h2 className="text-3xl font-extrabold text-purple-deep mb-4">Paste LinkedIn Profile 📋</h2>
+                <p className="text-gray-600 mb-6">
                   Copy your LinkedIn profile text (go to your LinkedIn profile, select all text, and paste here)
                 </p>
                 <textarea
                   value={linkedInText}
                   onChange={(e) => setLinkedInText(e.target.value)}
-                  className="w-full h-64 border border-gray-300 rounded-lg p-3 text-sm"
+                  className="w-full h-64 border-2 border-gray-300 rounded-2xl p-4 text-sm focus:border-violet focus:ring-2 focus:ring-violet/20 transition-all"
                   placeholder="Paste your LinkedIn profile text here..."
                 />
-                <div className="flex gap-3 mt-4">
-                  <Button
+                <div className="flex gap-4 mt-6">
+                  <Button3D
                     onClick={handleLinkedInPaste}
                     disabled={isParsing || !linkedInText.trim()}
-                    className="flex-1"
+                    variant="primary"
+                    icon="🚀"
                   >
                     {isParsing ? 'Parsing...' : 'Import Profile'}
-                  </Button>
-                  <Button
+                  </Button3D>
+                  <Button3D
                     onClick={() => {
                       setShowLinkedInPaste(false);
                       setLinkedInText('');
                     }}
-                    className="flex-1 bg-gray-300 hover:bg-gray-400"
+                    variant="secondary"
                     disabled={isParsing}
                   >
                     Cancel
-                  </Button>
+                  </Button3D>
                 </div>
               </div>
             </div>
@@ -289,14 +318,14 @@ export default function Profile() {
 
         {/* Resume Upload Modal */}
         {showResumeUpload && (
-          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-            <div className="bg-white rounded-lg max-w-md w-full">
-              <div className="p-6">
-                <h2 className="text-2xl font-bold mb-4">Upload Resume</h2>
-                <p className="text-gray-600 mb-4">
+          <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4 animate-[fadeIn_0.3s]">
+            <div className="bg-white rounded-3xl max-w-md w-full shadow-3d-lg animate-bounce-in">
+              <div className="p-8">
+                <h2 className="text-3xl font-extrabold text-purple-deep mb-4">Upload Resume 📄</h2>
+                <p className="text-gray-600 mb-6">
                   Upload your resume PDF and we'll automatically extract your work experience and education
                 </p>
-                <div className="border-2 border-dashed border-gray-300 rounded-lg p-8 text-center mb-4">
+                <div className="border-2 border-dashed border-gray-300 rounded-2xl p-8 text-center mb-6 hover:border-violet transition-all">
                   <input
                     type="file"
                     accept=".pdf"
@@ -305,35 +334,36 @@ export default function Profile() {
                     id="resume-file"
                   />
                   <label htmlFor="resume-file" className="cursor-pointer">
-                    <Upload className="w-12 h-12 mx-auto mb-3 text-gray-400" />
+                    <Upload className="w-12 h-12 mx-auto mb-3 text-violet" />
                     {resumeFile ? (
-                      <span className="text-sm font-medium text-gray-700">{resumeFile.name}</span>
+                      <span className="text-sm font-bold text-purple-deep">{resumeFile.name}</span>
                     ) : (
                       <>
-                        <span className="text-blue-600 font-medium hover:underline">Click to upload</span>
+                        <span className="text-violet font-bold hover:underline">Click to upload</span>
                         <p className="text-sm text-gray-500 mt-1">PDF only, max 10MB</p>
                       </>
                     )}
                   </label>
                 </div>
-                <div className="flex gap-3">
-                  <Button
+                <div className="flex gap-4">
+                  <Button3D
                     onClick={handleResumeUpload}
                     disabled={isUploadingResume || !resumeFile}
-                    className="flex-1"
+                    variant="primary"
+                    icon="📤"
                   >
                     {isUploadingResume ? 'Uploading...' : 'Import Resume'}
-                  </Button>
-                  <Button
+                  </Button3D>
+                  <Button3D
                     onClick={() => {
                       setShowResumeUpload(false);
                       setResumeFile(null);
                     }}
-                    className="flex-1 bg-gray-300 hover:bg-gray-400"
+                    variant="secondary"
                     disabled={isUploadingResume}
                   >
                     Cancel
-                  </Button>
+                  </Button3D>
                 </div>
               </div>
             </div>
@@ -371,20 +401,20 @@ export default function Profile() {
 
           {/* Profile Info Tab */}
           <TabsContent value="profile">
-            <Card>
+            <Card className="rounded-3xl shadow-card-soft border-2 border-gray-100">
               <CardHeader>
                 <div className="flex items-center justify-between">
-                  <CardTitle>Your Information</CardTitle>
+                  <CardTitle className="text-2xl font-extrabold text-purple-deep">Your Information 📝</CardTitle>
                   {!isEditing ? (
-                    <Button
+                    <Button3D
                       onClick={() => setIsEditing(true)}
-                      className="flex items-center gap-2"
+                      variant="secondary"
+                      icon={<Edit className="w-4 h-4" />}
                     >
-                      <Edit className="w-4 h-4" />
                       Edit
-                    </Button>
+                    </Button3D>
                   ) : (
-                    <Button
+                    <Button3D
                       onClick={() => {
                         setIsEditing(false);
                         // Reset to user data
@@ -401,11 +431,11 @@ export default function Profile() {
                         setSkills(user?.skills ? (JSON.parse(user.skills) as string[]).join(', ') : '');
                         setAvatarFile(null);
                       }}
-                      className="flex items-center gap-2 bg-gray-500 hover:bg-gray-600"
+                      variant="secondary"
                     >
                       <X className="w-4 h-4" />
                       Cancel
-                    </Button>
+                    </Button3D>
                   )}
                 </div>
               </CardHeader>
@@ -611,11 +641,21 @@ export default function Profile() {
                       />
                     </div>
 
-                    <Button type="submit" className="w-full">
-                      {updateProfileMutation.isPending || updateProfileWithFileMutation.isPending
-                        ? 'Saving...'
-                        : 'Save Changes'}
-                    </Button>
+                    <div className="flex justify-center pt-4">
+                      <Button3D
+                        onClick={(e: React.MouseEvent<HTMLButtonElement>) => {
+                          e.preventDefault();
+                          handleSubmit(e as any);
+                        }}
+                        variant="primary"
+                        icon="💾"
+                        disabled={updateProfileMutation.isPending || updateProfileWithFileMutation.isPending}
+                      >
+                        {updateProfileMutation.isPending || updateProfileWithFileMutation.isPending
+                          ? 'Saving...'
+                          : 'Save Changes'}
+                      </Button3D>
+                    </div>
                   </form>
                 )}
               </CardContent>
@@ -647,7 +687,15 @@ export default function Profile() {
             <SettingsTab />
           </TabsContent>
         </Tabs>
+        </div>
       </div>
-    </div>
+
+      <SuccessCelebration
+        show={showCelebration}
+        message="Profile Updated!"
+        xpGained={xpEarned}
+        onClose={() => setShowCelebration(false)}
+      />
+    </>
   );
 }
