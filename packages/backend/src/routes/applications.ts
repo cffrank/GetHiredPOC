@@ -19,6 +19,7 @@ import {
   canPerformAction,
   incrementUsage,
 } from '../services/subscription.service';
+import { awardXP, checkAchievements } from '../services/gamification.service';
 
 type Variables = {
   env: Env;
@@ -82,6 +83,16 @@ applications.post('/', async (c) => {
 
     // Increment application counter after successful creation
     await incrementUsage(c.env.DB, user.id, 'application', 1);
+
+    // Award XP for application (50 XP)
+    try {
+      await awardXP(c.env.DB, user.id, 50, 'Application submitted');
+      // Check for new achievements
+      await checkAchievements(c.env.DB, user.id);
+    } catch (gamificationError) {
+      console.error('Gamification error:', gamificationError);
+      // Don't fail the request if gamification fails
+    }
 
     // Check if limit warning or limit reached email should be sent
     if (tierCheck.current !== undefined && tierCheck.limit) {

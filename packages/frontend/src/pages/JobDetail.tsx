@@ -10,6 +10,7 @@ import { Tabs, TabsList, TabsTrigger, TabsContent } from '../components/ui/Tabs'
 import { MatchScoreDial } from '../components/ui/MatchScoreDial';
 import { FloatingShapesBackground } from '../components/effects/FloatingShapesBackground';
 import { CuteRobotLoader } from '../components/loaders/CuteRobotLoader';
+import { SuccessCelebration } from '../components/SuccessCelebration';
 import { MapPin, BarChart3, FileText, Mail, Briefcase, Loader2 } from 'lucide-react';
 
 interface GeneratedResume {
@@ -47,6 +48,7 @@ export default function JobDetail() {
   const [loadingSimilar, setLoadingSimilar] = useState(false);
   const [loadingGeneratedContent, setLoadingGeneratedContent] = useState(false);
   const [activeTab, setActiveTab] = useState<string>('');
+  const [showCelebration, setShowCelebration] = useState(false);
 
   // Fetch generated content on mount
   useEffect(() => {
@@ -140,7 +142,11 @@ export default function JobDetail() {
 
   const handleApply = async () => {
     await createApplicationMutation.mutateAsync({ jobId: id!, status: 'applied' });
-    navigate('/applications');
+    setShowCelebration(true);
+    // Navigate after celebration
+    setTimeout(() => {
+      navigate('/applications');
+    }, 3000);
   };
 
   const handleAnalyze = async () => {
@@ -619,6 +625,14 @@ export default function JobDetail() {
           </div>
         </div>
       </div>
+
+      {/* Success Celebration */}
+      <SuccessCelebration
+        show={showCelebration}
+        message="Application Submitted!"
+        xpGained={50}
+        onClose={() => setShowCelebration(false)}
+      />
     </>
   );
 }
