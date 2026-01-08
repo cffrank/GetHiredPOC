@@ -124,6 +124,60 @@ export default {
         // Record the run
         await recordDailyScraperRun(env.DB, 'all');
 
+        // Check for expired trials and downgrade users
+        console.log('[Cron] Checking for expired trials');
+        const { checkExpiredTrials, getTrialsExpiringIn } = await import('./services/subscription.service');
+        const { sendTrialWarningEmail, sendTrialFinalWarningEmail, sendTrialExpiredEmail } = await import('./services/email.service');
+
+        // Check for expired trials
+        const expiredUsers = await checkExpiredTrials(env.DB);
+        console.log(`[Cron] Found ${expiredUsers.length} expired trials`);
+
+        // Send trial expired emails
+        for (const expiredUser of expiredUsers) {
+          try {
+            const user = await env.DB.prepare('SELECT * FROM users WHERE id = ?').bind(expiredUser.id).first();
+            if (user) {
+              await sendTrialExpiredEmail(env, user as any);
+              console.log(`[Cron] Trial expired email sent to ${expiredUser.email}`);
+            }
+          } catch (error: any) {
+            console.error(`[Cron] Failed to send trial expired email to ${expiredUser.email}:`, error.message);
+          }
+        }
+
+        // Check for trials expiring in 7 days
+        const expiring7Days = await getTrialsExpiringIn(env.DB, 7);
+        console.log(`[Cron] Found ${expiring7Days.length} trials expiring in 7 days`);
+
+        for (const user of expiring7Days) {
+          try {
+            const fullUser = await env.DB.prepare('SELECT * FROM users WHERE id = ?').bind(user.id).first();
+            if (fullUser) {
+              await sendTrialWarningEmail(env, fullUser as any, 7);
+              console.log(`[Cron] 7-day warning sent to ${user.email}`);
+            }
+          } catch (error: any) {
+            console.error(`[Cron] Failed to send 7-day warning to ${user.email}:`, error.message);
+          }
+        }
+
+        // Check for trials expiring in 1 day
+        const expiring1Day = await getTrialsExpiringIn(env.DB, 1);
+        console.log(`[Cron] Found ${expiring1Day.length} trials expiring in 1 day`);
+
+        for (const user of expiring1Day) {
+          try {
+            const fullUser = await env.DB.prepare('SELECT * FROM users WHERE id = ?').bind(user.id).first();
+            if (fullUser) {
+              await sendTrialFinalWarningEmail(env, fullUser as any);
+              console.log(`[Cron] Final warning sent to ${user.email}`);
+            }
+          } catch (error: any) {
+            console.error(`[Cron] Failed to send final warning to ${user.email}:`, error.message);
+          }
+        }
+
         // If it's the 1st of the month, send monthly usage summaries
         if (now.getDate() === 1) {
           console.log('[Cron] First day of month - sending monthly usage summaries');

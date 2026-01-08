@@ -7,8 +7,9 @@ export function Navigation() {
 
   // Use subscription_tier (new Polar system) with fallback to membership_tier (old system)
   const subscriptionTier = user?.subscription_tier || user?.membership_tier;
-  const isFree = subscriptionTier === 'free' || subscriptionTier === 'trial' || !subscriptionTier;
-  const isPro = subscriptionTier === 'pro' || subscriptionTier === 'paid';
+  const isTrial = subscriptionTier === 'pro' && user?.is_trial === 1;
+  const isFree = (subscriptionTier === 'free' || subscriptionTier === 'trial' || !subscriptionTier) && !isTrial;
+  const isPro = (subscriptionTier === 'pro' || subscriptionTier === 'paid') && !isTrial;
 
   return (
     <nav className="border-b bg-white">
@@ -45,10 +46,10 @@ export function Navigation() {
                     </Button>
                   </Link>
                 )}
-                {isFree && (
+                {(isFree || isTrial) && (
                   <Link to="/subscription">
                     <Button className="bg-green-600 hover:bg-green-700 text-white text-sm font-semibold">
-                      Upgrade to PRO
+                      {isTrial ? 'Keep PRO Access' : 'Upgrade to PRO'}
                     </Button>
                   </Link>
                 )}
@@ -58,6 +59,11 @@ export function Navigation() {
                 <Link to="/profile" className="flex items-center space-x-2">
                   <Button variant="ghost" className="flex items-center space-x-2">
                     <span>{user.email}</span>
+                    {isTrial && (
+                      <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-semibold bg-blue-100 text-blue-700 border border-blue-600">
+                        PRO Trial
+                      </span>
+                    )}
                     {isPro && (
                       <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-semibold bg-green-100 text-green-700 border border-green-600">
                         PRO

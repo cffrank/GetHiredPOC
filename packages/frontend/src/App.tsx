@@ -22,6 +22,8 @@ import AdminSubscriptions from './pages/admin/AdminSubscriptions';
 import AdminJobs from './pages/admin/AdminJobs';
 import AdminPrompts from './pages/admin/AdminPrompts';
 import AdminAnalytics from './pages/admin/AdminAnalytics';
+import TermsOfService from './pages/TermsOfService';
+import PrivacyPolicy from './pages/PrivacyPolicy';
 
 export default function App() {
   return (
@@ -29,6 +31,8 @@ export default function App() {
       <Route path="/" element={<Home />} />
       <Route path="/login" element={<Login />} />
       <Route path="/signup" element={<Signup />} />
+      <Route path="/terms" element={<TermsOfService />} />
+      <Route path="/privacy" element={<PrivacyPolicy />} />
 
       <Route element={<ProtectedRoute />}>
         <Route element={<UserLayout />}>

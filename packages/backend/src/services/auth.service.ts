@@ -31,15 +31,23 @@ export async function signup(
 
   const passwordHash = await hashPassword(password);
 
+  // Set new users to PRO trial automatically
+  const trialStartsAt = Math.floor(Date.now() / 1000);
+  const trialExpiresAt = trialStartsAt + (14 * 24 * 60 * 60); // 14 days
+
   const result = await env.DB.prepare(
-    `INSERT INTO users (email, password_hash) VALUES (?, ?) RETURNING
+    `INSERT INTO users (
+      email, password_hash,
+      subscription_tier, subscription_status,
+      trial_started_at, trial_expires_at, is_trial
+    ) VALUES (?, ?, ?, ?, ?, ?, ?) RETURNING
      id, email, full_name, bio, location, skills, avatar_url, address, linkedin_url, role,
      membership_tier, membership_started_at, membership_expires_at, trial_started_at,
      subscription_tier, subscription_status, subscription_started_at, subscription_expires_at,
-     polar_customer_id, polar_subscription_id,
+     polar_customer_id, polar_subscription_id, trial_expires_at, is_trial,
      created_at, updated_at`
   )
-    .bind(email, passwordHash)
+    .bind(email, passwordHash, 'pro', 'active', trialStartsAt, trialExpiresAt, 1)
     .first<User>();
 
   if (!result) {
@@ -60,7 +68,7 @@ export async function login(
     `SELECT id, email, password_hash, full_name, bio, location, skills, avatar_url, address, linkedin_url, role,
      membership_tier, membership_started_at, membership_expires_at, trial_started_at,
      subscription_tier, subscription_status, subscription_started_at, subscription_expires_at,
-     polar_customer_id, polar_subscription_id,
+     polar_customer_id, polar_subscription_id, trial_expires_at, is_trial,
      created_at, updated_at
      FROM users WHERE email = ?`
   )
@@ -118,7 +126,7 @@ export async function getSession(
     `SELECT id, email, full_name, bio, location, skills, avatar_url, address, linkedin_url, role,
      membership_tier, membership_started_at, membership_expires_at, trial_started_at,
      subscription_tier, subscription_status, subscription_started_at, subscription_expires_at,
-     polar_customer_id, polar_subscription_id,
+     polar_customer_id, polar_subscription_id, trial_expires_at, is_trial,
      created_at, updated_at
      FROM users WHERE id = ?`
   )

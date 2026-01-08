@@ -13,6 +13,8 @@ export interface User {
   membership_started_at?: number;
   membership_expires_at?: number;
   trial_started_at?: number;
+  trial_expires_at?: number;
+  is_trial?: number; // 0 or 1 (SQLite boolean)
   // Subscription tier system
   subscription_tier?: 'free' | 'pro';
   subscription_status?: 'active' | 'canceled' | 'expired';

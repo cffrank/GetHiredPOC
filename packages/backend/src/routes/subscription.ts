@@ -39,6 +39,9 @@ subscription.get('/status', async (c) => {
         startedAt: status.startedAt,
         expiresAt: status.expiresAt,
         daysRemaining: status.daysRemaining,
+        isTrial: status.isTrial,
+        trialExpiresAt: status.trialExpiresAt,
+        trialDaysRemaining: status.trialDaysRemaining,
       },
       limits: tierInfo.limits,
       usage: {
