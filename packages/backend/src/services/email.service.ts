@@ -7,6 +7,9 @@ import { LimitReachedEmail } from '../emails/LimitReachedEmail';
 import { PaymentSuccessEmail } from '../emails/PaymentSuccessEmail';
 import { PaymentFailedEmail } from '../emails/PaymentFailedEmail';
 import { MonthlyUsageSummary } from '../emails/MonthlyUsageSummary';
+import { TrialWarningEmail } from '../emails/TrialWarningEmail';
+import { TrialFinalWarningEmail } from '../emails/TrialFinalWarningEmail';
+import { TrialExpiredEmail } from '../emails/TrialExpiredEmail';
 
 export interface EmailPreferences {
   userId: string;
@@ -475,5 +478,124 @@ export async function sendMonthlyUsageSummary(
   } catch (error: any) {
     console.error('Failed to send monthly summary email:', error.message);
     await logEmail(env.DB, user.email, 'monthly_summary', subject, 'failed');
+  }
+}
+
+/**
+ * Send trial warning email (7 days before expiry)
+ */
+export async function sendTrialWarningEmail(
+  env: Env,
+  user: User,
+  daysRemaining: number
+): Promise<void> {
+  const apiKey = env.RESEND_API_KEY;
+  if (!apiKey) {
+    console.warn('Resend API key not configured, skipping trial warning email');
+    return;
+  }
+
+  const resend = new Resend(apiKey);
+  const subject = `Your PRO trial expires in ${daysRemaining} days`;
+
+  try {
+    const html = await render(
+      TrialWarningEmail({
+        userName: user.full_name || 'there',
+        daysRemaining,
+        upgradeUrl: `${env.FRONTEND_URL || 'https://gethiredpoc.pages.dev'}/subscription`,
+      })
+    );
+
+    await resend.emails.send({
+      from: 'GetHiredPOC <noreply@gethiredpoc.com>',
+      to: user.email,
+      subject,
+      html,
+    });
+
+    console.log(`Trial warning email sent to ${user.email}`);
+    await logEmail(env.DB, user.email, 'trial_warning', subject, 'sent');
+  } catch (error: any) {
+    console.error('Failed to send trial warning email:', error.message);
+    await logEmail(env.DB, user.email, 'trial_warning', subject, 'failed');
+  }
+}
+
+/**
+ * Send trial final warning email (1 day before expiry)
+ */
+export async function sendTrialFinalWarningEmail(
+  env: Env,
+  user: User
+): Promise<void> {
+  const apiKey = env.RESEND_API_KEY;
+  if (!apiKey) {
+    console.warn('Resend API key not configured, skipping trial final warning email');
+    return;
+  }
+
+  const resend = new Resend(apiKey);
+  const subject = 'Your PRO trial expires tomorrow!';
+
+  try {
+    const html = await render(
+      TrialFinalWarningEmail({
+        userName: user.full_name || 'there',
+        upgradeUrl: `${env.FRONTEND_URL || 'https://gethiredpoc.pages.dev'}/subscription`,
+      })
+    );
+
+    await resend.emails.send({
+      from: 'GetHiredPOC <noreply@gethiredpoc.com>',
+      to: user.email,
+      subject,
+      html,
+    });
+
+    console.log(`Trial final warning email sent to ${user.email}`);
+    await logEmail(env.DB, user.email, 'trial_final_warning', subject, 'sent');
+  } catch (error: any) {
+    console.error('Failed to send trial final warning email:', error.message);
+    await logEmail(env.DB, user.email, 'trial_final_warning', subject, 'failed');
+  }
+}
+
+/**
+ * Send trial expired email
+ */
+export async function sendTrialExpiredEmail(
+  env: Env,
+  user: User
+): Promise<void> {
+  const apiKey = env.RESEND_API_KEY;
+  if (!apiKey) {
+    console.warn('Resend API key not configured, skipping trial expired email');
+    return;
+  }
+
+  const resend = new Resend(apiKey);
+  const subject = 'Your PRO trial has ended';
+
+  try {
+    const html = await render(
+      TrialExpiredEmail({
+        userName: user.full_name || 'there',
+        upgradeUrl: `${env.FRONTEND_URL || 'https://gethiredpoc.pages.dev'}/subscription`,
+      })
+    );
+
+    await resend.emails.send({
+      from: 'GetHiredPOC <noreply@gethiredpoc.com>',
+      to: user.email,
+      subject,
+      html,
+    });
+
+    console.log(`Trial expired email sent to ${user.email}`);
+    await logEmail(env.DB, user.email, 'trial_expired', subject, 'sent');
+  } catch (error: any) {
+    console.error('Failed to send trial expired email:', error.message);
+    await logEmail(env.DB, user.email, 'trial_expired', subject, 'failed');
   }
 }

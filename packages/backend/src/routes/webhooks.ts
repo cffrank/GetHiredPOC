@@ -34,12 +34,11 @@ webhooks.post('/polar', async (c) => {
     const rawBody = await c.req.text();
 
     // Verify webhook signature (security-critical)
-    // TODO: Implement actual signature verification when webhook secret is available
-    // const isValid = verifyWebhookSignature(rawBody, signature, c.env.POLAR_WEBHOOK_SECRET || '');
-    // if (!isValid) {
-    //   console.error('Invalid webhook signature');
-    //   return c.json({ error: 'Invalid signature' }, 401);
-    // }
+    const isValid = verifyWebhookSignature(rawBody, signature, c.env.POLAR_WEBHOOK_SECRET || '');
+    if (!isValid) {
+      console.error('Invalid webhook signature');
+      return c.json({ error: 'Invalid signature' }, 401);
+    }
 
     // Parse webhook payload
     const payload = JSON.parse(rawBody);
@@ -65,7 +64,7 @@ webhooks.post('/polar', async (c) => {
         const now = Math.floor(Date.now() / 1000);
         const expiresAt = now + (30 * 24 * 60 * 60); // 30 days from now
 
-        // Upgrade user to PRO tier
+        // Upgrade user to PRO tier (convert from trial to paid)
         await c.env.DB.prepare(`
           UPDATE users
           SET subscription_tier = 'pro',
@@ -74,6 +73,7 @@ webhooks.post('/polar', async (c) => {
               subscription_expires_at = ?,
               polar_customer_id = ?,
               polar_subscription_id = ?,
+              is_trial = 0,
               updated_at = unixepoch()
           WHERE id = ?
         `)

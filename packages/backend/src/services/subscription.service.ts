@@ -79,23 +79,31 @@ function generateUsageId(userId: string, month: string): string {
  */
 export async function getUserTier(db: D1Database, userId: string): Promise<UserTierInfo> {
   const user = await db
-    .prepare('SELECT subscription_tier, subscription_status, subscription_expires_at FROM users WHERE id = ?')
+    .prepare('SELECT subscription_tier, subscription_status, subscription_expires_at, is_trial, trial_expires_at FROM users WHERE id = ?')
     .bind(userId)
     .first<{
       subscription_tier: SubscriptionTier;
       subscription_status: string;
       subscription_expires_at: number | null;
+      is_trial: number;
+      trial_expires_at: number | null;
     }>();
 
   if (!user) {
     throw new Error('User not found');
   }
 
-  // Check if pro subscription has expired
+  const now = Math.floor(Date.now() / 1000);
   let tier: SubscriptionTier = user.subscription_tier || 'free';
 
-  if (tier === 'pro') {
-    const now = Math.floor(Date.now() / 1000);
+  // Check if trial has expired
+  if (user.is_trial && user.trial_expires_at && now > user.trial_expires_at) {
+    // Auto-downgrade to FREE
+    await downgradeUserToFree(db, userId);
+    tier = 'free';
+  }
+  // Check if paid pro subscription has expired
+  else if (tier === 'pro' && !user.is_trial) {
     const hasExpired = user.subscription_expires_at && user.subscription_expires_at < now;
     const isCanceled = user.subscription_status === 'expired' || user.subscription_status === 'canceled';
 
@@ -394,7 +402,8 @@ export async function downgradeUserToFree(
     .prepare(`
       UPDATE users
       SET subscription_tier = 'free',
-          subscription_status = 'canceled',
+          subscription_status = 'expired',
+          is_trial = 0,
           updated_at = unixepoch()
       WHERE id = ?
     `)
@@ -418,6 +427,9 @@ export async function getSubscriptionStatus(
   startedAt: number | null;
   expiresAt: number | null;
   daysRemaining: number | null;
+  isTrial: boolean;
+  trialExpiresAt: number | null;
+  trialDaysRemaining: number | null;
 }> {
   const user = await db
     .prepare(`
@@ -425,7 +437,9 @@ export async function getSubscriptionStatus(
         subscription_tier,
         subscription_status,
         subscription_started_at,
-        subscription_expires_at
+        subscription_expires_at,
+        is_trial,
+        trial_expires_at
       FROM users
       WHERE id = ?
     `)
@@ -435,6 +449,8 @@ export async function getSubscriptionStatus(
       subscription_status: string;
       subscription_started_at: number | null;
       subscription_expires_at: number | null;
+      is_trial: number;
+      trial_expires_at: number | null;
     }>();
 
   if (!user) {
@@ -448,13 +464,76 @@ export async function getSubscriptionStatus(
     daysRemaining = Math.max(0, Math.ceil(secondsRemaining / (24 * 60 * 60)));
   }
 
+  let trialDaysRemaining: number | null = null;
+  if (user.trial_expires_at) {
+    const now = Math.floor(Date.now() / 1000);
+    const secondsRemaining = user.trial_expires_at - now;
+    trialDaysRemaining = Math.max(0, Math.ceil(secondsRemaining / (24 * 60 * 60)));
+  }
+
   return {
     tier: user.subscription_tier || 'free',
     status: user.subscription_status || 'active',
     startedAt: user.subscription_started_at,
     expiresAt: user.subscription_expires_at,
     daysRemaining,
+    isTrial: user.is_trial === 1,
+    trialExpiresAt: user.trial_expires_at,
+    trialDaysRemaining,
   };
+}
+
+/**
+ * Check for expired trials and downgrade users to FREE tier
+ *
+ * @param db - D1 Database instance
+ * @returns Array of users who were downgraded
+ */
+export async function checkExpiredTrials(db: D1Database): Promise<Array<{ id: string; email: string; trial_expires_at: number }>> {
+  const expiredTrials = await db
+    .prepare(`
+      SELECT id, email, trial_expires_at
+      FROM users
+      WHERE is_trial = 1
+        AND trial_expires_at < unixepoch()
+        AND subscription_tier = 'pro'
+    `)
+    .all();
+
+  const users = expiredTrials.results as Array<{ id: string; email: string; trial_expires_at: number }>;
+
+  for (const user of users) {
+    await downgradeUserToFree(db, user.id);
+  }
+
+  return users;
+}
+
+/**
+ * Check for trials expiring soon and return users who need warning emails
+ *
+ * @param db - D1 Database instance
+ * @param daysUntilExpiry - Number of days until expiry to check (7 or 1)
+ * @returns Array of users needing warning emails
+ */
+export async function getTrialsExpiringIn(
+  db: D1Database,
+  daysUntilExpiry: number
+): Promise<Array<{ id: string; email: string; trial_expires_at: number; full_name: string | null }>> {
+  const startSeconds = daysUntilExpiry * 24 * 60 * 60;
+  const endSeconds = (daysUntilExpiry - 1) * 24 * 60 * 60;
+
+  const expiringTrials = await db
+    .prepare(`
+      SELECT id, email, trial_expires_at, full_name
+      FROM users
+      WHERE is_trial = 1
+        AND trial_expires_at BETWEEN unixepoch() + ? AND unixepoch() + ?
+    `)
+    .bind(endSeconds, startSeconds)
+    .all();
+
+  return expiringTrials.results as Array<{ id: string; email: string; trial_expires_at: number; full_name: string | null }>;
 }
 
 /**

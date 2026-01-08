@@ -31,15 +31,23 @@ export async function signup(
 
   const passwordHash = await hashPassword(password);
 
+  // Set new users to PRO trial automatically
+  const trialStartsAt = Math.floor(Date.now() / 1000);
+  const trialExpiresAt = trialStartsAt + (14 * 24 * 60 * 60); // 14 days
+
   const result = await env.DB.prepare(
-    `INSERT INTO users (email, password_hash) VALUES (?, ?) RETURNING
+    `INSERT INTO users (
+      email, password_hash,
+      subscription_tier, subscription_status,
+      trial_started_at, trial_expires_at, is_trial
+    ) VALUES (?, ?, ?, ?, ?, ?, ?) RETURNING
      id, email, full_name, bio, location, skills, avatar_url, address, linkedin_url, role,
      membership_tier, membership_started_at, membership_expires_at, trial_started_at,
      subscription_tier, subscription_status, subscription_started_at, subscription_expires_at,
-     polar_customer_id, polar_subscription_id,
+     polar_customer_id, polar_subscription_id, trial_expires_at, is_trial,
      created_at, updated_at`
   )
-    .bind(email, passwordHash)
+    .bind(email, passwordHash, 'pro', 'active', trialStartsAt, trialExpiresAt, 1)
     .first<User>();
 
   if (!result) {
@@ -60,7 +68,7 @@ export async function login(
     `SELECT id, email, password_hash, full_name, bio, location, skills, avatar_url, address, linkedin_url, role,
      membership_tier, membership_started_at, membership_expires_at, trial_started_at,
      subscription_tier, subscription_status, subscription_started_at, subscription_expires_at,
-     polar_customer_id, polar_subscription_id,
+     polar_customer_id, polar_subscription_id, trial_expires_at, is_trial,
      created_at, updated_at
      FROM users WHERE email = ?`
   )
@@ -118,7 +126,7 @@ export async function getSession(
     `SELECT id, email, full_name, bio, location, skills, avatar_url, address, linkedin_url, role,
      membership_tier, membership_started_at, membership_expires_at, trial_started_at,
      subscription_tier, subscription_status, subscription_started_at, subscription_expires_at,
-     polar_customer_id, polar_subscription_id,
+     polar_customer_id, polar_subscription_id, trial_expires_at, is_trial,
      created_at, updated_at
      FROM users WHERE id = ?`
   )
@@ -150,8 +158,8 @@ export function setSessionCookie(sessionId: string, isProduction: boolean = fals
   const maxAge = 7 * 24 * 60 * 60; // 7 days in seconds
 
   if (isProduction) {
-    // Production: cross-origin cookies require SameSite=none and Secure
-    return `session=${sessionId}; Path=/; HttpOnly; Secure; SameSite=None; Max-Age=${maxAge}`;
+    // Production: cross-origin cookies require SameSite=None, Secure, and Partitioned (CHIPS)
+    return `session=${sessionId}; Path=/; HttpOnly; Secure; SameSite=None; Partitioned; Max-Age=${maxAge}`;
   } else {
     // Development: same-origin
     return `session=${sessionId}; Path=/; HttpOnly; SameSite=Lax; Max-Age=${maxAge}`;
@@ -160,17 +168,27 @@ export function setSessionCookie(sessionId: string, isProduction: boolean = fals
 
 export function clearSessionCookie(isProduction: boolean = false): string {
   if (isProduction) {
-    return "session=; Path=/; HttpOnly; Secure; SameSite=None; Max-Age=0";
+    return "session=; Path=/; HttpOnly; Secure; SameSite=None; Partitioned; Max-Age=0";
   } else {
     return "session=; Path=/; HttpOnly; SameSite=Lax; Max-Age=0";
   }
 }
 
 /**
- * Get current user from session cookie in Hono context
+ * Get current user from session cookie OR Authorization header in Hono context
  */
 export async function getCurrentUser(c: any): Promise<User | null> {
-  const sessionId = getCookie(c.req.raw, 'session');
+  // Try cookie first (for same-origin or browsers that support Partitioned cookies)
+  let sessionId = getCookie(c.req.raw, 'session');
+
+  // Fallback to Authorization header (for cross-origin when cookies are blocked)
+  if (!sessionId) {
+    const authHeader = c.req.header('Authorization');
+    if (authHeader && authHeader.startsWith('Bearer ')) {
+      sessionId = authHeader.substring(7); // Remove "Bearer " prefix
+    }
+  }
+
   if (!sessionId) {
     return null;
   }

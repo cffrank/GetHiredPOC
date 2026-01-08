@@ -21,6 +21,9 @@ interface SubscriptionStatus {
   };
   membership_started_at?: number;
   membership_expires_at?: number;
+  isTrial?: boolean;
+  trialExpiresAt?: number;
+  trialDaysRemaining?: number;
 }
 
 export default function Subscription() {
@@ -30,7 +33,31 @@ export default function Subscription() {
 
   const { data: status, isLoading, error } = useQuery<SubscriptionStatus>({
     queryKey: ['subscription', 'status'],
-    queryFn: () => apiClient.request('/api/subscription/status'),
+    queryFn: async () => {
+      const response = await apiClient.request('/api/subscription/status');
+
+      // Transform API response to match component interface
+      return {
+        tier: response.subscription.tier,
+        usage: {
+          job_imports_today: response.usage.jobImports.count,
+          applications_this_month: response.usage.applications.count,
+          resumes_generated: response.usage.resumesGenerated.count,
+          cover_letters_generated: response.usage.coverLettersGenerated.count,
+        },
+        limits: {
+          job_imports_daily: response.usage.jobImports.limit,
+          applications_monthly: response.usage.applications.limit,
+          resumes_total: response.usage.resumesGenerated.limit,
+          cover_letters_total: response.usage.coverLettersGenerated.limit,
+        },
+        membership_started_at: response.subscription.startedAt,
+        membership_expires_at: response.subscription.expiresAt,
+        isTrial: response.subscription.isTrial,
+        trialExpiresAt: response.subscription.trialExpiresAt,
+        trialDaysRemaining: response.subscription.trialDaysRemaining,
+      };
+    },
   });
 
   // Check for success parameter from Polar redirect
@@ -78,8 +105,9 @@ export default function Subscription() {
   }
 
   // Support both new subscription_tier ('free'/'pro') and old membership_tier ('trial'/'paid')
-  const isFree = status?.tier === 'free' || status?.tier === 'trial';
-  const isPro = status?.tier === 'pro' || status?.tier === 'paid';
+  const isFree = status?.tier === 'free' && !status?.isTrial;
+  const isPro = status?.tier === 'pro' && !status?.isTrial;
+  const isTrial = status?.tier === 'pro' && status?.isTrial;
 
   const UsageBar = ({
     label,
@@ -92,7 +120,8 @@ export default function Subscription() {
     limit: number | null;
     color?: 'blue' | 'green' | 'purple' | 'orange';
   }) => {
-    const isUnlimited = limit === null;
+    // Treat null or 999999 as unlimited (PRO tier)
+    const isUnlimited = limit === null || limit === 999999;
     const percentage = isUnlimited ? 0 : Math.min((current / limit) * 100, 100);
     const isNearLimit = !isUnlimited && percentage > 80;
 
@@ -178,7 +207,12 @@ export default function Subscription() {
         <div>
           {isFree && (
             <span className="inline-flex items-center px-4 py-2 rounded-full text-sm font-semibold bg-gray-100 text-gray-700 border border-gray-300">
-              FREE TRIAL
+              FREE
+            </span>
+          )}
+          {isTrial && (
+            <span className="inline-flex items-center px-4 py-2 rounded-full text-sm font-semibold bg-blue-100 text-blue-700 border border-blue-600">
+              PRO TRIAL
             </span>
           )}
           {isPro && (
@@ -196,9 +230,25 @@ export default function Subscription() {
           <div className="flex justify-between">
             <span className="text-gray-600">Plan:</span>
             <span className="font-semibold text-gray-900">
-              {isFree ? 'Free Trial' : 'PRO'}
+              {isFree ? 'FREE' : isTrial ? 'PRO Trial' : 'PRO'}
             </span>
           </div>
+          {isTrial && status?.trialDaysRemaining !== undefined && (
+            <div className="flex justify-between">
+              <span className="text-gray-600">Trial ends in:</span>
+              <span className={`font-semibold ${status.trialDaysRemaining <= 3 ? 'text-red-600' : 'text-blue-600'}`}>
+                {status.trialDaysRemaining} {status.trialDaysRemaining === 1 ? 'day' : 'days'}
+              </span>
+            </div>
+          )}
+          {isTrial && status?.trialExpiresAt && (
+            <div className="flex justify-between">
+              <span className="text-gray-600">Trial expires:</span>
+              <span className="font-semibold text-gray-900">
+                {new Date(status.trialExpiresAt * 1000).toLocaleDateString()}
+              </span>
+            </div>
+          )}
           {status?.membership_started_at && (
             <div className="flex justify-between">
               <span className="text-gray-600">Member since:</span>
@@ -253,12 +303,16 @@ export default function Subscription() {
         </div>
       </div>
 
-      {/* Upgrade Section (only show for free users) */}
-      {isFree && (
+      {/* Upgrade Section (show for free and trial users) */}
+      {(isFree || isTrial) && (
         <div className="bg-gradient-to-br from-blue-50 to-green-50 border border-blue-200 rounded-lg p-8 shadow-md">
           <div className="text-center mb-6">
-            <h2 className="text-2xl font-bold text-gray-900 mb-2">Upgrade to PRO</h2>
-            <p className="text-gray-700">Unlock unlimited access to all features</p>
+            <h2 className="text-2xl font-bold text-gray-900 mb-2">
+              {isTrial ? 'Keep Your PRO Access' : 'Upgrade to PRO'}
+            </h2>
+            <p className="text-gray-700">
+              {isTrial ? 'Continue enjoying unlimited access after your trial ends' : 'Unlock unlimited access to all features'}
+            </p>
             <div className="mt-4">
               <span className="text-4xl font-bold text-green-600">$39</span>
               <span className="text-gray-600 text-lg">/month</span>

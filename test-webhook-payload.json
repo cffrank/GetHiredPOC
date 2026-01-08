@@ -1,0 +1,14 @@
+{
+  "type": "subscription.created",
+  "data": {
+    "id": "sub_test_123456789",
+    "customer_id": "cus_test_123456789",
+    "status": "active",
+    "current_period_end": "2026-02-07T22:00:00Z",
+    "amount": 3900,
+    "metadata": {
+      "userId": "YOUR_USER_ID_HERE",
+      "source": "gethiredpoc"
+    }
+  }
+}

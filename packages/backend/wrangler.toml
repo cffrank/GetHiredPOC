@@ -3,10 +3,13 @@ main = "src/index.ts"
 compatibility_date = "2024-01-01"
 compatibility_flags = ["nodejs_compat"]
 
+# Disable workers.dev subdomain (only use custom domain)
+workers_dev = false
+
 # CORS allowed origins (update with production frontend URL)
 [vars]
-FRONTEND_URL = "https://gethiredpoc.pages.dev"
-BACKEND_URL = "https://gethiredpoc-api.carl-f-frank.workers.dev"
+FRONTEND_URL = "https://app.allfrontoffice.com"
+BACKEND_URL = "https://api.allfrontoffice.com"
 CLOUDFLARE_ACCOUNT_ID = "280c58ea17d9fe3235c33bd0a52a256b"
 
 # Admin emails (comma-separated list)
@@ -35,6 +38,7 @@ LINKEDIN_CLIENT_ID = "86gnb581r70q6j"
 
 # Polar.sh API Token for subscription payment processing
 # Note: Add POLAR_ACCESS_TOKEN via: npx wrangler secret put POLAR_ACCESS_TOKEN (DONE)
+# Note: Add POLAR_WEBHOOK_SECRET via: npx wrangler secret put POLAR_WEBHOOK_SECRET (DONE)
 # IMPORTANT: Currently using SANDBOX environment (sandbox.polar.sh)
 POLAR_PRODUCT_ID = "e866b778-608d-41fb-a308-78cdef850f92" # Sandbox PRO product ($39/month)
 POLAR_SANDBOX = "true" # Set to "false" for production, "true" for sandbox testing

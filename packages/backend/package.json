@@ -4,8 +4,8 @@
   "private": true,
   "type": "module",
   "scripts": {
-    "dev": "wrangler dev",
-    "deploy": "wrangler deploy",
+    "dev": "npx wrangler dev",
+    "deploy": "npx wrangler deploy",
     "build": "tsc"
   },
   "dependencies": {
@@ -27,6 +27,6 @@
     "@cloudflare/workers-types": "^4.20250110.0",
     "@types/bcryptjs": "^2.4.6",
     "typescript": "^5.9.3",
-    "wrangler": "^3.100.0"
+    "wrangler": "^4.54.0"
   }
 }

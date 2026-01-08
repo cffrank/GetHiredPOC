@@ -68,3 +68,6 @@ coverage
 
 # Playwright test artifacts
 .playwright-mcp/
+test-results/
+playwright-report/
+playwright/.cache/

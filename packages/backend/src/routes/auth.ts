@@ -36,7 +36,10 @@ auth.post('/signup', async (c) => {
     );
 
     return c.json(
-      { user },
+      {
+        user,
+        sessionId, // Include sessionId in response for localStorage fallback
+      },
       201,
       {
         'Set-Cookie': setSessionCookie(sessionId, isProduction),
@@ -61,7 +64,10 @@ auth.post('/login', async (c) => {
     const isProduction = c.env.FRONTEND_URL?.includes('pages.dev');
 
     return c.json(
-      { user },
+      {
+        user,
+        sessionId, // Include sessionId in response for localStorage fallback
+      },
       200,
       {
         'Set-Cookie': setSessionCookie(sessionId, isProduction),
