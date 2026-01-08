@@ -27,7 +27,7 @@ interviewQuestions.use('*', async (c, next) => {
     return c.json({ error: 'Invalid session' }, 401);
   }
 
-  c.set('userId', session.user_id);
+  c.set('userId', session.id);
   await next();
 });
 
