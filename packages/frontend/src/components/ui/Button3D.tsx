@@ -1,8 +1,8 @@
-import { ReactNode } from 'react';
+import { ReactNode, MouseEvent } from 'react';
 
 interface Button3DProps {
   children: ReactNode;
-  onClick?: () => void;
+  onClick?: (e?: MouseEvent<HTMLButtonElement>) => void;
   icon?: ReactNode;
   variant?: 'primary' | 'secondary';
   disabled?: boolean;

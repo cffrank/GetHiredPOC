@@ -643,8 +643,8 @@ export default function Profile() {
 
                     <div className="flex justify-center pt-4">
                       <Button3D
-                        onClick={(e: React.MouseEvent<HTMLButtonElement>) => {
-                          e.preventDefault();
+                        onClick={(e) => {
+                          e?.preventDefault();
                           handleSubmit(e as any);
                         }}
                         variant="primary"
