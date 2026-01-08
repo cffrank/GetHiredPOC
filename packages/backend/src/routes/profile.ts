@@ -3,6 +3,7 @@ import type { Env } from '../services/db.service';
 import { getSession, getCookie, validatePhone, validateZipCode, validateState } from '../services/auth.service';
 import { uploadFile } from '../services/storage.service';
 import type { User } from '@gethiredpoc/shared';
+import { awardXP, checkAchievements } from '../services/gamification.service';
 
 type Variables = {
   env: Env;
@@ -170,6 +171,21 @@ profile.put('/', async (c) => {
     await invalidateUserEmbeddingCache(c.env, user.id).catch(err => {
       console.error('[Route] Failed to invalidate embedding cache:', err);
     });
+
+    // Award XP for profile update (varies by completeness)
+    try {
+      // Award 100 XP if this is a substantial update
+      if (Object.keys(updates).length >= 3) {
+        await awardXP(c.env.DB, user.id, 100, 'Profile updated');
+      } else {
+        await awardXP(c.env.DB, user.id, 25, 'Profile updated');
+      }
+      // Check for profile completion achievement
+      await checkAchievements(c.env.DB, user.id);
+    } catch (gamificationError) {
+      console.error('Gamification error:', gamificationError);
+      // Don't fail the request if gamification fails
+    }
 
     return c.json({ profile: updatedUser }, 200);
   } catch (error: any) {

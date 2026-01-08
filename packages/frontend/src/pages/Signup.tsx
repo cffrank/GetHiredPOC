@@ -2,10 +2,11 @@ import { useState, FormEvent } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { Navigation } from '../components/Navigation';
-import { Button } from '../components/ui/Button';
+import { Button3D } from '../components/ui/Button3D';
 import { Input } from '../components/ui/Input';
 import { Label } from '../components/ui/Label';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '../components/ui/Card';
+import { FloatingShapesBackground } from '../components/effects/FloatingShapesBackground';
 import { US_STATES, validatePhone, validateZipCode } from '../lib/constants';
 
 export default function Signup() {
@@ -74,22 +75,23 @@ export default function Signup() {
   return (
     <>
       <Navigation />
-      <div className="min-h-[calc(100vh-4rem)] flex items-center justify-center bg-gray-50 px-4 py-8">
-        <Card className="w-full max-w-3xl">
+      <FloatingShapesBackground />
+      <div className="relative z-10 min-h-[calc(100vh-4rem)] flex items-center justify-center px-4 py-12">
+        <Card className="w-full max-w-3xl rounded-3xl shadow-card-soft border-2 border-gray-100">
           <CardHeader>
-            <CardTitle>Create Account</CardTitle>
-            <CardDescription>Start your 14-day FREE PRO trial - no credit card required</CardDescription>
+            <CardTitle className="text-3xl font-extrabold text-purple-deep">Create Account 🚀</CardTitle>
+            <CardDescription className="text-lg">Start your 14-day FREE PRO trial - no credit card required</CardDescription>
           </CardHeader>
           <CardContent>
             {/* Trial Banner */}
-            <div className="mb-4 p-4 bg-green-50 border border-green-200 rounded-lg">
-              <div className="flex items-center gap-2 text-green-800 font-semibold mb-1">
-                <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
-                  <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
-                </svg>
+            <div className="mb-6 p-6 bg-gradient-to-br from-green-50 to-green-100 border-2 border-green-200 rounded-2xl shadow-3d-sm">
+              <div className="flex items-center gap-3 text-green-800 font-bold mb-2 text-lg">
+                <div className="w-8 h-8 rounded-xl bg-green-500 flex items-center justify-center text-white">
+                  ✓
+                </div>
                 14-Day FREE PRO Trial Included
               </div>
-              <p className="text-sm text-green-700">
+              <p className="text-sm text-green-700 font-medium">
                 Get unlimited access to all features. No payment required to start!
               </p>
             </div>
@@ -231,51 +233,57 @@ export default function Signup() {
               </div>
 
               {/* Terms and Privacy Checkboxes */}
-              <div className="space-y-3 pt-2">
-                <div className="flex items-start gap-2">
+              <div className="space-y-4 pt-4">
+                <div className="flex items-start gap-3">
                   <input
                     id="accept-tos"
                     type="checkbox"
                     checked={acceptedToS}
                     onChange={(e) => setAcceptedToS(e.target.checked)}
-                    className="mt-1 h-4 w-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
+                    className="mt-1 h-5 w-5 text-violet border-gray-300 rounded-md focus:ring-violet"
                     required
                   />
-                  <label htmlFor="accept-tos" className="text-sm text-gray-700">
+                  <label htmlFor="accept-tos" className="text-sm text-gray-700 font-medium">
                     I agree to the{' '}
-                    <Link to="/terms-of-service" target="_blank" className="text-blue-600 hover:underline">
+                    <Link to="/terms-of-service" target="_blank" className="text-violet hover:underline font-bold">
                       Terms of Service
                     </Link>
                   </label>
                 </div>
-                <div className="flex items-start gap-2">
+                <div className="flex items-start gap-3">
                   <input
                     id="accept-privacy"
                     type="checkbox"
                     checked={acceptedPrivacy}
                     onChange={(e) => setAcceptedPrivacy(e.target.checked)}
-                    className="mt-1 h-4 w-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
+                    className="mt-1 h-5 w-5 text-violet border-gray-300 rounded-md focus:ring-violet"
                     required
                   />
-                  <label htmlFor="accept-privacy" className="text-sm text-gray-700">
+                  <label htmlFor="accept-privacy" className="text-sm text-gray-700 font-medium">
                     I agree to the{' '}
-                    <Link to="/privacy-policy" target="_blank" className="text-blue-600 hover:underline">
+                    <Link to="/privacy-policy" target="_blank" className="text-violet hover:underline font-bold">
                       Privacy Policy
                     </Link>
                   </label>
                 </div>
               </div>
 
-              <Button
-                type="submit"
-                className="w-full"
-                disabled={isLoading || !acceptedToS || !acceptedPrivacy}
-              >
-                {isLoading ? 'Creating account...' : 'Start Free Trial'}
-              </Button>
+              <div className="flex justify-center pt-4">
+                <Button3D
+                  onClick={(e: React.MouseEvent<HTMLButtonElement>) => {
+                    e.preventDefault();
+                    handleSubmit(e as any);
+                  }}
+                  variant="primary"
+                  icon="🎉"
+                  disabled={isLoading || !acceptedToS || !acceptedPrivacy}
+                >
+                  {isLoading ? 'Creating account...' : 'Start Free Trial'}
+                </Button3D>
+              </div>
               <p className="text-sm text-center text-gray-600">
                 Already have an account?{' '}
-                <Link to="/login" className="text-blue-600 hover:underline">
+                <Link to="/login" className="text-violet hover:underline font-bold">
                   Sign in
                 </Link>
               </p>

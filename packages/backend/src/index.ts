@@ -20,6 +20,7 @@ import webhooks from './routes/webhooks';
 import analytics from './routes/analytics';
 import interviewQuestions from './routes/interview-questions';
 import generatedContent from './routes/generated-content';
+import gamification from './routes/gamification';
 import { getFile } from './services/storage.service';
 
 const app = new Hono<{ Bindings: Env }>();
@@ -62,6 +63,7 @@ app.route('/api/subscription', subscription);
 app.route('/api/webhooks', webhooks);
 app.route('/api/admin/analytics', analytics);
 app.route('/api/interview-questions', interviewQuestions);
+app.route('/api/gamification', gamification);
 
 // File serving endpoint
 app.get('/api/files/*', async (c) => {

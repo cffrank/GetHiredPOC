@@ -197,4 +197,7 @@ export const apiClient = {
     apiClient.request(`/api/chat/conversations/${id}`, {
       method: 'DELETE',
     }),
+
+  // Gamification
+  getGamificationStats: () => apiClient.request('/api/gamification/me'),
 };
