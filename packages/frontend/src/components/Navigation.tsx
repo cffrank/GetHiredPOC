@@ -56,16 +56,6 @@ export function Navigation() {
                 >
                   Applications
                 </Link>
-                <Link
-                  to="/resume"
-                  className={`font-semibold transition-colors ${
-                    isActive('/resume')
-                      ? 'text-violet border-b-2 border-violet'
-                      : 'text-gray-600 hover:text-violet'
-                  }`}
-                >
-                  Resume
-                </Link>
               </>
             )}
           </div>
@@ -86,11 +76,6 @@ export function Navigation() {
                     </Button3D>
                   </Link>
                 )}
-                <Link to="/settings">
-                  <Button variant="ghost" className="font-semibold text-gray-600 hover:text-violet">
-                    Settings
-                  </Button>
-                </Link>
                 <Link to="/profile" className="flex items-center space-x-2">
                   <Button variant="ghost" className="flex items-center space-x-2 font-semibold">
                     <span className="text-gray-700">{user.email}</span>
