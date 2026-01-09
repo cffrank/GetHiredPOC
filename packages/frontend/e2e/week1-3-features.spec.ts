@@ -92,14 +92,17 @@ test.describe('Week 1-2: Interview Questions Feature', () => {
 
     // Click on Interview Prep tab
     await page.click('button[role="tab"]:has-text("Interview Prep")');
-    await page.waitForTimeout(500);
+    await page.waitForTimeout(1000);
+
+    // Wait for tab content to fully load
+    await page.waitForTimeout(1000);
 
     // Click Add Question button to show the form
     await page.click('button:has-text("Add Question")');
-    await page.waitForTimeout(1000);
 
-    // Wait for form to appear
-    await page.waitForSelector('textarea[id="question"]', { timeout: 10000 });
+    // Wait for form to appear with longer timeout and verify it stays visible
+    await page.waitForSelector('textarea[id="question"]', { timeout: 15000, state: 'visible' });
+    await page.waitForTimeout(500);
 
     // Fill in question form
     await page.fill('textarea[id="question"]', 'Tell me about a time when you overcame a challenge');
@@ -155,12 +158,15 @@ test.describe('Week 1-2: Interview Questions Feature', () => {
 
     // Click on Interview Prep tab
     await page.click('button[role="tab"]:has-text("Interview Prep")');
-    await page.waitForTimeout(500);
+    await page.waitForTimeout(1000);
+
+    // Wait for tab content to fully load
+    await page.waitForTimeout(1000);
 
     // Add behavioral question
     await page.click('button:has-text("Add Question")');
-    await page.waitForTimeout(1000);
-    await page.waitForSelector('textarea[id="question"]', { timeout: 10000 });
+    await page.waitForSelector('textarea[id="question"]', { timeout: 15000, state: 'visible' });
+    await page.waitForTimeout(500);
     await page.fill('textarea[id="question"]', 'Behavioral test question');
     await page.selectOption('select[id="type"]', 'behavioral');
     await page.click('button[type="submit"]:has-text("Add Question")');

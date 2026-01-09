@@ -138,7 +138,12 @@ export async function completeOnboarding(page: any) {
         if (await skipBtn8.isVisible({ timeout: 2000 }).catch(() => false)) {
           console.log(`[completeOnboarding] Clicking Skip button for final step`);
           await skipBtn8.click();
-          await page.waitForTimeout(3000); // Wait longer for completion
+
+          // Wait for either URL change or enough time for UI update
+          await Promise.race([
+            page.waitForURL(url => !url.includes('onboarding'), { timeout: 8000 }),
+            page.waitForTimeout(8000)
+          ]).catch(() => console.log(`[completeOnboarding] Timeout waiting for navigation after skip`));
 
           const url = page.url();
           console.log(`[completeOnboarding] After skip, URL: ${url}`);
@@ -153,8 +158,15 @@ export async function completeOnboarding(page: any) {
         const completeBtn = page.locator('button').filter({ hasText: /^Complete$/ });
         if (await completeBtn.isVisible({ timeout: 2000 }).catch(() => false)) {
           console.log(`[completeOnboarding] Clicking Complete button`);
-          await completeBtn.click();
-          await page.waitForTimeout(3000);
+          // Wait for button to be stable (not being re-rendered)
+          await page.waitForTimeout(500);
+          await completeBtn.click({ timeout: 5000 });
+
+          // Wait for either URL change or enough time for UI update
+          await Promise.race([
+            page.waitForURL(url => !url.includes('onboarding'), { timeout: 8000 }),
+            page.waitForTimeout(8000)
+          ]).catch(() => console.log(`[completeOnboarding] Timeout waiting for navigation after complete`));
 
           const url = page.url();
           console.log(`[completeOnboarding] After complete, URL: ${url}`);
