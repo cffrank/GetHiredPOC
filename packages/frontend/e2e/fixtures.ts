@@ -27,66 +27,171 @@ export function generateTestEmail(): string {
 
 /**
  * Helper function to complete onboarding flow
+ * Handles all 8 steps of the onboarding wizard
  */
 export async function completeOnboarding(page: any) {
   console.log(`[completeOnboarding] Starting onboarding completion`);
+  console.log(`[completeOnboarding] Current URL: ${page.url()}`);
 
-  // Check if we're on the onboarding page
-  const currentUrl = page.url();
-  if (!currentUrl.includes('onboarding') && !currentUrl.includes('preferences')) {
-    console.log(`[completeOnboarding] Not on onboarding page, checking if we need to navigate`);
-    // Try navigating to preferences/onboarding
-    await page.goto('/preferences').catch(() => page.goto('/onboarding'));
-  }
-
-  // Wait for onboarding page to load
+  // Wait for onboarding page to fully load
   await page.waitForLoadState('domcontentloaded');
+  await page.waitForTimeout(1000);
 
-  // Click through all onboarding steps quickly with default selections
-  const maxSteps = 10; // Safety limit
-  for (let step = 0; step < maxSteps; step++) {
-    console.log(`[completeOnboarding] Step ${step + 1}`);
+  const maxSteps = 8; // Known number of steps in onboarding
 
-    // Check for selectable option cards/buttons (excluding navigation buttons)
-    const optionCards = page.locator('button:not(:has-text("Next")):not(:has-text("Continue")):not(:has-text("Finish")):not(:has-text("Back")):not(:has-text("Skip"))');
-    const cardCount = await optionCards.count().catch(() => 0);
+  for (let stepNum = 1; stepNum <= maxSteps; stepNum++) {
+    console.log(`[completeOnboarding] Processing step ${stepNum}/8`);
 
-    if (cardCount > 0) {
-      console.log(`[completeOnboarding] Found ${cardCount} option cards, clicking first one`);
-      // Click the first option card
-      await optionCards.first().click();
-      await page.waitForTimeout(800);
+    // Wait for step content to be visible
+    await page.waitForTimeout(500);
+
+    // Check current step via progress indicator
+    const progressText = await page.locator('text=/Step \\d+ of 8/').textContent().catch(() => '');
+    console.log(`[completeOnboarding] Progress indicator: ${progressText}`);
+
+    // Handle each step based on its type
+    switch (stepNum) {
+      case 1:
+        // Employment Status - click the last option "Employed, open to greener pastures"
+        console.log(`[completeOnboarding] Step 1: Selecting employment status`);
+        const employmentBtn = page.locator('button').filter({ hasText: 'Employed, open to greener pastures' });
+        if (await employmentBtn.isVisible({ timeout: 3000 }).catch(() => false)) {
+          await employmentBtn.click();
+          await page.waitForTimeout(300);
+        }
+        break;
+
+      case 2:
+        // Job Titles - click "Add example titles" button
+        console.log(`[completeOnboarding] Step 2: Adding example job titles`);
+        const exampleBtn = page.locator('button:has-text("+ Add example titles")');
+        if (await exampleBtn.isVisible({ timeout: 2000 }).catch(() => false)) {
+          await exampleBtn.click();
+          await page.waitForTimeout(300);
+        }
+        // Otherwise skip - Next button will work without titles
+        break;
+
+      case 3:
+        // Availability Date - click "ASAP" button
+        console.log(`[completeOnboarding] Step 3: Selecting ASAP availability`);
+        const asapBtn = page.locator('button:has-text("ASAP")');
+        if (await asapBtn.isVisible({ timeout: 2000 }).catch(() => false)) {
+          await asapBtn.click();
+          await page.waitForTimeout(300);
+        }
+        break;
+
+      case 4:
+        // Industries - click first 2-3 industries (multi-select)
+        console.log(`[completeOnboarding] Step 4: Selecting industries`);
+        const industryButtons = page.locator('button').filter({ has: page.locator('text=/Technology|Software|Finance/i') });
+        const count = await industryButtons.count().catch(() => 0);
+        for (let i = 0; i < Math.min(2, count); i++) {
+          await industryButtons.nth(i).click().catch(() => {});
+          await page.waitForTimeout(200);
+        }
+        // Can also skip this step
+        break;
+
+      case 5:
+        // Work Locations - already has defaults (Remote, On-Site, Hybrid), just continue
+        console.log(`[completeOnboarding] Step 5: Work locations (using defaults)`);
+        // No action needed, defaults are already selected
+        break;
+
+      case 6:
+        // Relocation - click "No"
+        console.log(`[completeOnboarding] Step 6: Selecting relocation preference`);
+        const noBtn = page.locator('button:has-text("No")').first();
+        if (await noBtn.isVisible({ timeout: 2000 }).catch(() => false)) {
+          await noBtn.click();
+          await page.waitForTimeout(300);
+        }
+        break;
+
+      case 7:
+        // Legal Requirements (optional) - use Skip button
+        console.log(`[completeOnboarding] Step 7: Skipping legal requirements`);
+        const skipBtn7 = page.locator('button:has-text("Skip")');
+        if (await skipBtn7.isVisible({ timeout: 2000 }).catch(() => false)) {
+          console.log(`[completeOnboarding] Using Skip button for step 7`);
+          await skipBtn7.click();
+          await page.waitForTimeout(1500);
+
+          // Check if we moved past onboarding
+          const url = page.url();
+          if (!url.includes('onboarding') && !url.includes('preferences')) {
+            console.log(`[completeOnboarding] Completed after step 7`);
+            return;
+          }
+          continue; // Skip the Next button click below
+        }
+        break;
+
+      case 8:
+        // Demographics (optional) - use Skip button or Next button
+        console.log(`[completeOnboarding] Step 8: Final step (demographics)`);
+
+        // Try Skip button first (if this step is optional)
+        const skipBtn8 = page.locator('button:has-text("Skip")');
+        if (await skipBtn8.isVisible({ timeout: 2000 }).catch(() => false)) {
+          console.log(`[completeOnboarding] Clicking Skip button for final step`);
+          await skipBtn8.click();
+          await page.waitForTimeout(3000); // Wait longer for completion
+
+          const url = page.url();
+          console.log(`[completeOnboarding] After skip, URL: ${url}`);
+          if (!url.includes('onboarding') && !url.includes('preferences')) {
+            console.log(`[completeOnboarding] Onboarding complete after skip!`);
+            return;
+          }
+          console.log(`[completeOnboarding] Still on onboarding after skip, will try Next/Complete button`);
+        }
+
+        // If Skip didn't work or wasn't available, try Complete button
+        const completeBtn = page.locator('button').filter({ hasText: /^Complete$/ });
+        if (await completeBtn.isVisible({ timeout: 2000 }).catch(() => false)) {
+          console.log(`[completeOnboarding] Clicking Complete button`);
+          await completeBtn.click();
+          await page.waitForTimeout(3000);
+
+          const url = page.url();
+          console.log(`[completeOnboarding] After complete, URL: ${url}`);
+          if (!url.includes('onboarding') && !url.includes('preferences')) {
+            console.log(`[completeOnboarding] Onboarding complete after Complete button!`);
+            return;
+          }
+        }
+
+        // If still on onboarding, don't break - let Next button handler try
+        console.log(`[completeOnboarding] Step 8: Will try Next button as fallback`);
+        break;
     }
 
-    // Look for "Next" or "Continue" or "Finish" button
-    const nextBtn = page.locator('button:has-text("Next"), button:has-text("Continue"), button:has-text("Finish"), button:has-text("Get Started")').first();
+    // Click Next button (for steps 1-6, and as fallback for 7-8)
+    const nextBtn = page.locator('button').filter({ hasText: /^Next →$/ }).or(
+      page.locator('button').filter({ hasText: /^Complete$/ })
+    );
 
     if (await nextBtn.isVisible({ timeout: 3000 }).catch(() => false)) {
-      console.log(`[completeOnboarding] Clicking next/continue button`);
+      const btnText = await nextBtn.textContent();
+      console.log(`[completeOnboarding] Clicking "${btnText}" button`);
       await nextBtn.click();
       await page.waitForTimeout(1500);
 
-      // Check if we've navigated away from onboarding
+      // Check if we've completed onboarding
       const newUrl = page.url();
       if (!newUrl.includes('onboarding') && !newUrl.includes('preferences')) {
         console.log(`[completeOnboarding] Onboarding complete, navigated to: ${newUrl}`);
-        break;
+        return;
       }
     } else {
-      console.log(`[completeOnboarding] No next button found, checking if onboarding is complete`);
-      // Double-check if we're still on onboarding
-      const currentUrl = page.url();
-      if (!currentUrl.includes('onboarding') && !currentUrl.includes('preferences')) {
-        console.log(`[completeOnboarding] Already left onboarding page`);
-        break;
-      }
-      // If we're still on onboarding but no next button, we might be stuck
-      console.log(`[completeOnboarding] Still on onboarding but no next button found`);
-      break;
+      console.log(`[completeOnboarding] No Next/Complete button found on step ${stepNum}`);
     }
   }
 
-  console.log(`[completeOnboarding] Onboarding completion finished`);
+  console.log(`[completeOnboarding] Finished processing all ${maxSteps} steps`);
 }
 
 /**
@@ -153,31 +258,6 @@ export async function signupUser(
     throw new Error('Session token not found in localStorage after signup');
   }
 
-  // Mark onboarding as complete via test API to bypass onboarding flow
-  if (!skipOnboardingBypass) {
-    console.log(`[signupUser] Marking onboarding as complete via test API for ${email}`);
-    try {
-      const response = await page.request.post('http://localhost:8787/api/test-utils/complete-onboarding', {
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        data: {
-          email: email
-        }
-      });
-
-      const data = await response.json();
-
-      if (response.ok()) {
-        console.log(`[signupUser] Onboarding marked as complete: ${JSON.stringify(data)}`);
-      } else {
-        console.warn(`[signupUser] Failed to mark onboarding complete: ${response.status()}, ${JSON.stringify(data)}`);
-      }
-    } catch (error) {
-      console.warn(`[signupUser] Error calling test-utils API:`, error);
-    }
-  }
-
   console.log(`[signupUser] Signup complete and authenticated`);
 }
 
@@ -223,6 +303,23 @@ export async function navigateTo(page: any, path: string) {
 
   const finalUrl = page.url();
   console.log(`[navigateTo] Navigation complete, current URL: ${finalUrl}`);
+
+  // Check if we got redirected to onboarding
+  if ((finalUrl.includes('/onboarding') || finalUrl.includes('/preferences')) && !path.includes('/onboarding')) {
+    console.log(`[navigateTo] Detected onboarding redirect, completing onboarding flow`);
+    await completeOnboarding(page);
+
+    // After completing onboarding, navigate to original destination
+    console.log(`[navigateTo] Onboarding complete, navigating to original destination: ${path}`);
+    if (linkText) {
+      await page.click(`nav >> text=${linkText}`);
+    } else {
+      await page.goto(path);
+    }
+    await page.waitForLoadState('domcontentloaded');
+    await page.waitForTimeout(500);
+    console.log(`[navigateTo] Final URL: ${page.url()}`);
+  }
 }
 
 /**

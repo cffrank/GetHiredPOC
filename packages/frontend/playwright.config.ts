@@ -14,11 +14,14 @@ export default defineConfig({
   /* Fail the build on CI if you accidentally left test.only in the source code. */
   forbidOnly: !!process.env.CI,
 
+  /* Increase timeout to account for onboarding flow (~25-30s) */
+  timeout: 60000, // 60 seconds per test
+
   /* Retry on CI only */
   retries: process.env.CI ? 2 : 0,
 
-  /* Opt out of parallel tests on CI. */
-  workers: process.env.CI ? 1 : undefined,
+  /* Limit parallel workers to avoid overwhelming browser with multiple onboarding flows */
+  workers: process.env.CI ? 1 : 3, // Run 3 tests in parallel locally
 
   /* Reporter to use. See https://playwright.dev/docs/test-reporters */
   reporter: 'html',
