@@ -17,7 +17,17 @@ const interviewQuestions = new Hono<{ Bindings: Env; Variables: Variables }>();
 
 // Middleware to require authentication
 interviewQuestions.use('*', async (c, next) => {
-  const sessionId = getCookie(c.req.raw, 'session');
+  // Try cookie first
+  let sessionId = getCookie(c.req.raw, 'session');
+
+  // Fall back to Authorization header if no cookie (for cross-origin requests)
+  if (!sessionId) {
+    const authHeader = c.req.header('Authorization');
+    if (authHeader && authHeader.startsWith('Bearer ')) {
+      sessionId = authHeader.substring(7);
+    }
+  }
+
   if (!sessionId) {
     return c.json({ error: 'Unauthorized' }, 401);
   }

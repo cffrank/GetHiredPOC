@@ -23,24 +23,20 @@ export function InterviewQuestions() {
   const [notes, setNotes] = useState('');
 
   // Fetch interview questions
-  const { data: questions, isLoading } = useQuery<InterviewQuestion[]>({
+  const { data: questionsResponse, isLoading } = useQuery({
     queryKey: ['interview-questions'],
-    queryFn: () => apiClient.request('/api/interview-questions')
+    queryFn: () => apiClient.getInterviewQuestions()
   });
+
+  const questions = questionsResponse?.questions || [];
 
   // Create/Update mutation
   const saveMutation = useMutation({
     mutationFn: (data: any) => {
       if (editingId) {
-        return apiClient.request(`/api/interview-questions/${editingId}`, {
-          method: 'PUT',
-          body: JSON.stringify(data)
-        });
+        return apiClient.updateInterviewQuestion(editingId, data);
       }
-      return apiClient.request('/api/interview-questions', {
-        method: 'POST',
-        body: JSON.stringify(data)
-      });
+      return apiClient.createInterviewQuestion(data);
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['interview-questions'] });
@@ -50,8 +46,7 @@ export function InterviewQuestions() {
 
   // Delete mutation
   const deleteMutation = useMutation({
-    mutationFn: (id: string) =>
-      apiClient.request(`/api/interview-questions/${id}`, { method: 'DELETE' }),
+    mutationFn: (id: string) => apiClient.deleteInterviewQuestion(id),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['interview-questions'] });
     }

@@ -200,4 +200,47 @@ export const apiClient = {
 
   // Gamification
   getGamificationStats: () => apiClient.request('/api/gamification/me'),
+
+  // Interview Questions
+  getInterviewQuestions: (filters?: { application_id?: string; job_id?: string }) => {
+    const params = new URLSearchParams();
+    if (filters?.application_id) params.set('application_id', filters.application_id);
+    if (filters?.job_id) params.set('job_id', filters.job_id);
+    const query = params.toString();
+    return apiClient.request(`/api/interview-questions${query ? `?${query}` : ''}`);
+  },
+
+  getInterviewQuestion: (id: string) =>
+    apiClient.request(`/api/interview-questions/${id}`),
+
+  createInterviewQuestion: (data: {
+    question: string;
+    answer?: string | null;
+    is_behavioral?: number;
+    difficulty?: 'easy' | 'medium' | 'hard' | null;
+    notes?: string | null;
+    application_id?: string | null;
+    job_id?: string | null;
+  }) =>
+    apiClient.request('/api/interview-questions', {
+      method: 'POST',
+      body: JSON.stringify(data),
+    }),
+
+  updateInterviewQuestion: (id: string, updates: {
+    question?: string;
+    answer?: string | null;
+    is_behavioral?: number;
+    difficulty?: 'easy' | 'medium' | 'hard' | null;
+    notes?: string | null;
+  }) =>
+    apiClient.request(`/api/interview-questions/${id}`, {
+      method: 'PUT',
+      body: JSON.stringify(updates),
+    }),
+
+  deleteInterviewQuestion: (id: string) =>
+    apiClient.request(`/api/interview-questions/${id}`, {
+      method: 'DELETE',
+    }),
 };
