@@ -15,27 +15,7 @@ import { signupUser, loginUser, generateTestEmail } from './fixtures';
 
 const BASE_URL = process.env.VITE_API_URL || 'http://localhost:5173';
 
-// Shared test user for all tests in this suite
-let TEST_USER_EMAIL: string;
-let TEST_USER_PASSWORD: string;
-let userCreated = false;
-
-test.describe.serial('Week 1-3: Profile & Settings Refactor', () => {
-  test.beforeEach(async ({ page }) => {
-    if (!userCreated) {
-      // Create test user on first test
-      TEST_USER_EMAIL = generateTestEmail();
-      TEST_USER_PASSWORD = 'TestPassword123!';
-      console.log(`Creating test user: ${TEST_USER_EMAIL}`);
-      await signupUser(page, TEST_USER_EMAIL, TEST_USER_PASSWORD);
-      userCreated = true;
-    } else {
-      // Login with existing user for subsequent tests
-      console.log(`Logging in with: ${TEST_USER_EMAIL}`);
-      await loginUser(page, TEST_USER_EMAIL, TEST_USER_PASSWORD);
-      console.log(`Current URL after login: ${page.url()}`);
-    }
-  });
+test.describe('Week 1-3: Profile & Settings Refactor', () => {
 
   test('should signup with new required fields (first name, last name, phone, address)', async ({ page }) => {
     // Test user already created in beforeAll, verify signup page has all required fields
@@ -57,16 +37,14 @@ test.describe.serial('Week 1-3: Profile & Settings Refactor', () => {
   });
 
   test('should show Profile with 6 tabs', async ({ page }) => {
-    // After beforeEach, user should be logged in
-    console.log(`[Profile tabs test] Starting, current URL: ${page.url()}`);
+    // Create and login a test user
+    const email = generateTestEmail();
+    const password = 'TestPassword123!';
+    await signupUser(page, email, password);
 
-    // Navigate to Profile
-    console.log(`[Profile tabs test] Navigating to /profile`);
+    // Navigate to Profile (should already be there or redirected after signup)
     await page.goto(`${BASE_URL}/profile`);
-
-    console.log(`[Profile tabs test] After goto, current URL: ${page.url()}`);
     await page.waitForLoadState('domcontentloaded');
-    console.log(`[Profile tabs test] Page loaded, looking for tabs`);
 
     // Check all 6 tabs are visible - use more specific selectors
     await expect(page.locator('button:has-text("Profile Info")')).toBeVisible();
@@ -78,6 +56,10 @@ test.describe.serial('Week 1-3: Profile & Settings Refactor', () => {
   });
 
   test('should verify Resume and Settings removed from Navigation', async ({ page }) => {
+    // Create and login a test user
+    const email = generateTestEmail();
+    const password = 'TestPassword123!';
+    await signupUser(page, email, password);
 
     // Check navigation bar
     const nav = page.locator('nav');
@@ -91,10 +73,15 @@ test.describe.serial('Week 1-3: Profile & Settings Refactor', () => {
   });
 });
 
-test.describe.serial('Week 1-2: Interview Questions Feature', () => {
+test.describe('Week 1-2: Interview Questions Feature', () => {
   test('should create and delete interview question', async ({ page }) => {
+    // Create and login a test user
+    const email = generateTestEmail();
+    const password = 'TestPassword123!';
+    await signupUser(page, email, password);
+
     await page.goto(`${BASE_URL}/profile`);
-    await page.waitForLoadState('networkidle');
+    await page.waitForLoadState('domcontentloaded');
 
     // Click on Interview Prep tab
     await page.click('button:has-text("Interview Prep")');
@@ -125,8 +112,13 @@ test.describe.serial('Week 1-2: Interview Questions Feature', () => {
   });
 
   test('should filter interview questions by type', async ({ page }) => {
+    // Create and login a test user
+    const email = generateTestEmail();
+    const password = 'TestPassword123!';
+    await signupUser(page, email, password);
+
     await page.goto(`${BASE_URL}/profile`);
-    await page.waitForLoadState('networkidle');
+    await page.waitForLoadState('domcontentloaded');
     await page.click('button:has-text("Interview Prep")');
 
     // Add behavioral question
@@ -152,10 +144,15 @@ test.describe.serial('Week 1-2: Interview Questions Feature', () => {
   });
 });
 
-test.describe.serial('Week 2-3: Fixed Chat Sidebar', () => {
+test.describe('Week 2-3: Fixed Chat Sidebar', () => {
   test('should show fixed chat sidebar on right side', async ({ page }) => {
+    // Create and login a test user
+    const email = generateTestEmail();
+    const password = 'TestPassword123!';
+    await signupUser(page, email, password);
+
     await page.goto(`${BASE_URL}/jobs`);
-    await page.waitForLoadState('networkidle');
+    await page.waitForLoadState('domcontentloaded');
 
     // Check chat sidebar is visible - look for the chat icon or button
     const chatIcon = page.locator('button[aria-label="Open chat"]');
@@ -171,8 +168,13 @@ test.describe.serial('Week 2-3: Fixed Chat Sidebar', () => {
   });
 
   test('should toggle chat sidebar', async ({ page }) => {
+    // Create and login a test user
+    const email = generateTestEmail();
+    const password = 'TestPassword123!';
+    await signupUser(page, email, password);
+
     await page.goto(`${BASE_URL}/jobs`);
-    await page.waitForLoadState('networkidle');
+    await page.waitForLoadState('domcontentloaded');
 
     // Initially collapsed - find open button
     const openBtn = page.locator('button[aria-label="Open chat"]');
@@ -195,8 +197,13 @@ test.describe.serial('Week 2-3: Fixed Chat Sidebar', () => {
   });
 });
 
-test.describe.serial('Week 3: Advanced Job Search', () => {
+test.describe('Week 3: Advanced Job Search', () => {
   test('should show advanced filters by default', async ({ page }) => {
+    // Create and login a test user
+    const email = generateTestEmail();
+    const password = 'TestPassword123!';
+    await signupUser(page, email, password);
+
     await page.goto(`${BASE_URL}/jobs`);
 
     // Advanced filters should be visible by default
@@ -207,6 +214,11 @@ test.describe.serial('Week 3: Advanced Job Search', () => {
   });
 
   test('should perform advanced search with multiple criteria', async ({ page }) => {
+    // Create and login a test user
+    const email = generateTestEmail();
+    const password = 'TestPassword123!';
+    await signupUser(page, email, password);
+
     await page.goto(`${BASE_URL}/jobs`);
 
     // Add keyword
@@ -232,8 +244,13 @@ test.describe.serial('Week 3: Advanced Job Search', () => {
   });
 });
 
-test.describe.serial('Week 3: Job Details with Tabs', () => {
+test.describe('Week 3: Job Details with Tabs', () => {
   test('should show job details without tabs initially', async ({ page }) => {
+    // Create and login a test user
+    const email = generateTestEmail();
+    const password = 'TestPassword123!';
+    await signupUser(page, email, password);
+
     await page.goto(`${BASE_URL}/jobs`);
 
     // Click on first job
@@ -248,6 +265,11 @@ test.describe.serial('Week 3: Job Details with Tabs', () => {
   });
 
   test('should generate AI analysis and show Analysis tab', async ({ page }) => {
+    // Create and login a test user
+    const email = generateTestEmail();
+    const password = 'TestPassword123!';
+    await signupUser(page, email, password);
+
     await page.goto(`${BASE_URL}/jobs`);
 
     // Click on first job
@@ -271,6 +293,11 @@ test.describe.serial('Week 3: Job Details with Tabs', () => {
   });
 
   test('should restrict resume generation to saved jobs only', async ({ page }) => {
+    // Create and login a test user
+    const email = generateTestEmail();
+    const password = 'TestPassword123!';
+    await signupUser(page, email, password);
+
     await page.goto(`${BASE_URL}/jobs`);
 
     // Click on first job
@@ -294,8 +321,13 @@ test.describe.serial('Week 3: Job Details with Tabs', () => {
   });
 });
 
-test.describe.serial('Week 3: Version Management for Generated Content', () => {
+test.describe('Week 3: Version Management for Generated Content', () => {
   test('should create multiple resume versions', async ({ page }) => {
+    // Create and login a test user
+    const email = generateTestEmail();
+    const password = 'TestPassword123!';
+    await signupUser(page, email, password);
+
     await page.goto(`${BASE_URL}/jobs`);
 
     // Get to a saved job with AI features
