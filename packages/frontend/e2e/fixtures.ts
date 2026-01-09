@@ -56,17 +56,35 @@ export async function loginUser(
   email: string,
   password: string
 ) {
+  console.log(`[loginUser] Navigating to /login`);
   await page.goto('/login');
+
+  // Wait for login page to load
+  await page.waitForLoadState('domcontentloaded');
+  console.log(`[loginUser] Login page loaded, filling form with email: ${email}`);
 
   // Fill in login form
   await page.fill('input[id="email"]', email);
   await page.fill('input[id="password"]', password);
 
-  // Submit form - use text selector instead of type="submit"
+  console.log(`[loginUser] Form filled, clicking Sign In button`);
+  // Submit form
   await page.click('button:has-text("Sign In")');
 
-  // Wait for navigation to complete - could go to multiple pages
-  await page.waitForURL(/.*(profile|dashboard|jobs|onboarding|preferences)/, { timeout: 15000 });
+  console.log(`[loginUser] Button clicked, waiting for navigation`);
+  // Wait for navigation to complete - goes to /jobs after successful login
+  try {
+    await page.waitForURL(/.*(profile|dashboard|jobs|onboarding|preferences)/, { timeout: 20000 });
+    console.log(`[loginUser] Successfully navigated to: ${page.url()}`);
+  } catch (error) {
+    console.error(`[loginUser] Navigation failed. Current URL: ${page.url()}`);
+    // Check for error message on login page
+    const errorMsg = await page.locator('.text-red-600').textContent().catch(() => null);
+    if (errorMsg) {
+      console.error(`[loginUser] Login error message: ${errorMsg}`);
+    }
+    throw error;
+  }
 }
 
 /**

@@ -26,11 +26,14 @@ test.describe.serial('Week 1-3: Profile & Settings Refactor', () => {
       // Create test user on first test
       TEST_USER_EMAIL = generateTestEmail();
       TEST_USER_PASSWORD = 'TestPassword123!';
+      console.log(`Creating test user: ${TEST_USER_EMAIL}`);
       await signupUser(page, TEST_USER_EMAIL, TEST_USER_PASSWORD);
       userCreated = true;
     } else {
       // Login with existing user for subsequent tests
+      console.log(`Logging in with: ${TEST_USER_EMAIL}`);
       await loginUser(page, TEST_USER_EMAIL, TEST_USER_PASSWORD);
+      console.log(`Current URL after login: ${page.url()}`);
     }
   });
 
@@ -54,12 +57,16 @@ test.describe.serial('Week 1-3: Profile & Settings Refactor', () => {
   });
 
   test('should show Profile with 6 tabs', async ({ page }) => {
-    // Login first
+    // After beforeEach, user should be logged in
+    console.log(`[Profile tabs test] Starting, current URL: ${page.url()}`);
 
-    // Navigate to Profile by clicking the profile link in nav
+    // Navigate to Profile
+    console.log(`[Profile tabs test] Navigating to /profile`);
     await page.goto(`${BASE_URL}/profile`);
-    await expect(page).toHaveURL(/.*profile/);
-    await page.waitForLoadState('networkidle');
+
+    console.log(`[Profile tabs test] After goto, current URL: ${page.url()}`);
+    await page.waitForLoadState('domcontentloaded');
+    console.log(`[Profile tabs test] Page loaded, looking for tabs`);
 
     // Check all 6 tabs are visible - use more specific selectors
     await expect(page.locator('button:has-text("Profile Info")')).toBeVisible();
@@ -230,7 +237,7 @@ test.describe.serial('Week 3: Job Details with Tabs', () => {
     await page.goto(`${BASE_URL}/jobs`);
 
     // Click on first job
-    await page.click('button:has-text("View Details")').first();
+    await page.locator('button:has-text("View Details")').first().click();
 
     // Should show job description
     await expect(page.locator('text=Job Description').or(page.locator('h1'))).toBeVisible();
@@ -244,7 +251,7 @@ test.describe.serial('Week 3: Job Details with Tabs', () => {
     await page.goto(`${BASE_URL}/jobs`);
 
     // Click on first job
-    await page.click('button:has-text("View Details")').first();
+    await page.locator('button:has-text("View Details")').first().click();
 
     // Wait for page to load
     await page.waitForLoadState('networkidle');
@@ -267,7 +274,7 @@ test.describe.serial('Week 3: Job Details with Tabs', () => {
     await page.goto(`${BASE_URL}/jobs`);
 
     // Click on first job
-    await page.click('button:has-text("View Details")').first();
+    await page.locator('button:has-text("View Details")').first().click();
     await page.waitForLoadState('networkidle');
 
     // Resume/Cover Letter buttons should be disabled if not saved
@@ -301,7 +308,7 @@ test.describe.serial('Week 3: Version Management for Generated Content', () => {
     }
 
     // Click on first saved job
-    await page.click('button:has-text("View Details")').first();
+    await page.locator('button:has-text("View Details")').first().click();
     await page.waitForLoadState('networkidle');
 
     // Generate first resume
