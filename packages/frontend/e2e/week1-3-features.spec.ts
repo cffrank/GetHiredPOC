@@ -1,5 +1,5 @@
 import { test, expect } from '@playwright/test';
-import { signupUser, loginUser, generateTestEmail } from './fixtures';
+import { signupUser, loginUser, generateTestEmail, navigateTo } from './fixtures';
 
 /**
  * E2E Tests for Week 1-3: AI-First Platform Refactor
@@ -42,17 +42,17 @@ test.describe('Week 1-3: Profile & Settings Refactor', () => {
     const password = 'TestPassword123!';
     await signupUser(page, email, password);
 
-    // Navigate to Profile (should already be there or redirected after signup)
-    await page.goto(`${BASE_URL}/profile`);
-    await page.waitForLoadState('domcontentloaded');
+    // signupUser already navigates to /profile, so we're already there
+    // Just verify we're on the profile page
+    await expect(page).toHaveURL(/.*profile/);
 
-    // Check all 6 tabs are visible - use more specific selectors
-    await expect(page.locator('button:has-text("Profile Info")')).toBeVisible();
-    await expect(page.locator('button:has-text("Experience")')).toBeVisible();
-    await expect(page.locator('button:has-text("Education")')).toBeVisible();
-    await expect(page.locator('button:has-text("Resume")')).toBeVisible();
-    await expect(page.locator('button:has-text("Interview Prep")')).toBeVisible();
-    await expect(page.locator('button:has-text("Settings")')).toBeVisible();
+    // Check all 6 tabs are visible - use role="tab" for specificity
+    await expect(page.locator('button[role="tab"]:has-text("Profile Info")')).toBeVisible();
+    await expect(page.locator('button[role="tab"]:has-text("Experience")')).toBeVisible();
+    await expect(page.locator('button[role="tab"]:has-text("Education")')).toBeVisible();
+    await expect(page.locator('button[role="tab"]:has-text("Resume")')).toBeVisible();
+    await expect(page.locator('button[role="tab"]:has-text("Interview Prep")')).toBeVisible();
+    await expect(page.locator('button[role="tab"]:has-text("Settings")')).toBeVisible();
   });
 
   test('should verify Resume and Settings removed from Navigation', async ({ page }) => {
@@ -80,11 +80,11 @@ test.describe('Week 1-2: Interview Questions Feature', () => {
     const password = 'TestPassword123!';
     await signupUser(page, email, password);
 
-    await page.goto(`${BASE_URL}/profile`);
-    await page.waitForLoadState('domcontentloaded');
+    // signupUser already navigates to /profile
+    await expect(page).toHaveURL(/.*profile/);
 
     // Click on Interview Prep tab
-    await page.click('button:has-text("Interview Prep")');
+    await page.click('button[role="tab"]:has-text("Interview Prep")');
 
     // Click Add Question button
     await page.click('text=Add Question');
@@ -117,9 +117,9 @@ test.describe('Week 1-2: Interview Questions Feature', () => {
     const password = 'TestPassword123!';
     await signupUser(page, email, password);
 
-    await page.goto(`${BASE_URL}/profile`);
-    await page.waitForLoadState('domcontentloaded');
-    await page.click('button:has-text("Interview Prep")');
+    // signupUser already navigates to /profile
+    await expect(page).toHaveURL(/.*profile/);
+    await page.click('button[role="tab"]:has-text("Interview Prep")');
 
     // Add behavioral question
     await page.click('text=Add Question');
@@ -151,8 +151,7 @@ test.describe('Week 2-3: Fixed Chat Sidebar', () => {
     const password = 'TestPassword123!';
     await signupUser(page, email, password);
 
-    await page.goto(`${BASE_URL}/jobs`);
-    await page.waitForLoadState('domcontentloaded');
+    await navigateTo(page, '/jobs');
 
     // Check chat sidebar is visible - look for the chat icon or button
     const chatIcon = page.locator('button[aria-label="Open chat"]');
@@ -173,8 +172,7 @@ test.describe('Week 2-3: Fixed Chat Sidebar', () => {
     const password = 'TestPassword123!';
     await signupUser(page, email, password);
 
-    await page.goto(`${BASE_URL}/jobs`);
-    await page.waitForLoadState('domcontentloaded');
+    await navigateTo(page, '/jobs');
 
     // Initially collapsed - find open button
     const openBtn = page.locator('button[aria-label="Open chat"]');
@@ -204,7 +202,7 @@ test.describe('Week 3: Advanced Job Search', () => {
     const password = 'TestPassword123!';
     await signupUser(page, email, password);
 
-    await page.goto(`${BASE_URL}/jobs`);
+    await navigateTo(page, '/jobs');
 
     // Advanced filters should be visible by default
     await expect(page.locator('text=Keywords')).toBeVisible();
@@ -219,7 +217,7 @@ test.describe('Week 3: Advanced Job Search', () => {
     const password = 'TestPassword123!';
     await signupUser(page, email, password);
 
-    await page.goto(`${BASE_URL}/jobs`);
+    await navigateTo(page, '/jobs');
 
     // Add keyword
     await page.fill('input[placeholder*="keyword"]', 'React');
@@ -251,7 +249,7 @@ test.describe('Week 3: Job Details with Tabs', () => {
     const password = 'TestPassword123!';
     await signupUser(page, email, password);
 
-    await page.goto(`${BASE_URL}/jobs`);
+    await navigateTo(page, '/jobs');
 
     // Click on first job
     await page.locator('button:has-text("View Details")').first().click();
@@ -270,7 +268,7 @@ test.describe('Week 3: Job Details with Tabs', () => {
     const password = 'TestPassword123!';
     await signupUser(page, email, password);
 
-    await page.goto(`${BASE_URL}/jobs`);
+    await navigateTo(page, '/jobs');
 
     // Click on first job
     await page.locator('button:has-text("View Details")').first().click();
@@ -298,7 +296,7 @@ test.describe('Week 3: Job Details with Tabs', () => {
     const password = 'TestPassword123!';
     await signupUser(page, email, password);
 
-    await page.goto(`${BASE_URL}/jobs`);
+    await navigateTo(page, '/jobs');
 
     // Click on first job
     await page.locator('button:has-text("View Details")').first().click();
@@ -328,7 +326,7 @@ test.describe('Week 3: Version Management for Generated Content', () => {
     const password = 'TestPassword123!';
     await signupUser(page, email, password);
 
-    await page.goto(`${BASE_URL}/jobs`);
+    await navigateTo(page, '/jobs');
 
     // Get to a saved job with AI features
     await page.click('text=Saved');
