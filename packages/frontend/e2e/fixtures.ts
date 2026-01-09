@@ -95,7 +95,8 @@ export async function completeOnboarding(page: any) {
 export async function signupUser(
   page: any,
   email: string,
-  password: string
+  password: string,
+  skipOnboardingBypass: boolean = false
 ) {
   console.log(`[signupUser] Starting signup for ${email}`);
   await page.goto('/signup');
@@ -152,11 +153,29 @@ export async function signupUser(
     throw new Error('Session token not found in localStorage after signup');
   }
 
-  // Check if redirected to onboarding/preferences and complete it automatically
-  const finalUrl = page.url();
-  if (finalUrl.includes('onboarding') || finalUrl.includes('preferences')) {
-    console.log(`[signupUser] User redirected to onboarding, completing automatically`);
-    await completeOnboarding(page);
+  // Mark onboarding as complete via test API to bypass onboarding flow
+  if (!skipOnboardingBypass) {
+    console.log(`[signupUser] Marking onboarding as complete via test API for ${email}`);
+    try {
+      const response = await page.request.post('http://localhost:8787/api/test-utils/complete-onboarding', {
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        data: {
+          email: email
+        }
+      });
+
+      const data = await response.json();
+
+      if (response.ok()) {
+        console.log(`[signupUser] Onboarding marked as complete: ${JSON.stringify(data)}`);
+      } else {
+        console.warn(`[signupUser] Failed to mark onboarding complete: ${response.status()}, ${JSON.stringify(data)}`);
+      }
+    } catch (error) {
+      console.warn(`[signupUser] Error calling test-utils API:`, error);
+    }
   }
 
   console.log(`[signupUser] Signup complete and authenticated`);
@@ -200,38 +219,10 @@ export async function navigateTo(page: any, path: string) {
   }
 
   // Wait for client-side React Router redirects to complete
-  await page.waitForTimeout(1000);
+  await page.waitForTimeout(500);
 
   const finalUrl = page.url();
   console.log(`[navigateTo] Navigation complete, current URL: ${finalUrl}`);
-
-  // Check if we got redirected to onboarding and complete it
-  if ((finalUrl.includes('onboarding') || finalUrl.includes('preferences')) && !path.includes('onboarding') && !path.includes('preferences')) {
-    console.log(`[navigateTo] Got redirected to onboarding, completing it`);
-    await completeOnboarding(page);
-
-    // Navigate to original destination again
-    console.log(`[navigateTo] Onboarding complete, navigating to ${path} again`);
-    if (linkText) {
-      await page.click(`nav >> text=${linkText}`).catch(async () => {
-        await page.goto(path);
-      });
-    } else {
-      await page.goto(path);
-    }
-    await page.waitForLoadState('domcontentloaded');
-    await page.waitForTimeout(1000);
-    console.log(`[navigateTo] Finally at: ${page.url()}`);
-  }
-
-  // Verify we're actually on the intended page by checking for page-specific content
-  if (path === '/jobs' || path.includes('/jobs')) {
-    // Wait for Jobs page to load - look for search or job listings
-    console.log(`[navigateTo] Verifying Jobs page loaded`);
-    await page.waitForSelector('input[placeholder*="Search"], button:has-text("Search"), h1, h2, h3').catch(() => {
-      console.log(`[navigateTo] Warning: Could not find Jobs page elements`);
-    });
-  }
 }
 
 /**
