@@ -1,4 +1,5 @@
 import { test, expect } from '@playwright/test';
+import { signupUser, loginUser, generateTestEmail } from './fixtures';
 
 /**
  * E2E Tests for Week 1-3: AI-First Platform Refactor
@@ -13,60 +14,24 @@ import { test, expect } from '@playwright/test';
  */
 
 const BASE_URL = process.env.VITE_API_URL || 'http://localhost:5173';
-const TEST_USER_EMAIL = `test-week3-${Date.now()}-${Math.floor(Math.random() * 1000)}@example.com`;
-const TEST_USER_PASSWORD = 'TestPassword123!';
 
-// Global setup - create test user once before all tests
-test.beforeAll(async ({ browser }) => {
-  const page = await browser.newPage();
-
-  try {
-    // Navigate to signup
-    await page.goto(BASE_URL);
-    await page.click('text=Sign Up');
-    await page.waitForURL(/.*signup/, { timeout: 5000 });
-
-    // Fill in all required fields
-    await page.fill('input[id="email"]', TEST_USER_EMAIL);
-    await page.fill('input[id="password"]', TEST_USER_PASSWORD);
-    await page.fill('input[id="firstName"]', 'E2E');
-    await page.fill('input[id="lastName"]', 'Test');
-    await page.fill('input[id="phone"]', '5551234567');
-    await page.fill('input[id="streetAddress"]', '123 Test St');
-    await page.fill('input[id="city"]', 'Test City');
-    await page.selectOption('select[id="state"]', 'CA');
-    await page.fill('input[id="zipCode"]', '94102');
-
-    // Check Terms of Service and Privacy Policy checkboxes
-    await page.check('input[id="accept-tos"]');
-    await page.check('input[id="accept-privacy"]');
-
-    // Submit form
-    await page.click('button:has-text("Start Free Trial")');
-
-    // Wait for signup to complete - could go to many places
-    await page.waitForURL(/.*(jobs|profile|onboarding|preferences|signup)/, { timeout: 20000 });
-
-    // If still on signup page, check for error (user might already exist)
-    if (page.url().includes('/signup')) {
-      const error = await page.locator('.text-red-600').textContent().catch(() => null);
-      if (error && error.includes('already exists')) {
-        console.log('Test user already exists, continuing with tests...');
-      } else {
-        throw new Error(`Signup failed: ${error || 'Unknown error'}`);
-      }
-    }
-  } catch (e) {
-    console.error('beforeAll setup error:', e);
-    // Don't fail the entire test suite if setup fails - user might already exist
-  } finally {
-    await page.close();
-  }
-});
+// Shared test user for all tests in this suite
+let TEST_USER_EMAIL: string;
+let TEST_USER_PASSWORD: string;
+let userCreated = false;
 
 test.describe.serial('Week 1-3: Profile & Settings Refactor', () => {
   test.beforeEach(async ({ page }) => {
-    await page.goto(BASE_URL);
+    if (!userCreated) {
+      // Create test user on first test
+      TEST_USER_EMAIL = generateTestEmail();
+      TEST_USER_PASSWORD = 'TestPassword123!';
+      await signupUser(page, TEST_USER_EMAIL, TEST_USER_PASSWORD);
+      userCreated = true;
+    } else {
+      // Login with existing user for subsequent tests
+      await loginUser(page, TEST_USER_EMAIL, TEST_USER_PASSWORD);
+    }
   });
 
   test('should signup with new required fields (first name, last name, phone, address)', async ({ page }) => {
@@ -90,7 +55,6 @@ test.describe.serial('Week 1-3: Profile & Settings Refactor', () => {
 
   test('should show Profile with 6 tabs', async ({ page }) => {
     // Login first
-    await loginTestUser(page);
 
     // Navigate to Profile by clicking the profile link in nav
     await page.goto(`${BASE_URL}/profile`);
@@ -107,7 +71,6 @@ test.describe.serial('Week 1-3: Profile & Settings Refactor', () => {
   });
 
   test('should verify Resume and Settings removed from Navigation', async ({ page }) => {
-    await loginTestUser(page);
 
     // Check navigation bar
     const nav = page.locator('nav');
@@ -123,7 +86,6 @@ test.describe.serial('Week 1-3: Profile & Settings Refactor', () => {
 
 test.describe.serial('Week 1-2: Interview Questions Feature', () => {
   test('should create and delete interview question', async ({ page }) => {
-    await loginTestUser(page);
     await page.goto(`${BASE_URL}/profile`);
     await page.waitForLoadState('networkidle');
 
@@ -156,7 +118,6 @@ test.describe.serial('Week 1-2: Interview Questions Feature', () => {
   });
 
   test('should filter interview questions by type', async ({ page }) => {
-    await loginTestUser(page);
     await page.goto(`${BASE_URL}/profile`);
     await page.waitForLoadState('networkidle');
     await page.click('button:has-text("Interview Prep")');
@@ -186,7 +147,6 @@ test.describe.serial('Week 1-2: Interview Questions Feature', () => {
 
 test.describe.serial('Week 2-3: Fixed Chat Sidebar', () => {
   test('should show fixed chat sidebar on right side', async ({ page }) => {
-    await loginTestUser(page);
     await page.goto(`${BASE_URL}/jobs`);
     await page.waitForLoadState('networkidle');
 
@@ -204,7 +164,6 @@ test.describe.serial('Week 2-3: Fixed Chat Sidebar', () => {
   });
 
   test('should toggle chat sidebar', async ({ page }) => {
-    await loginTestUser(page);
     await page.goto(`${BASE_URL}/jobs`);
     await page.waitForLoadState('networkidle');
 
@@ -231,7 +190,6 @@ test.describe.serial('Week 2-3: Fixed Chat Sidebar', () => {
 
 test.describe.serial('Week 3: Advanced Job Search', () => {
   test('should show advanced filters by default', async ({ page }) => {
-    await loginTestUser(page);
     await page.goto(`${BASE_URL}/jobs`);
 
     // Advanced filters should be visible by default
@@ -242,7 +200,6 @@ test.describe.serial('Week 3: Advanced Job Search', () => {
   });
 
   test('should perform advanced search with multiple criteria', async ({ page }) => {
-    await loginTestUser(page);
     await page.goto(`${BASE_URL}/jobs`);
 
     // Add keyword
@@ -270,7 +227,6 @@ test.describe.serial('Week 3: Advanced Job Search', () => {
 
 test.describe.serial('Week 3: Job Details with Tabs', () => {
   test('should show job details without tabs initially', async ({ page }) => {
-    await loginTestUser(page);
     await page.goto(`${BASE_URL}/jobs`);
 
     // Click on first job
@@ -285,7 +241,6 @@ test.describe.serial('Week 3: Job Details with Tabs', () => {
   });
 
   test('should generate AI analysis and show Analysis tab', async ({ page }) => {
-    await loginTestUser(page);
     await page.goto(`${BASE_URL}/jobs`);
 
     // Click on first job
@@ -309,7 +264,6 @@ test.describe.serial('Week 3: Job Details with Tabs', () => {
   });
 
   test('should restrict resume generation to saved jobs only', async ({ page }) => {
-    await loginTestUser(page);
     await page.goto(`${BASE_URL}/jobs`);
 
     // Click on first job
@@ -335,7 +289,6 @@ test.describe.serial('Week 3: Job Details with Tabs', () => {
 
 test.describe.serial('Week 3: Version Management for Generated Content', () => {
   test('should create multiple resume versions', async ({ page }) => {
-    await loginTestUser(page);
     await page.goto(`${BASE_URL}/jobs`);
 
     // Get to a saved job with AI features
@@ -371,33 +324,3 @@ test.describe.serial('Week 3: Version Management for Generated Content', () => {
   });
 });
 
-// Helper function to login
-async function loginTestUser(page) {
-  await page.goto(BASE_URL);
-
-  // Check if already logged in
-  const logoutButton = page.locator('text=Logout');
-  if (await logoutButton.isVisible({ timeout: 2000 }).catch(() => false)) {
-    return;
-  }
-
-  // Login
-  await page.click('text=Login');
-  await page.waitForURL(/.*login/, { timeout: 5000 });
-
-  await page.fill('input[id="email"]', TEST_USER_EMAIL);
-  await page.fill('input[id="password"]', TEST_USER_PASSWORD);
-  await page.click('button[type="submit"]');
-
-  // Wait for login to complete - can land on jobs, profile, onboarding, or preferences
-  await expect(page).toHaveURL(/.*(jobs|profile|onboarding|preferences)/, { timeout: 15000 });
-
-  // If landed on onboarding or preferences, skip them
-  if (page.url().includes('/onboarding')) {
-    await page.goto(`${BASE_URL}/jobs`);
-    await page.waitForLoadState('networkidle');
-  } else if (page.url().includes('/preferences')) {
-    await page.goto(`${BASE_URL}/jobs`);
-    await page.waitForLoadState('networkidle');
-  }
-}

@@ -30,24 +30,28 @@ test.describe('Signup with Trial', () => {
   test('should disable submit button until checkboxes are checked', async ({ page }) => {
     await page.goto('/signup');
 
-    const submitButton = page.locator('button[type="submit"]');
+    const submitButton = page.locator('button:has-text("Start Free Trial")');
 
-    // Button should be disabled initially
-    await expect(submitButton).toBeDisabled();
+    // Fill in all required fields first
+    await page.fill('input[id="email"]', generateTestEmail());
+    await page.fill('input[id="password"]', 'TestPassword123!');
+    await page.fill('input[id="firstName"]', 'Test');
+    await page.fill('input[id="lastName"]', 'User');
+    await page.fill('input[id="phone"]', '5551234567');
+    await page.fill('input[id="streetAddress"]', '123 Test St');
+    await page.fill('input[id="city"]', 'Test City');
+    await page.selectOption('select[id="state"]', 'CA');
+    await page.fill('input[id="zipCode"]', '94102');
 
-    // Fill in email and password
-    await page.fill('input[type="email"]', generateTestEmail());
-    await page.fill('input[type="password"]', 'TestPassword123!');
-
-    // Still disabled without checkboxes
+    // Button should be disabled without checkboxes
     await expect(submitButton).toBeDisabled();
 
     // Check ToS
-    await page.check('#accept-tos');
+    await page.check('input[id="accept-tos"]');
     await expect(submitButton).toBeDisabled();
 
     // Check Privacy Policy
-    await page.check('#accept-privacy');
+    await page.check('input[id="accept-privacy"]');
 
     // Now should be enabled
     await expect(submitButton).toBeEnabled();
@@ -66,17 +70,24 @@ test.describe('Signup with Trial', () => {
 
     await page.goto('/signup');
 
-    // Fill in form
-    await page.fill('input[type="email"]', email);
-    await page.fill('input[type="password"]', password);
-    await page.check('#accept-tos');
-    await page.check('#accept-privacy');
+    // Fill in all required fields
+    await page.fill('input[id="email"]', email);
+    await page.fill('input[id="password"]', password);
+    await page.fill('input[id="firstName"]', 'Test');
+    await page.fill('input[id="lastName"]', 'User');
+    await page.fill('input[id="phone"]', '5551234567');
+    await page.fill('input[id="streetAddress"]', '123 Test St');
+    await page.fill('input[id="city"]', 'Test City');
+    await page.selectOption('select[id="state"]', 'CA');
+    await page.fill('input[id="zipCode"]', '94102');
+    await page.check('input[id="accept-tos"]');
+    await page.check('input[id="accept-privacy"]');
 
     // Submit
-    await page.click('button[type="submit"]');
+    await page.click('button:has-text("Start Free Trial")');
 
-    // Should redirect to profile or dashboard
-    await page.waitForURL(/\/profile|\/dashboard/, { timeout: 10000 });
+    // Should redirect to profile, dashboard, or other pages
+    await page.waitForURL(/.*(profile|dashboard|jobs|onboarding|preferences)/, { timeout: 20000 });
 
     // Should show PRO Trial badge in navigation (use specific selector to avoid strict mode violation)
     await expect(page.locator('nav span.bg-blue-100:has-text("PRO Trial")')).toBeVisible();

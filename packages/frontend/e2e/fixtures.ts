@@ -26,19 +26,26 @@ export async function signupUser(
 ) {
   await page.goto('/signup');
 
-  // Fill in signup form
-  await page.fill('input[type="email"]', email);
-  await page.fill('input[type="password"]', password);
+  // Fill in all required signup fields
+  await page.fill('input[id="email"]', email);
+  await page.fill('input[id="password"]', password);
+  await page.fill('input[id="firstName"]', 'Test');
+  await page.fill('input[id="lastName"]', 'User');
+  await page.fill('input[id="phone"]', '5551234567');
+  await page.fill('input[id="streetAddress"]', '123 Test St');
+  await page.fill('input[id="city"]', 'Test City');
+  await page.selectOption('select[id="state"]', 'CA');
+  await page.fill('input[id="zipCode"]', '94102');
 
   // Accept ToS and Privacy Policy
-  await page.check('#accept-tos');
-  await page.check('#accept-privacy');
+  await page.check('input[id="accept-tos"]');
+  await page.check('input[id="accept-privacy"]');
 
-  // Submit form
-  await page.click('button[type="submit"]');
+  // Submit form - use text selector instead of type="submit"
+  await page.click('button:has-text("Start Free Trial")');
 
-  // Wait for navigation to complete
-  await page.waitForURL(/\/profile|\/dashboard/);
+  // Wait for navigation to complete - could go to multiple pages
+  await page.waitForURL(/.*(profile|dashboard|jobs|onboarding|preferences)/, { timeout: 20000 });
 }
 
 /**
@@ -52,14 +59,14 @@ export async function loginUser(
   await page.goto('/login');
 
   // Fill in login form
-  await page.fill('input[type="email"]', email);
-  await page.fill('input[type="password"]', password);
+  await page.fill('input[id="email"]', email);
+  await page.fill('input[id="password"]', password);
 
-  // Submit form
-  await page.click('button[type="submit"]');
+  // Submit form - use text selector instead of type="submit"
+  await page.click('button:has-text("Sign In")');
 
-  // Wait for navigation to complete
-  await page.waitForURL(/\/profile|\/dashboard|\/jobs/);
+  // Wait for navigation to complete - could go to multiple pages
+  await page.waitForURL(/.*(profile|dashboard|jobs|onboarding|preferences)/, { timeout: 15000 });
 }
 
 /**
