@@ -83,7 +83,7 @@ export function InterviewQuestions() {
     });
   };
 
-  const filteredQuestions = questions?.filter(q => {
+  const filteredQuestions = questions?.filter((q: InterviewQuestion) => {
     if (filterType === 'behavioral') return q.is_behavioral === 1;
     if (filterType === 'technical') return q.is_behavioral === 0;
     return true;
@@ -139,8 +139,8 @@ export function InterviewQuestions() {
           >
             {type.charAt(0).toUpperCase() + type.slice(1)}
             {type === 'all' && ` (${questions?.length || 0})`}
-            {type === 'behavioral' && ` (${questions?.filter(q => q.is_behavioral === 1).length || 0})`}
-            {type === 'technical' && ` (${questions?.filter(q => q.is_behavioral === 0).length || 0})`}
+            {type === 'behavioral' && ` (${questions?.filter((q: InterviewQuestion) => q.is_behavioral === 1).length || 0})`}
+            {type === 'technical' && ` (${questions?.filter((q: InterviewQuestion) => q.is_behavioral === 0).length || 0})`}
           </button>
         ))}
       </div>
@@ -244,7 +244,7 @@ export function InterviewQuestions() {
             </p>
           </div>
         ) : (
-          filteredQuestions.map((q) => (
+          filteredQuestions.map((q: InterviewQuestion) => (
             <Card key={q.id}>
               <CardContent className="pt-6">
                 <div className="flex items-start justify-between mb-3">

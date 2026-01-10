@@ -296,6 +296,57 @@ const TOOL_DEFINITIONS = [
         }
       }
     }
+  },
+  {
+    type: 'function',
+    function: {
+      name: 'generate_job_analysis',
+      description: 'Generate AI match analysis for a specific job. This analyzes how well the user\'s profile matches the job requirements.',
+      parameters: {
+        type: 'object',
+        properties: {
+          job_id: {
+            type: 'string',
+            description: 'The ID of the job to analyze'
+          }
+        },
+        required: ['job_id']
+      }
+    }
+  },
+  {
+    type: 'function',
+    function: {
+      name: 'generate_tailored_resume',
+      description: 'Generate a tailored resume for a specific job. The job must be saved first. Creates a new version each time.',
+      parameters: {
+        type: 'object',
+        properties: {
+          job_id: {
+            type: 'string',
+            description: 'The ID of the job to generate resume for'
+          }
+        },
+        required: ['job_id']
+      }
+    }
+  },
+  {
+    type: 'function',
+    function: {
+      name: 'generate_cover_letter',
+      description: 'Generate a tailored cover letter for a specific job. The job must be saved first. Creates a new version each time.',
+      parameters: {
+        type: 'object',
+        properties: {
+          job_id: {
+            type: 'string',
+            description: 'The ID of the job to generate cover letter for'
+          }
+        },
+        required: ['job_id']
+      }
+    }
   }
 ];
 
@@ -658,6 +709,112 @@ ${toolInput.job_text}`;
             route: '/jobs',
             filters: toolInput.filters || {},
             message: toolInput.message || 'Here are the job results'
+          }
+        });
+      }
+
+      case 'generate_job_analysis': {
+        // Generate AI match analysis
+        const response = await fetch(`${env.API_URL || 'http://localhost:8787'}/api/ai/jobs/${toolInput.job_id}/analyze-match`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'X-User-Id': userId
+          }
+        });
+
+        if (!response.ok) {
+          throw new Error('Failed to generate analysis');
+        }
+
+        const result = await response.json();
+
+        // Return navigation action to job detail page
+        return JSON.stringify({
+          success: true,
+          analysis: result,
+          navigation_action: {
+            type: 'navigate',
+            route: `/jobs/${toolInput.job_id}`,
+            message: 'Analysis generated! Opening job details...'
+          }
+        });
+      }
+
+      case 'generate_tailored_resume': {
+        // Check if job is saved first
+        const app = await env.DB.prepare(
+          'SELECT id FROM applications WHERE user_id = ? AND job_id = ?'
+        ).bind(userId, toolInput.job_id).first();
+
+        if (!app) {
+          return JSON.stringify({
+            error: 'You must save this job first before generating a resume. Use the save_job tool first.'
+          });
+        }
+
+        // Generate tailored resume
+        const response = await fetch(`${env.API_URL || 'http://localhost:8787'}/api/ai/jobs/${toolInput.job_id}/generate-resume`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'X-User-Id': userId
+          }
+        });
+
+        if (!response.ok) {
+          throw new Error('Failed to generate resume');
+        }
+
+        const result = await response.json();
+
+        // Return navigation action to job detail page
+        return JSON.stringify({
+          success: true,
+          resume: result,
+          navigation_action: {
+            type: 'navigate',
+            route: `/jobs/${toolInput.job_id}`,
+            message: 'Resume generated! Opening job details...'
+          }
+        });
+      }
+
+      case 'generate_cover_letter': {
+        // Check if job is saved first
+        const app = await env.DB.prepare(
+          'SELECT id FROM applications WHERE user_id = ? AND job_id = ?'
+        ).bind(userId, toolInput.job_id).first();
+
+        if (!app) {
+          return JSON.stringify({
+            error: 'You must save this job first before generating a cover letter. Use the save_job tool first.'
+          });
+        }
+
+        // Generate cover letter
+        const response = await fetch(`${env.API_URL || 'http://localhost:8787'}/api/ai/jobs/${toolInput.job_id}/generate-cover-letter`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'X-User-Id': userId
+          }
+        });
+
+        if (!response.ok) {
+          throw new Error('Failed to generate cover letter');
+        }
+
+        const result = await response.json();
+
+        // Return navigation action to job detail page
+        return JSON.stringify({
+          success: true,
+          cover_letter: result,
+          navigation_action: {
+            type: 'navigate',
+            route: `/jobs/${toolInput.job_id}`,
+            message: 'Cover letter generated! Opening job details...'
           }
         });
       }

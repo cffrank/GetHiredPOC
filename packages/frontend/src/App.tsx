@@ -10,8 +10,9 @@ import JobDetail from './pages/JobDetail';
 import SavedJobs from './pages/SavedJobs';
 import Profile from './pages/Profile';
 import Applications from './pages/Applications';
-import Resume from './pages/Resume';
-import Settings from './pages/Settings';
+// Removed: Resume and Settings are now integrated into Profile tabs
+// import Resume from './pages/Resume';
+// import Settings from './pages/Settings';
 import Recommendations from './pages/Recommendations';
 import Onboarding from './pages/Onboarding';
 import JobPreferences from './pages/JobPreferences';
@@ -44,8 +45,7 @@ export default function App() {
           <Route path="/recommendations" element={<Recommendations />} />
           <Route path="/profile" element={<Profile />} />
           <Route path="/applications" element={<Applications />} />
-          <Route path="/resume" element={<Resume />} />
-          <Route path="/settings" element={<Settings />} />
+          {/* Removed: Resume and Settings now integrated into Profile page tabs */}
           <Route path="/subscription" element={<Subscription />} />
         </Route>
       </Route>

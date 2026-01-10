@@ -1,4 +1,5 @@
 import { useState, useEffect, useRef } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { Send, Loader2, Bot, User, Wrench } from 'lucide-react';
 import { apiClient } from '../lib/api-client';
 import type { ChatMessage, ToolCall } from '@gethiredpoc/shared';
@@ -8,6 +9,7 @@ interface ChatInterfaceProps {
 }
 
 export function ChatInterface({ isOpen }: ChatInterfaceProps) {
+  const navigate = useNavigate();
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [inputValue, setInputValue] = useState('');
   const [isLoading, setIsLoading] = useState(false);
@@ -27,6 +29,27 @@ export function ChatInterface({ isOpen }: ChatInterfaceProps) {
       inputRef.current?.focus();
     }
   }, [isOpen]);
+
+  // Handle navigation actions from chat messages
+  useEffect(() => {
+    const lastMessage = messages[messages.length - 1];
+    if (lastMessage?.role === 'assistant' && lastMessage.navigation_action) {
+      const action = lastMessage.navigation_action;
+
+      if (action.type === 'navigate') {
+        console.log('[ChatInterface] Navigation action detected:', action);
+
+        // Navigate with state containing filters and message
+        navigate(action.route, {
+          state: {
+            filters: action.filters,
+            message: action.message,
+            ...action.state
+          }
+        });
+      }
+    }
+  }, [messages, navigate]);
 
   const handleSendMessage = async () => {
     if (!inputValue.trim() || isLoading) return;
