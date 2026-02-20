@@ -1,0 +1,138 @@
+# Requirements: GetHiredPOC Stabilization
+
+**Defined:** 2026-02-20
+**Core Value:** The app must not crash, lose data, or expose users to security vulnerabilities — every core flow works reliably for real users.
+
+## v1 Requirements
+
+Requirements for production readiness. Each maps to roadmap phases.
+
+### Bug Fixes
+
+- [ ] **BUG-01**: JobDetail page handles invalid JSON in requirements field without crashing
+- [ ] **BUG-02**: Application status values are consistent between UI and database schema
+- [ ] **BUG-03**: Status updates wait for API confirmation before updating local state, with rollback on failure
+
+### Type Safety
+
+- [ ] **TYPE-01**: All `any` types in API handlers replaced with proper TypeScript interfaces
+- [ ] **TYPE-02**: ParsedResume, JobMatch, and ApplicationUpdate types defined in shared package
+- [ ] **TYPE-03**: Error catch blocks use typed error handling instead of `catch (error: any)`
+
+### Input Validation
+
+- [ ] **VALID-01**: All API endpoints validate request bodies with Zod schemas
+- [ ] **VALID-02**: @hono/zod-validator middleware integrated into all route handlers
+- [ ] **VALID-03**: Validation errors return structured field-level error details
+
+### Security
+
+- [ ] **SEC-01**: Security headers (CSP, HSTS, X-Frame-Options) applied globally via Hono secureHeaders
+- [ ] **SEC-02**: AI-parsed resume fields sanitized for XSS before database storage
+- [ ] **SEC-03**: File uploads validated via magic byte inspection before processing
+- [ ] **SEC-04**: Expired sessions cleaned up from D1 database periodically
+- [ ] **SEC-05**: bcryptjs CPU usage profiled in Workers; replaced with PBKDF2 if exceeding limits
+
+### Error Handling
+
+- [ ] **ERR-01**: Typed error classes (NotFoundError, ValidationError, ForbiddenError) with correct HTTP status codes
+- [ ] **ERR-02**: Global error handler converts typed errors to consistent JSON responses
+- [ ] **ERR-03**: React error boundaries contain crashes per UI domain (Profile, Applications, JobDetail)
+- [ ] **ERR-04**: User-friendly error notifications replace alert() calls
+
+### Performance
+
+- [ ] **PERF-01**: Job analysis N+1 queries consolidated from 7 to 2-3 using JOINs
+- [ ] **PERF-02**: Job listings use cursor-based pagination with appropriate DB indexes
+- [ ] **PERF-03**: Job analysis cache invalidation includes profile modification timestamp
+- [ ] **PERF-04**: PDF resume parsing uses pdf-parse library instead of raw TextDecoder
+
+### Graceful Degradation
+
+- [ ] **GRACE-01**: LinkedIn integration handles empty API data with user notification instead of silent empty loops
+- [ ] **GRACE-02**: AI response parsing uses structured extraction with fallback templates on malformed JSON
+- [ ] **GRACE-03**: Structured logging with consistent prefixes replaces ad-hoc console.log
+
+### Testing
+
+- [ ] **TEST-01**: Backend test infrastructure set up with vitest-pool-workers and D1 bindings
+- [ ] **TEST-02**: Unit tests for auth, resume parsing, and job matching services
+- [ ] **TEST-03**: Integration tests for all API route handlers
+- [ ] **TEST-04**: Frontend component tests for Profile, Applications, and JobDetail pages
+- [ ] **TEST-05**: E2E tests covering signup → profile → job search → apply flow
+
+## v2 Requirements
+
+Deferred to future release. Tracked but not in current roadmap.
+
+### LinkedIn
+
+- **LINK-01**: Full LinkedIn profile import via Partner Program API access
+- **LINK-02**: LinkedIn skills mapping to job requirements
+
+### Advanced Features
+
+- **ADV-01**: Offline support for saved jobs browsing
+- **ADV-02**: Real-time chat via WebSocket
+- **ADV-03**: Performance monitoring dashboard
+- **ADV-04**: Automated CI/CD deployment pipeline
+- **ADV-05**: Feature flags infrastructure
+
+## Out of Scope
+
+Explicitly excluded. Documented to prevent scope creep.
+
+| Feature | Reason |
+|---------|--------|
+| New user-facing features | This milestone is fixes only |
+| Mobile app | Web-first strategy unchanged |
+| Infrastructure migration | Cloudflare ecosystem is correct |
+| AI provider swap | Fix parsing, not the model |
+| LinkedIn Partner Program integration | Requires external approval we don't have |
+| Feature flags | Overkill for stabilization; just fix the code |
+
+## Traceability
+
+Which phases cover which requirements. Updated during roadmap creation.
+
+| Requirement | Phase | Status |
+|-------------|-------|--------|
+| BUG-01 | — | Pending |
+| BUG-02 | — | Pending |
+| BUG-03 | — | Pending |
+| TYPE-01 | — | Pending |
+| TYPE-02 | — | Pending |
+| TYPE-03 | — | Pending |
+| VALID-01 | — | Pending |
+| VALID-02 | — | Pending |
+| VALID-03 | — | Pending |
+| SEC-01 | — | Pending |
+| SEC-02 | — | Pending |
+| SEC-03 | — | Pending |
+| SEC-04 | — | Pending |
+| SEC-05 | — | Pending |
+| ERR-01 | — | Pending |
+| ERR-02 | — | Pending |
+| ERR-03 | — | Pending |
+| ERR-04 | — | Pending |
+| PERF-01 | — | Pending |
+| PERF-02 | — | Pending |
+| PERF-03 | — | Pending |
+| PERF-04 | — | Pending |
+| GRACE-01 | — | Pending |
+| GRACE-02 | — | Pending |
+| GRACE-03 | — | Pending |
+| TEST-01 | — | Pending |
+| TEST-02 | — | Pending |
+| TEST-03 | — | Pending |
+| TEST-04 | — | Pending |
+| TEST-05 | — | Pending |
+
+**Coverage:**
+- v1 requirements: 30 total
+- Mapped to phases: 0
+- Unmapped: 30 ⚠️
+
+---
+*Requirements defined: 2026-02-20*
+*Last updated: 2026-02-20 after initial definition*
