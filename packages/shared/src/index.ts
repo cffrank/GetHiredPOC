@@ -1,3 +1,9 @@
+// Resume types
+export type { ParsedResume } from './types/resume';
+
+// Job match types
+export type { JobMatch } from './types/job-match';
+
 // User types
 export type { User, Session, UserWithSkills } from './types/user';
 
@@ -57,6 +63,7 @@ export type {
   CreateApplicationRequest,
   CreateApplicationResponse,
   UpdateApplicationRequest,
+  ApplicationUpdate,
   UpdateApplicationResponse,
   DeleteApplicationResponse,
   // Profile

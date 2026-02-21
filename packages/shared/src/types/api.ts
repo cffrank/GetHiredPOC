@@ -107,6 +107,9 @@ export interface UpdateProfileResponse {
   profile: User;
 }
 
+// ApplicationUpdate — alias for UpdateApplicationRequest (shared type for update payloads)
+export type ApplicationUpdate = UpdateApplicationRequest;
+
 // Error response
 export interface ErrorResponse {
   error: string;
