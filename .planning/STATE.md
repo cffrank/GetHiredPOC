@@ -10,28 +10,28 @@ See: .planning/PROJECT.md (updated 2026-02-20)
 ## Current Position
 
 Phase: 2 of 5 (Type Safety + Input Validation)
-Plan: 1 of 3 in current phase
+Plan: 2 of 3 in current phase
 Status: In progress
-Last activity: 2026-02-21 — Completed 02-01: Shared types, typed error handling, Zod deps installed (TYPE-02, TYPE-03)
+Last activity: 2026-02-21 — Completed 02-02: Zero any in route handlers, 12 Zod schemas, zValidator on all 11 JSON body route files (TYPE-01, VALID-01, VALID-02, VALID-03)
 
-Progress: [████░░░░░░] 40%
+Progress: [█████░░░░░] 50%
 
 ## Performance Metrics
 
 **Velocity:**
-- Total plans completed: 4
-- Average duration: ~10 min
-- Total execution time: ~40 min
+- Total plans completed: 5
+- Average duration: ~21 min
+- Total execution time: ~105 min
 
 **By Phase:**
 
 | Phase | Plans | Total | Avg/Plan |
 |-------|-------|-------|----------|
 | 01-critical-bugs-test-infrastructure | 3 | ~30 min | ~10 min |
-| 02-type-safety-input-validation | 1 | ~10 min | ~10 min |
+| 02-type-safety-input-validation | 2 | ~75 min | ~37 min |
 
 **Recent Trend:**
-- Last 5 plans: 01-01 (backend test infra), 01-02 (frontend bug fixes), 01-03 (status alignment), 02-01 (shared types + typed errors)
+- Last 5 plans: 01-01 (backend test infra), 01-02 (frontend bug fixes), 01-03 (status alignment), 02-01 (shared types + typed errors), 02-02 (route any types + Zod validation)
 - Trend: On track
 
 *Updated after each plan completion*
@@ -55,6 +55,9 @@ Recent decisions affecting current work:
 - [02-01]: ApplicationUpdate added as type alias for UpdateApplicationRequest (identical shape, avoids duplication)
 - [02-01]: Route files use local msg variable from toMessage() to enable string comparisons for auth error detection
 - [02-01]: Service files use inline instanceof narrowing rather than toMessage() import when constructing new Error() messages
+- [Phase 02-02]: AppVariables interface exported from auth.middleware.ts — all routes using requireAuth declare Variables: AppVariables in Hono generic for typed c.get('user')
+- [Phase 02-02]: Profile dual content-type uses manual safeParse (Option A) — zValidator can't conditionally validate based on content-type; JSON branch validated, FormData bypasses schema
+- [Phase 02-02]: ADMIN_EMAILS added to Env interface — was in wrangler.toml but missing from TypeScript type, caused requireAdmin to fail compile
 
 ### Pending Todos
 
@@ -62,12 +65,12 @@ None yet.
 
 ### Blockers/Concerns
 
-- [Phase 2]: Audit actual frontend request shapes before writing Zod schemas — prevents rejecting traffic that was previously valid
+- [Phase 2 - RESOLVED]: Frontend request shapes audited in 02-02 — schemas use .passthrough() where needed, all schemas match api-client.ts patterns
 - [Phase 3]: Benchmark bcryptjs CPU usage in the actual Workers environment before deciding whether to replace with PBKDF2
 - [Phase 3]: Identify exactly which AI-parsed resume fields are user-influenced and need XSS sanitization vs safe structured fields
 
 ## Session Continuity
 
 Last session: 2026-02-21
-Stopped at: Completed 02-01-PLAN.md — Shared types (ParsedResume, JobMatch, ApplicationUpdate) + typed error handling (77 catch blocks migrated) + zod installed
+Stopped at: Completed 02-02-PLAN.md — Zero any in route handlers, 12 Zod schemas, zValidator on all 11 JSON body route files
 Resume file: None
