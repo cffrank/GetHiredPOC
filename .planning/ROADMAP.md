@@ -81,7 +81,13 @@ Plans:
   3. Triggering a job match re-analysis after updating a user profile returns fresh results, not cached results from before the profile change
   4. Uploading a multi-page PDF resume produces a correctly parsed text representation — the parsed output contains full resume content, not garbled binary artifacts from TextDecoder
   5. Connecting LinkedIn when the API returns no profile data shows the user a notification explaining the limitation instead of silently completing with no data imported
-**Plans**: TBD
+**Plans**: 4 plans
+
+Plans:
+- [ ] 04-01-PLAN.md — Structured logger utility + PDF parsing with unpdf (GRACE-03, PERF-04)
+- [ ] 04-02-PLAN.md — LinkedIn empty data handling + AI response fallback templates (GRACE-01, GRACE-02)
+- [ ] 04-03-PLAN.md — N+1 query consolidation + cache invalidation with profile-versioned keys (PERF-01, PERF-03)
+- [ ] 04-04-PLAN.md — Cursor-based pagination for job listings (PERF-02)
 
 ### Phase 5: Comprehensive Test Suite
 **Goal**: All critical paths have automated test coverage that will catch regressions — unit tests for services, integration tests for API routes, component tests for key UI interactions, and E2E tests for the end-to-end signup-to-apply flow
@@ -104,5 +110,5 @@ Phases execute in numeric order: 1 → 2 → 3 → 4 → 5
 | 1. Critical Bugs + Test Infrastructure | 3/3 | Complete    | 2026-02-21 |
 | 2. Type Safety + Input Validation | 3/3 | Complete    | 2026-02-21 |
 | 3. Security + Error Handling | 5/5 | Complete   | 2026-02-21 |
-| 4. Performance + Graceful Degradation | 0/TBD | Not started | - |
+| 4. Performance + Graceful Degradation | 0/4 | Not started | - |
 | 5. Comprehensive Test Suite | 0/TBD | Not started | - |
