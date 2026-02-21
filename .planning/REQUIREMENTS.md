@@ -10,7 +10,7 @@ Requirements for production readiness. Each maps to roadmap phases.
 ### Bug Fixes
 
 - [x] **BUG-01**: JobDetail page handles invalid JSON in requirements field without crashing
-- [ ] **BUG-02**: Application status values are consistent between UI and database schema
+- [x] **BUG-02**: Application status values are consistent between UI and database schema
 - [x] **BUG-03**: Status updates wait for API confirmation before updating local state, with rollback on failure
 
 ### Type Safety
@@ -98,9 +98,9 @@ Which phases cover which requirements. Updated during roadmap creation.
 | Requirement | Phase | Status |
 |-------------|-------|--------|
 | BUG-01 | Phase 1 | Complete |
-| BUG-02 | Phase 1 | Pending |
+| BUG-02 | Phase 1 | Complete |
 | BUG-03 | Phase 1 | Complete |
-| TEST-01 | Phase 1 | Pending |
+| TEST-01 | Phase 1 | Complete |
 | TYPE-01 | Phase 2 | Pending |
 | TYPE-02 | Phase 2 | Pending |
 | TYPE-03 | Phase 2 | Pending |
@@ -135,4 +135,4 @@ Which phases cover which requirements. Updated during roadmap creation.
 
 ---
 *Requirements defined: 2026-02-20*
-*Last updated: 2026-02-20 after 01-02-PLAN.md — BUG-01 and BUG-03 complete*
+*Last updated: 2026-02-20 after 01-03-PLAN.md — BUG-02 complete; Phase 1 all requirements done*

@@ -12,7 +12,7 @@ This milestone hardens an existing, feature-complete job search platform for rea
 
 Decimal phases appear between their surrounding integers in numeric order.
 
-- [ ] **Phase 1: Critical Bugs + Test Infrastructure** - Stop the crashes and establish the test harness so every fix has a test from day one
+- [x] **Phase 1: Critical Bugs + Test Infrastructure** - Stop the crashes and establish the test harness so every fix has a test from day one
 - [ ] **Phase 2: Type Safety + Input Validation** - Eliminate all `any` types and validate every API endpoint with Zod schemas
 - [ ] **Phase 3: Security + Error Handling** - Apply security headers, sanitize AI output, validate file uploads, and replace raw crashes with typed error responses
 - [ ] **Phase 4: Performance + Graceful Degradation** - Eliminate N+1 queries, add pagination, fix cache invalidation, and make integrations fail gracefully
@@ -34,7 +34,7 @@ Decimal phases appear between their surrounding integers in numeric order.
 Plans:
 - [x] 01-01-PLAN.md — Backend test infrastructure (vitest-pool-workers + D1 smoke test)
 - [x] 01-02-PLAN.md — Frontend crash fixes (safe JSON parse + optimistic update rollback)
-- [ ] 01-03-PLAN.md — Application status schema audit and alignment
+- [x] 01-03-PLAN.md — Application status schema audit and alignment
 
 ### Phase 2: Type Safety + Input Validation
 **Goal**: All `any` types are replaced with proper TypeScript interfaces and every API endpoint validates its request body with a Zod schema before the handler runs
@@ -89,7 +89,7 @@ Phases execute in numeric order: 1 → 2 → 3 → 4 → 5
 
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
-| 1. Critical Bugs + Test Infrastructure | 1/3 | In progress | - |
+| 1. Critical Bugs + Test Infrastructure | 3/3 | Complete | 2026-02-20 |
 | 2. Type Safety + Input Validation | 0/TBD | Not started | - |
 | 3. Security + Error Handling | 0/TBD | Not started | - |
 | 4. Performance + Graceful Degradation | 0/TBD | Not started | - |
