@@ -230,11 +230,12 @@ async function executeTool(
   try {
     switch (toolName) {
       case 'search_jobs': {
-        const jobs = await getJobs(env, {
+        const { jobs } = await getJobs(env, {
           title: toolInput.query,
           location: toolInput.location,
           remote: toolInput.remote,
-          userId
+          userId,
+          limit: 10,
         });
 
         // Return top 10 results with key info

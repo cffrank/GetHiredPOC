@@ -55,6 +55,25 @@ export interface Env {
   ADMIN_EMAILS?: string;
 }
 
+// Cursor encoding/decoding utilities for keyset pagination
+function encodeCursor(job: { posted_date: number; id: string }): string {
+  return btoa(JSON.stringify({ posted_date: job.posted_date, id: job.id }));
+}
+
+function decodeCursor(cursor: string): { posted_date: number; id: string } | null {
+  try {
+    return JSON.parse(atob(cursor));
+  } catch {
+    return null;
+  }
+}
+
+export interface PaginatedJobs {
+  jobs: Job[];
+  nextCursor: string | null;
+  hasMore: boolean;
+}
+
 // Jobs
 export async function getJobs(
   env: Env,
@@ -63,8 +82,11 @@ export async function getJobs(
     remote?: boolean;
     location?: string;
     userId?: string;
+    cursor?: string;
+    limit?: number;
   }
-): Promise<Job[]> {
+): Promise<PaginatedJobs> {
+  const limit = Math.min(filters?.limit ?? 20, 100);
   let query = "SELECT * FROM jobs WHERE 1=1";
   const params: (string | number)[] = [];
 
@@ -89,11 +111,27 @@ export async function getJobs(
     params.push(filters.userId);
   }
 
-  query += " ORDER BY posted_date DESC";
+  // Apply cursor-based keyset condition
+  if (filters?.cursor) {
+    const decoded = decodeCursor(filters.cursor);
+    if (decoded) {
+      query += " AND (posted_date < ? OR (posted_date = ? AND id < ?))";
+      params.push(decoded.posted_date, decoded.posted_date, decoded.id);
+    }
+  }
+
+  query += " ORDER BY posted_date DESC, id DESC LIMIT ?";
+  params.push(limit);
 
   const stmt = env.DB.prepare(query);
   const result = await stmt.bind(...params).all<Job>();
-  return result.results || [];
+  const jobs = result.results || [];
+
+  return {
+    jobs,
+    nextCursor: jobs.length === limit ? encodeCursor(jobs[jobs.length - 1]) : null,
+    hasMore: jobs.length === limit,
+  };
 }
 
 export async function getJobById(env: Env, jobId: string): Promise<Job | null> {

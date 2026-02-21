@@ -31,16 +31,23 @@ jobs.get('/', async (c) => {
     const title = c.req.query("title") || undefined;
     const remote = c.req.query("remote");
     const location = c.req.query("location") || undefined;
+    const cursor = c.req.query("cursor") || undefined;
+    const limitParam = c.req.query("limit");
+    const limit = limitParam ? Math.min(Math.max(1, parseInt(limitParam, 10) || 20), 100) : 20;
 
     // Get user to exclude hidden jobs and filter by preferences
     const user = await getOptionalUser(c);
 
-    let jobsList = await getJobs(c.env, {
+    const paginated = await getJobs(c.env, {
       title,
       remote: remote === "true" ? true : remote === "false" ? false : undefined,
       location,
       userId: user?.id, // Pass userId to exclude hidden jobs
+      cursor,
+      limit,
     });
+
+    let jobsList = paginated.jobs;
 
     // Filter jobs based on user preferences if logged in
     if (user) {
@@ -90,7 +97,7 @@ jobs.get('/', async (c) => {
       }
     }
 
-    return c.json({ jobs: jobsList }, 200);
+    return c.json({ jobs: jobsList, nextCursor: paginated.nextCursor, hasMore: paginated.hasMore }, 200);
   } catch (error: unknown) {
     return c.json({ error: toMessage(error) }, 500);
   }
