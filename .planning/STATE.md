@@ -10,9 +10,9 @@ See: .planning/PROJECT.md (updated 2026-02-20)
 ## Current Position
 
 Phase: 4 of 5 (Performance + Graceful Degradation)
-Plan: 2 of 4 in current phase
-Status: In progress — 04-01 and 04-02 complete
-Last activity: 2026-02-21 — Completed 04-02: LinkedIn empty data detection + AI parse fallback (GRACE-01, GRACE-02)
+Plan: 3 of 4 in current phase
+Status: In progress — 04-01, 04-02, and 04-03 complete
+Last activity: 2026-02-21 — Completed 04-03: N+1 query elimination + profile-versioned cache keys (PERF-01, PERF-03)
 
 Progress: [████████░░] 80%
 
@@ -40,6 +40,8 @@ Progress: [████████░░] 80%
 | Phase 03-security-error-handling P02 | 6 | 3 tasks | 11 files |
 | Phase 04-performance-graceful-degradation P01 | 4 | 2 tasks | 6 files |
 | Phase 04-performance-graceful-degradation P02 | 4 | 2 tasks | 7 files |
+| Phase 04-performance-graceful-degradation P03 | 3 | 2 tasks | 3 files |
+| Phase 04-performance-graceful-degradation P04 | 3 | 2 tasks | 5 files |
 
 ## Accumulated Context
 
@@ -84,6 +86,8 @@ Recent decisions affecting current work:
 - [Phase 04-02]: hasLinkedInData() checks positions/educations/skills arrays — all empty signals only basic OpenID Connect data (name/email); redirects to ?warning=linkedin_limited_data
 - [Phase 04-02]: Both codebase paths updated for LinkedIn warning — packages/backend + src/app each have independent LinkedIn OAuth implementations
 - [Phase 04-02]: PARSE_FALLBACK constant for AI parse errors — score:50 'fair' returned instead of throwing; jobs with failed AI analysis still appear in recommendations
+- [Phase 04-03]: buildUserContext loads user+workHistory+education in parallel with Promise.all — single call before loop replaces 3 per-job queries
+- [Phase 04-03]: Cache key uses updated_at as profile version: v${updated_at} suffix — old keys expire via 7-day TTL without prefix-delete
 
 ### Pending Todos
 
@@ -98,5 +102,5 @@ None yet.
 ## Session Continuity
 
 Last session: 2026-02-21
-Stopped at: Completed 04-02-PLAN.md — LinkedIn graceful degradation + AI parse fallback (GRACE-01, GRACE-02)
+Stopped at: Completed 04-03-PLAN.md — N+1 query elimination + profile-versioned cache keys (PERF-01, PERF-03)
 Resume file: None

@@ -42,9 +42,9 @@ Requirements for production readiness. Each maps to roadmap phases.
 
 ### Performance
 
-- [ ] **PERF-01**: Job analysis N+1 queries consolidated from 7 to 2-3 using JOINs
+- [x] **PERF-01**: Job analysis N+1 queries consolidated from 7 to 2-3 using JOINs
 - [ ] **PERF-02**: Job listings use cursor-based pagination with appropriate DB indexes
-- [ ] **PERF-03**: Job analysis cache invalidation includes profile modification timestamp
+- [x] **PERF-03**: Job analysis cache invalidation includes profile modification timestamp
 - [x] **PERF-04**: PDF resume parsing uses pdf-parse library instead of raw TextDecoder
 
 ### Graceful Degradation
@@ -116,9 +116,9 @@ Which phases cover which requirements. Updated during roadmap creation.
 | ERR-02 | Phase 3 | Complete |
 | ERR-03 | Phase 3 | Complete |
 | ERR-04 | Phase 3 | Complete |
-| PERF-01 | Phase 4 | Pending |
+| PERF-01 | Phase 4 | Complete |
 | PERF-02 | Phase 4 | Pending |
-| PERF-03 | Phase 4 | Pending |
+| PERF-03 | Phase 4 | Complete |
 | PERF-04 | Phase 4 | Complete |
 | GRACE-01 | Phase 4 | Complete |
 | GRACE-02 | Phase 4 | Complete |
