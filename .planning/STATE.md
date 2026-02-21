@@ -5,23 +5,23 @@
 See: .planning/PROJECT.md (updated 2026-02-20)
 
 **Core value:** The app must not crash, lose data, or expose users to security vulnerabilities — every core flow works reliably for real users.
-**Current focus:** Phase 2 — Type Safety + Input Validation
+**Current focus:** Phase 3 — Security + Error Handling
 
 ## Current Position
 
-Phase: 2 of 5 (Type Safety + Input Validation)
-Plan: 3 of 3 in current phase (COMPLETE)
-Status: Phase 2 complete — ready for Phase 3
-Last activity: 2026-02-21 — Completed 02-03: Migrated JobMatch and ParsedResume to shared package imports, closing phase 2 verification gap (TYPE-01, TYPE-02, TYPE-03, VALID-01, VALID-02, VALID-03)
+Phase: 3 of 5 (Security + Error Handling)
+Plan: 4 of ? in current phase
+Status: In progress — 03-04 complete (error boundaries + toast notifications)
+Last activity: 2026-02-21 — Completed 03-04: Added React error boundaries and toast notifications to rwsdk app pages, replacing all alert()/confirm() calls (ERR-03, ERR-04)
 
-Progress: [██████░░░░] 60%
+Progress: [███████░░░] 70%
 
 ## Performance Metrics
 
 **Velocity:**
-- Total plans completed: 6
-- Average duration: ~18 min
-- Total execution time: ~108 min
+- Total plans completed: 7
+- Average duration: ~16 min
+- Total execution time: ~111 min
 
 **By Phase:**
 
@@ -29,9 +29,10 @@ Progress: [██████░░░░] 60%
 |-------|-------|-------|----------|
 | 01-critical-bugs-test-infrastructure | 3 | ~30 min | ~10 min |
 | 02-type-safety-input-validation | 3 | ~78 min | ~26 min |
+| 03-security-error-handling | 1+ | ~3 min | ~3 min |
 
 **Recent Trend:**
-- Last 5 plans: 01-02 (frontend bug fixes), 01-03 (status alignment), 02-01 (shared types + typed errors), 02-02 (route any types + Zod validation), 02-03 (shared type import migration)
+- Last 5 plans: 02-01 (shared types + typed errors), 02-02 (route any types + Zod validation), 02-03 (shared type import migration), 03-04 (error boundaries + toast notifications)
 - Trend: On track
 
 *Updated after each plan completion*
@@ -60,6 +61,9 @@ Recent decisions affecting current work:
 - [Phase 02-02]: ADMIN_EMAILS added to Env interface — was in wrangler.toml but missing from TypeScript type, caused requireAdmin to fail compile
 - [Phase 02-03]: Re-export JobMatch/ParsedResume from service files — job-recommendations.service.ts imports JobMatch from service file; re-export preserves consumers without changes
 - [Phase 02-03]: Renamed local wrapper type to JobRecommendation in Recommendations.tsx — avoids naming conflict with imported shared JobMatch
+- [Phase 03-04]: ErrorBoundary uses "use client" directive for rwsdk RSC compatibility — Navigation always placed outside ErrorBoundary to stay visible on section crash
+- [Phase 03-04]: handleResumeUpload signature made optional (e?: React.FormEvent) to support both form submit and Retry toast action callback
+- [Phase 03-04]: confirmingDeleteId state replaces confirm() dialog — shows inline "Delete? Yes / No" UI within the application card
 
 ### Pending Todos
 
@@ -74,5 +78,5 @@ None yet.
 ## Session Continuity
 
 Last session: 2026-02-21
-Stopped at: Completed 02-03-PLAN.md — Migrated JobMatch and ParsedResume to shared package imports
+Stopped at: Completed 03-04-PLAN.md — Added React error boundaries and toast notifications (ERR-03, ERR-04)
 Resume file: None
