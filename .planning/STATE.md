@@ -10,11 +10,11 @@ See: .planning/PROJECT.md (updated 2026-02-20)
 ## Current Position
 
 Phase: 4 of 5 (Performance + Graceful Degradation)
-Plan: 3 of 4 in current phase
-Status: In progress — 04-01, 04-02, and 04-03 complete
-Last activity: 2026-02-21 — Completed 04-03: N+1 query elimination + profile-versioned cache keys (PERF-01, PERF-03)
+Plan: 4 of 4 in current phase
+Status: Complete — all 04 plans complete (04-01, 04-02, 04-03, 04-04)
+Last activity: 2026-02-21 — Completed 04-04: cursor-based pagination for jobs API (PERF-02)
 
-Progress: [████████░░] 80%
+Progress: [█████████░] 90%
 
 ## Performance Metrics
 
@@ -88,6 +88,9 @@ Recent decisions affecting current work:
 - [Phase 04-02]: PARSE_FALLBACK constant for AI parse errors — score:50 'fair' returned instead of throwing; jobs with failed AI analysis still appear in recommendations
 - [Phase 04-03]: buildUserContext loads user+workHistory+education in parallel with Promise.all — single call before loop replaces 3 per-job queries
 - [Phase 04-03]: Cache key uses updated_at as profile version: v${updated_at} suffix — old keys expire via 7-day TTL without prefix-delete
+- [Phase 04-04]: Migration numbered 0015 (not 0012 as plan suggested) — 0012 through 0014 already existed
+- [Phase 04-04]: chat.service.ts getJobs caller destructured to { jobs } from PaginatedJobs — passes limit:10 to avoid fetching more than needed
+- [Phase 04-04]: Preference-based filtering in jobs route operates on paginated.jobs slice after DB query — cursor pagination applied at DB level, filter at app level
 
 ### Pending Todos
 
@@ -102,5 +105,5 @@ None yet.
 ## Session Continuity
 
 Last session: 2026-02-21
-Stopped at: Completed 04-03-PLAN.md — N+1 query elimination + profile-versioned cache keys (PERF-01, PERF-03)
+Stopped at: Completed 04-04-PLAN.md — cursor-based pagination for jobs API (PERF-02)
 Resume file: None
