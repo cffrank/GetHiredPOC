@@ -58,7 +58,7 @@ Requirements for production readiness. Each maps to roadmap phases.
 - [x] **TEST-01**: Backend test infrastructure set up with vitest-pool-workers and D1 bindings
 - [ ] **TEST-02**: Unit tests for auth, resume parsing, and job matching services
 - [ ] **TEST-03**: Integration tests for all API route handlers
-- [ ] **TEST-04**: Frontend component tests for Profile, Applications, and JobDetail pages
+- [x] **TEST-04**: Frontend component tests for Profile, Applications, and JobDetail pages
 - [ ] **TEST-05**: E2E tests covering signup → profile → job search → apply flow
 
 ## v2 Requirements
@@ -125,7 +125,7 @@ Which phases cover which requirements. Updated during roadmap creation.
 | GRACE-03 | Phase 4 | Complete |
 | TEST-02 | Phase 5 | Pending |
 | TEST-03 | Phase 5 | Pending |
-| TEST-04 | Phase 5 | Pending |
+| TEST-04 | Phase 5 | Complete |
 | TEST-05 | Phase 5 | Pending |
 
 **Coverage:**

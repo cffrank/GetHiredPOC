@@ -5,16 +5,16 @@
 See: .planning/PROJECT.md (updated 2026-02-20)
 
 **Core value:** The app must not crash, lose data, or expose users to security vulnerabilities — every core flow works reliably for real users.
-**Current focus:** Phase 4 — Performance + Graceful Degradation
+**Current focus:** Phase 5 — Comprehensive Test Suite
 
 ## Current Position
 
-Phase: 4 of 5 (Performance + Graceful Degradation)
-Plan: 4 of 4 in current phase
-Status: Complete — all 04 plans complete (04-01, 04-02, 04-03, 04-04)
-Last activity: 2026-02-21 — Completed 04-04: cursor-based pagination for jobs API (PERF-02)
+Phase: 5 of 5 (Comprehensive Test Suite)
+Plan: 3 of 4 in current phase
+Status: In Progress — 05-03 complete (frontend component tests: Profile, Applications, JobDetail)
+Last activity: 2026-02-21 — Completed 05-03: frontend Vitest+MSW component tests (TEST-04)
 
-Progress: [█████████░] 90%
+Progress: [█████████░] 95%
 
 ## Performance Metrics
 
@@ -42,6 +42,7 @@ Progress: [█████████░] 90%
 | Phase 04-performance-graceful-degradation P02 | 4 | 2 tasks | 7 files |
 | Phase 04-performance-graceful-degradation P03 | 3 | 2 tasks | 3 files |
 | Phase 04-performance-graceful-degradation P04 | 3 | 2 tasks | 5 files |
+| Phase 05-comprehensive-test-suite P03 | 18 | 2 tasks | 8 files |
 
 ## Accumulated Context
 
@@ -91,6 +92,9 @@ Recent decisions affecting current work:
 - [Phase 04-04]: Migration numbered 0015 (not 0012 as plan suggested) — 0012 through 0014 already existed
 - [Phase 04-04]: chat.service.ts getJobs caller destructured to { jobs } from PaginatedJobs — passes limit:10 to avoid fetching more than needed
 - [Phase 04-04]: Preference-based filtering in jobs route operates on paginated.jobs slice after DB query — cursor pagination applied at DB level, filter at app level
+- [Phase 05-03]: Profile page reads user data from AuthContext via /api/auth/me — no separate /api/profile call needed in tests
+- [Phase 05-03]: JobDetail wrapped in Routes+Route path=/jobs/:id so useParams() returns correct id in tests
+- [Phase 05-03]: MSW onUnhandledRequest:error caught missing work-experience and education endpoints; added to default handlers
 
 ### Pending Todos
 
@@ -105,5 +109,5 @@ None yet.
 ## Session Continuity
 
 Last session: 2026-02-21
-Stopped at: Completed 04-04-PLAN.md — cursor-based pagination for jobs API (PERF-02)
+Stopped at: Completed 05-03-PLAN.md — frontend component tests for Profile, Applications, JobDetail (TEST-04)
 Resume file: None
