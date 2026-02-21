@@ -4,9 +4,8 @@
     "lib": ["ES2022"],
     "module": "ESNext",
     "moduleResolution": "bundler",
-    "types": ["@cloudflare/workers-types"],
+    "types": ["@cloudflare/workers-types", "@cloudflare/vitest-pool-workers"],
     "outDir": "./dist",
-    "rootDir": "./src",
     "strict": true,
     "esModuleInterop": true,
     "skipLibCheck": true,
@@ -15,6 +14,6 @@
     "isolatedModules": true,
     "noEmit": false
   },
-  "include": ["src/**/*"],
+  "include": ["src/**/*", "test/**/*", "vitest.config.mts"],
   "exclude": ["node_modules", "dist"]
 }
