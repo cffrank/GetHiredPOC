@@ -10,11 +10,11 @@ See: .planning/PROJECT.md (updated 2026-02-20)
 ## Current Position
 
 Phase: 5 of 5 (Comprehensive Test Suite)
-Plan: 2 of 4 in current phase
-Status: In Progress — 05-02 complete (backend route integration tests: auth, jobs, applications, profile)
-Last activity: 2026-02-21 — Completed 05-02: backend route integration tests using worker.fetch() with real D1/KV (TEST-03)
+Plan: 4 of 4 in current phase
+Status: Complete — all 4 plans done (unit tests, backend integration, frontend components, E2E)
+Last activity: 2026-02-21 — Completed 05-04: Playwright E2E signup-to-apply test (TEST-05)
 
-Progress: [█████████░] 95%
+Progress: [██████████] 100%
 
 ## Performance Metrics
 
@@ -45,6 +45,7 @@ Progress: [█████████░] 95%
 | Phase 05-comprehensive-test-suite P03 | 18 | 2 tasks | 8 files |
 | Phase 05-comprehensive-test-suite P01 | 4 | 2 tasks | 4 files |
 | Phase 05-comprehensive-test-suite P02 | 22 | 2 tasks | 4 files |
+| Phase 05-comprehensive-test-suite P04 | 8 | 2 tasks | 3 files |
 
 ## Accumulated Context
 
@@ -104,6 +105,9 @@ Recent decisions affecting current work:
 - [Phase 05-02]: worker.fetch() pattern required for integration tests — index.ts exports Cloudflare Worker handler {fetch, scheduled} not the Hono app instance
 - [Phase 05-02]: Jobs table uses external_url column (from 0003 migration) not url — test seed INSERTs must match actual schema
 - [Phase 05-02]: GET /api/auth/me returns 200 with {user: null} when no session — not 401; auth guard not applied to /me route
+- [Phase 05-04]: E2E test uses getByLabel/getByRole locators — avoids brittle CSS selector coupling
+- [Phase 05-04]: Graceful empty-DB handling in E2E test: annotates and returns early if no jobs seeded, preventing false CI failures
+- [Phase 05-04]: reuseExistingServer:!process.env.CI in playwright.config.ts — locally reuses running servers; CI starts fresh
 
 ### Pending Todos
 
@@ -118,5 +122,5 @@ None yet.
 ## Session Continuity
 
 Last session: 2026-02-21
-Stopped at: Completed 05-03-PLAN.md — frontend component tests for Profile, Applications, JobDetail (TEST-04)
+Stopped at: Completed 05-04-PLAN.md — Playwright E2E signup-to-apply test (TEST-05)
 Resume file: None

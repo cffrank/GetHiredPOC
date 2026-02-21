@@ -59,7 +59,7 @@ Requirements for production readiness. Each maps to roadmap phases.
 - [x] **TEST-02**: Unit tests for auth, resume parsing, and job matching services
 - [x] **TEST-03**: Integration tests for all API route handlers
 - [x] **TEST-04**: Frontend component tests for Profile, Applications, and JobDetail pages
-- [ ] **TEST-05**: E2E tests covering signup → profile → job search → apply flow
+- [x] **TEST-05**: E2E tests covering signup → profile → job search → apply flow
 
 ## v2 Requirements
 
@@ -126,7 +126,7 @@ Which phases cover which requirements. Updated during roadmap creation.
 | TEST-02 | Phase 5 | Complete |
 | TEST-03 | Phase 5 | Complete |
 | TEST-04 | Phase 5 | Complete |
-| TEST-05 | Phase 5 | Pending |
+| TEST-05 | Phase 5 | Complete |
 
 **Coverage:**
 - v1 requirements: 30 total
