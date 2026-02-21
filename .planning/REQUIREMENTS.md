@@ -45,13 +45,13 @@ Requirements for production readiness. Each maps to roadmap phases.
 - [ ] **PERF-01**: Job analysis N+1 queries consolidated from 7 to 2-3 using JOINs
 - [ ] **PERF-02**: Job listings use cursor-based pagination with appropriate DB indexes
 - [ ] **PERF-03**: Job analysis cache invalidation includes profile modification timestamp
-- [ ] **PERF-04**: PDF resume parsing uses pdf-parse library instead of raw TextDecoder
+- [x] **PERF-04**: PDF resume parsing uses pdf-parse library instead of raw TextDecoder
 
 ### Graceful Degradation
 
 - [ ] **GRACE-01**: LinkedIn integration handles empty API data with user notification instead of silent empty loops
 - [ ] **GRACE-02**: AI response parsing uses structured extraction with fallback templates on malformed JSON
-- [ ] **GRACE-03**: Structured logging with consistent prefixes replaces ad-hoc console.log
+- [x] **GRACE-03**: Structured logging with consistent prefixes replaces ad-hoc console.log
 
 ### Testing
 
@@ -119,10 +119,10 @@ Which phases cover which requirements. Updated during roadmap creation.
 | PERF-01 | Phase 4 | Pending |
 | PERF-02 | Phase 4 | Pending |
 | PERF-03 | Phase 4 | Pending |
-| PERF-04 | Phase 4 | Pending |
+| PERF-04 | Phase 4 | Complete |
 | GRACE-01 | Phase 4 | Pending |
 | GRACE-02 | Phase 4 | Pending |
-| GRACE-03 | Phase 4 | Pending |
+| GRACE-03 | Phase 4 | Complete |
 | TEST-02 | Phase 5 | Pending |
 | TEST-03 | Phase 5 | Pending |
 | TEST-04 | Phase 5 | Pending |

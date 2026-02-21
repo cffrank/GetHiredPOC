@@ -5,16 +5,16 @@
 See: .planning/PROJECT.md (updated 2026-02-20)
 
 **Core value:** The app must not crash, lose data, or expose users to security vulnerabilities — every core flow works reliably for real users.
-**Current focus:** Phase 3 — Security + Error Handling
+**Current focus:** Phase 4 — Performance + Graceful Degradation
 
 ## Current Position
 
-Phase: 3 of 5 (Security + Error Handling)
-Plan: 5 of ? in current phase
-Status: In progress — 03-01, 03-02, 03-03, 03-04, and 03-05 complete
-Last activity: 2026-02-21 — Completed 03-02: js-xss sanitization of AI-parsed resume fields + PBKDF2 password hashing with bcryptjs lazy migration (SEC-02, SEC-05)
+Phase: 4 of 5 (Performance + Graceful Degradation)
+Plan: 1 of 4 in current phase
+Status: In progress — 04-01 complete
+Last activity: 2026-02-21 — Completed 04-01: structured logger utility + unpdf PDF parsing (GRACE-03, PERF-04)
 
-Progress: [███████░░░] 72%
+Progress: [████████░░] 80%
 
 ## Performance Metrics
 
@@ -38,6 +38,7 @@ Progress: [███████░░░] 72%
 *Updated after each plan completion*
 | Phase 03-security-error-handling P03 | 3 | 2 tasks | 6 files |
 | Phase 03-security-error-handling P02 | 6 | 3 tasks | 11 files |
+| Phase 04-performance-graceful-degradation P01 | 4 | 2 tasks | 6 files |
 
 ## Accumulated Context
 
@@ -77,6 +78,8 @@ Recent decisions affecting current work:
 - [Phase 03-02]: Two parallel sanitize.ts utilities (backend + rwsdk app) — codebases cannot share packages/backend imports at runtime
 - [Phase 03-02]: bcryptjs retained as dynamic import in verifyPassword for legacy hash support only; all new hashes use PBKDF2 via crypto.subtle
 - [Phase 03-02]: Lazy PBKDF2 migration: isLegacyHash() check after successful login triggers re-hash — no forced password reset
+- [Phase 04-performance-graceful-degradation]: unpdf replaces TextDecoder for PDF parsing in resume.service.ts — TextDecoder garbles compressed PDF binary; unpdf uses Workers-compatible PDF.js per Cloudflare official docs (PERF-04)
+- [Phase 04-performance-graceful-degradation]: createLogger(module) factory pattern for Cloudflare Workers — thin console.* wrapper producing JSON.stringify objects queryable in Workers Logs; no external library needed (GRACE-03)
 
 ### Pending Todos
 
@@ -91,5 +94,5 @@ None yet.
 ## Session Continuity
 
 Last session: 2026-02-21
-Stopped at: Completed 03-02-PLAN.md — js-xss sanitization + PBKDF2 password hashing (SEC-02, SEC-05)
+Stopped at: Completed 04-01-PLAN.md — structured logger utility + unpdf PDF parsing (GRACE-03, PERF-04)
 Resume file: None
