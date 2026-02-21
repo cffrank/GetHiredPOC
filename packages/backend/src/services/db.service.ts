@@ -1,11 +1,46 @@
-import type { Job, Application, ApplicationWithJob } from '@gethiredpoc/shared';
+import type { Job, Application, ApplicationWithJob, ApplicationStatus } from '@gethiredpoc/shared';
+import type { Ai } from '@cloudflare/workers-types';
+
+// Internal row type for joined application + job queries
+interface ApplicationJobRow {
+  id: string;
+  user_id: string;
+  job_id: string;
+  status: string;
+  notes: string | null;
+  ai_match_score: number | null;
+  ai_analysis: string | null;
+  applied_date: number | null;
+  created_at: number;
+  updated_at: number;
+  job_title: string;
+  job_company: string;
+  job_location: string | null;
+  job_remote: number;
+  job_description: string | null;
+  job_requirements: string | null;
+  job_salary_min: number | null;
+  job_salary_max: number | null;
+  job_posted_date: number;
+  job_created_at: number;
+  // Additional Job fields (may be null for older records)
+  job_contract_time: string | null;
+  job_contract_type: string | null;
+  job_category_tag: string | null;
+  job_category_label: string | null;
+  job_salary_is_predicted: number;
+  job_latitude: number | null;
+  job_longitude: number | null;
+  job_source: string | null;
+  job_external_url: string | null;
+}
 
 export interface Env {
   DB: D1Database;
   STORAGE: R2Bucket;
   KV_CACHE: KVNamespace;
   KV_SESSIONS: KVNamespace;
-  AI: any;
+  AI: Ai;
   FRONTEND_URL?: string;
   BACKEND_URL?: string;
   ADZUNA_APP_ID?: string;
@@ -17,6 +52,7 @@ export interface Env {
   AI_GATEWAY_TOKEN?: string;
   OPENAI_API_KEY?: string;
   CLOUDFLARE_API_TOKEN?: string;
+  ADMIN_EMAILS?: string;
 }
 
 // Jobs
@@ -30,7 +66,7 @@ export async function getJobs(
   }
 ): Promise<Job[]> {
   let query = "SELECT * FROM jobs WHERE 1=1";
-  const params: any[] = [];
+  const params: (string | number)[] = [];
 
   if (filters?.title) {
     query += " AND title LIKE ?";
@@ -133,20 +169,29 @@ export async function getApplications(
       j.salary_min as job_salary_min,
       j.salary_max as job_salary_max,
       j.posted_date as job_posted_date,
-      j.created_at as job_created_at
+      j.created_at as job_created_at,
+      j.contract_time as job_contract_time,
+      j.contract_type as job_contract_type,
+      j.category_tag as job_category_tag,
+      j.category_label as job_category_label,
+      j.salary_is_predicted as job_salary_is_predicted,
+      j.latitude as job_latitude,
+      j.longitude as job_longitude,
+      j.source as job_source,
+      j.external_url as job_external_url
     FROM applications a
     INNER JOIN jobs j ON a.job_id = j.id
     WHERE a.user_id = ?
     ORDER BY a.created_at DESC
   `)
     .bind(userId)
-    .all<any>();
+    .all<ApplicationJobRow>();
 
-  const applications = (result.results || []).map((row: any) => ({
+  const applications = (result.results || []).map((row: ApplicationJobRow) => ({
     id: row.id,
     user_id: row.user_id,
     job_id: row.job_id,
-    status: row.status,
+    status: row.status as ApplicationStatus,
     notes: row.notes,
     ai_match_score: row.ai_match_score,
     ai_analysis: row.ai_analysis,
@@ -165,6 +210,15 @@ export async function getApplications(
       salary_max: row.job_salary_max,
       posted_date: row.job_posted_date,
       created_at: row.job_created_at,
+      contract_time: row.job_contract_time,
+      contract_type: row.job_contract_type,
+      category_tag: row.job_category_tag,
+      category_label: row.job_category_label,
+      salary_is_predicted: row.job_salary_is_predicted,
+      latitude: row.job_latitude,
+      longitude: row.job_longitude,
+      source: row.job_source,
+      external_url: row.job_external_url,
     },
   }));
 
@@ -188,13 +242,22 @@ export async function getApplicationById(
       j.salary_min as job_salary_min,
       j.salary_max as job_salary_max,
       j.posted_date as job_posted_date,
-      j.created_at as job_created_at
+      j.created_at as job_created_at,
+      j.contract_time as job_contract_time,
+      j.contract_type as job_contract_type,
+      j.category_tag as job_category_tag,
+      j.category_label as job_category_label,
+      j.salary_is_predicted as job_salary_is_predicted,
+      j.latitude as job_latitude,
+      j.longitude as job_longitude,
+      j.source as job_source,
+      j.external_url as job_external_url
     FROM applications a
     INNER JOIN jobs j ON a.job_id = j.id
     WHERE a.id = ?
   `)
     .bind(applicationId)
-    .first<any>();
+    .first<ApplicationJobRow>();
 
   if (!result) return null;
 
@@ -202,7 +265,7 @@ export async function getApplicationById(
     id: result.id,
     user_id: result.user_id,
     job_id: result.job_id,
-    status: result.status,
+    status: result.status as import('@gethiredpoc/shared').ApplicationStatus,
     notes: result.notes,
     ai_match_score: result.ai_match_score,
     ai_analysis: result.ai_analysis,
@@ -221,6 +284,15 @@ export async function getApplicationById(
       salary_max: result.job_salary_max,
       posted_date: result.job_posted_date,
       created_at: result.job_created_at,
+      contract_time: result.job_contract_time,
+      contract_type: result.job_contract_type,
+      category_tag: result.job_category_tag,
+      category_label: result.job_category_label,
+      salary_is_predicted: result.job_salary_is_predicted,
+      latitude: result.job_latitude,
+      longitude: result.job_longitude,
+      source: result.job_source,
+      external_url: result.job_external_url,
     },
   };
 }
@@ -255,7 +327,7 @@ export async function updateApplication(
   }
 ): Promise<void> {
   const fields: string[] = [];
-  const params: any[] = [];
+  const params: (string | number)[] = [];
 
   if (updates.status !== undefined) {
     fields.push("status = ?");

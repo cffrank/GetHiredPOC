@@ -64,22 +64,28 @@ exportRoutes.get('/resume/:format', async (c) => {
       phone: parsedData.phone,
       location: user.location || parsedData.location,
       summary: user.bio || parsedData.summary,
-      workExperience: workExp.results.map((exp: any) => ({
-        company: exp.company,
-        title: exp.title,
-        location: exp.location,
-        startDate: exp.start_date,
-        endDate: exp.end_date,
-        description: exp.description
-      })),
-      education: education.results.map((edu: any) => ({
-        school: edu.school,
-        degree: edu.degree,
-        fieldOfStudy: edu.field_of_study,
-        startDate: edu.start_date,
-        endDate: edu.end_date,
-        gpa: edu.gpa
-      })),
+      workExperience: workExp.results.map((exp) => {
+        const e = exp as { company: string; title: string; location: string | null; start_date: string | null; end_date: string | null; description: string | null };
+        return {
+          company: e.company,
+          title: e.title,
+          location: e.location ?? undefined,
+          startDate: e.start_date ?? undefined,
+          endDate: e.end_date ?? undefined,
+          description: e.description ?? undefined,
+        };
+      }),
+      education: education.results.map((edu) => {
+        const e = edu as { school: string; degree: string | null; field_of_study: string | null; start_date: string | null; end_date: string | null; gpa: string | null };
+        return {
+          school: e.school,
+          degree: e.degree ?? undefined,
+          fieldOfStudy: e.field_of_study ?? undefined,
+          startDate: e.start_date ?? undefined,
+          endDate: e.end_date ?? undefined,
+          gpa: e.gpa ?? undefined,
+        };
+      }),
       skills: parsedData.skills || (user.skills ? JSON.parse(user.skills) : [])
     };
 
@@ -141,7 +147,7 @@ exportRoutes.post('/cover-letter/:format', async (c) => {
       applicantName: user.full_name || 'Your Name',
       applicantEmail: user.email,
       applicantPhone: undefined, // Could be fetched from profile if added
-      applicantAddress: user.location,
+      applicantAddress: user.location ?? undefined,
       companyName,
       jobTitle,
       hiringManagerName,

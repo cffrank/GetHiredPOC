@@ -1,8 +1,7 @@
 import { Hono } from 'hono';
 import type { Env } from '../services/db.service';
-import type { User } from '@gethiredpoc/shared';
 import { importJobsFromAdzuna, importJobsForUser } from '../services/adzuna.service';
-import { requireAuth, requireAdmin } from '../middleware/auth.middleware';
+import { requireAuth, requireAdmin, type AppVariables } from '../middleware/auth.middleware';
 import {
   getSystemMetrics,
   getAllUsers,
@@ -17,7 +16,7 @@ import {
 } from '../services/ai-prompt.service';
 import { toMessage } from '../utils/errors';
 
-const admin = new Hono<{ Bindings: Env }>();
+const admin = new Hono<{ Bindings: Env; Variables: AppVariables }>();
 
 // CRITICAL SECURITY: Protect ALL admin routes with authentication and admin check
 admin.use('*', requireAuth);
@@ -57,7 +56,7 @@ admin.put('/users/:userId/role', async (c) => {
   try {
     const userId = c.req.param('userId');
     const { role } = await c.req.json();
-    const currentUser = c.get('user') as User;
+    const currentUser = c.get('user');
 
     if (!role || !['user', 'admin'].includes(role)) {
       return c.json({ error: 'Invalid role. Must be "user" or "admin"' }, 400);
@@ -99,7 +98,7 @@ admin.post('/import-jobs', async (c) => {
     const result = await importJobsFromAdzuna(c.env, searchQueries);
 
     // Record audit log
-    const currentUser = c.get('user') as User;
+    const currentUser = c.get('user');
     await recordAuditLog(
       c.env,
       currentUser.id,
@@ -132,7 +131,7 @@ admin.post('/import-jobs-for-user/:userId', async (c) => {
     const result = await importJobsForUser(c.env, userId);
 
     // Record audit log
-    const currentUser = c.get('user') as User;
+    const currentUser = c.get('user');
     await recordAuditLog(
       c.env,
       currentUser.id,
@@ -203,7 +202,7 @@ admin.get('/prompts/:key', async (c) => {
 admin.post('/prompts', async (c) => {
   try {
     const body = await c.req.json();
-    const currentUser = c.get('user') as User;
+    const currentUser = c.get('user');
 
     // Validate required fields
     if (!body.prompt_key || !body.prompt_name || !body.prompt_template) {
@@ -260,7 +259,7 @@ admin.put('/prompts/:key', async (c) => {
   try {
     const promptKey = c.req.param('key');
     const body = await c.req.json();
-    const currentUser = c.get('user') as User;
+    const currentUser = c.get('user');
 
     // Check if prompt exists
     const existing = await getPrompt(c.env, promptKey);
@@ -314,7 +313,7 @@ admin.put('/prompts/:key', async (c) => {
 admin.delete('/prompts/:key', async (c) => {
   try {
     const promptKey = c.req.param('key');
-    const currentUser = c.get('user') as User;
+    const currentUser = c.get('user');
 
     const result = await deletePrompt(c.env, promptKey);
 

@@ -32,7 +32,7 @@ auth.post('/signup', async (c) => {
     const isProduction = c.env.FRONTEND_URL?.includes('pages.dev');
 
     // Send welcome email (non-blocking)
-    sendWelcomeEmail(c.env, user.email, user.full_name).catch(err =>
+    sendWelcomeEmail(c.env, user.email, user.full_name ?? undefined).catch(err =>
       console.error('Failed to send welcome email:', err)
     );
 

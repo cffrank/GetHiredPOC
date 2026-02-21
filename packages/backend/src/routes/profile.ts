@@ -1,62 +1,53 @@
 import { Hono } from 'hono';
 import type { Env } from '../services/db.service';
-import { getSession, getCookie } from '../services/auth.service';
+import { requireAuth, type AppVariables } from '../middleware/auth.middleware';
 import { uploadFile } from '../services/storage.service';
 import type { User } from '@gethiredpoc/shared';
 import { toMessage } from '../utils/errors';
 
-type Variables = {
-  env: Env;
-};
-
-const profile = new Hono<{ Bindings: Env; Variables: Variables }>();
-
-// Middleware to require auth
-async function requireAuth(c: any): Promise<User> {
-  const sessionId = getCookie(c.req.raw, "session");
-  if (!sessionId) {
-    throw new Error('Unauthorized');
-  }
-
-  const user = await getSession(c.env, sessionId);
-  if (!user) {
-    throw new Error('Session expired');
-  }
-
-  return user;
+// Allowed profile update fields (maps to DB column names)
+interface ProfileUpdates {
+  full_name?: string;
+  bio?: string;
+  location?: string;
+  skills?: string;
+  address?: string;
+  linkedin_url?: string;
+  avatar_url?: string;
 }
+
+const profile = new Hono<{ Bindings: Env; Variables: AppVariables }>();
+
+// Apply auth middleware to all routes
+profile.use('*', requireAuth);
 
 // GET /api/profile
 profile.get('/', async (c) => {
   try {
-    const user = await requireAuth(c);
+    const user = c.get('user');
     return c.json({ profile: user }, 200);
   } catch (error: unknown) {
-    const msg = toMessage(error);
-    if (msg === 'Unauthorized' || msg === 'Session expired') {
-      return c.json({ error: msg }, 401);
-    }
-    return c.json({ error: msg }, 500);
+    return c.json({ error: toMessage(error) }, 500);
   }
 });
 
 // PUT /api/profile
 profile.put('/', async (c) => {
   try {
-    const user = await requireAuth(c);
+    const user = c.get('user');
     const contentType = c.req.header("content-type");
 
-    let updates: any = {};
+    const updates: ProfileUpdates = {};
 
     if (contentType?.includes("multipart/form-data")) {
       const formData = await c.req.formData();
 
-      if (formData.has("full_name")) updates.full_name = formData.get("full_name");
-      if (formData.has("bio")) updates.bio = formData.get("bio");
-      if (formData.has("location")) updates.location = formData.get("location");
-      if (formData.has("skills")) updates.skills = formData.get("skills");
-      if (formData.has("address")) updates.address = formData.get("address");
-      if (formData.has("linkedin_url")) updates.linkedin_url = formData.get("linkedin_url");
+      if (formData.has("full_name")) updates.full_name = formData.get("full_name") as string;
+      if (formData.has("bio")) updates.bio = formData.get("bio") as string;
+      if (formData.has("location")) updates.location = formData.get("location") as string;
+      if (formData.has("skills")) updates.skills = formData.get("skills") as string;
+      if (formData.has("address")) updates.address = formData.get("address") as string;
+      if (formData.has("linkedin_url")) updates.linkedin_url = formData.get("linkedin_url") as string;
 
       console.log('[Profile Update] FormData - address:', formData.get("address"));
       console.log('[Profile Update] FormData - linkedin_url:', formData.get("linkedin_url"));
@@ -85,11 +76,11 @@ profile.put('/', async (c) => {
     console.log('[Profile Update] Updates object:', JSON.stringify(updates));
 
     const fields: string[] = [];
-    const params: any[] = [];
+    const params: (string | null)[] = [];
 
-    Object.entries(updates).forEach(([key, value]) => {
+    (Object.entries(updates) as [string, string | undefined][]).forEach(([key, value]) => {
       fields.push(`${key} = ?`);
-      params.push(value);
+      params.push(value ?? null);
     });
 
     if (fields.length === 0) {
@@ -116,31 +107,27 @@ profile.put('/', async (c) => {
 
     return c.json({ profile: updatedUser }, 200);
   } catch (error: unknown) {
-    const msg = toMessage(error);
-    if (msg === 'Unauthorized' || msg === 'Session expired') {
-      return c.json({ error: msg }, 401);
-    }
-    return c.json({ error: msg }, 500);
+    return c.json({ error: toMessage(error) }, 500);
   }
 });
 
 // PATCH /api/profile
 profile.patch('/', async (c) => {
   try {
-    const user = await requireAuth(c);
+    const user = c.get('user');
     const contentType = c.req.header("content-type");
 
-    let updates: any = {};
+    const updates: ProfileUpdates = {};
 
     if (contentType?.includes("multipart/form-data")) {
       const formData = await c.req.formData();
 
-      if (formData.has("full_name")) updates.full_name = formData.get("full_name");
-      if (formData.has("bio")) updates.bio = formData.get("bio");
-      if (formData.has("location")) updates.location = formData.get("location");
-      if (formData.has("skills")) updates.skills = formData.get("skills");
-      if (formData.has("address")) updates.address = formData.get("address");
-      if (formData.has("linkedin_url")) updates.linkedin_url = formData.get("linkedin_url");
+      if (formData.has("full_name")) updates.full_name = formData.get("full_name") as string;
+      if (formData.has("bio")) updates.bio = formData.get("bio") as string;
+      if (formData.has("location")) updates.location = formData.get("location") as string;
+      if (formData.has("skills")) updates.skills = formData.get("skills") as string;
+      if (formData.has("address")) updates.address = formData.get("address") as string;
+      if (formData.has("linkedin_url")) updates.linkedin_url = formData.get("linkedin_url") as string;
 
       const avatarFile = formData.get("avatar");
       if (avatarFile && typeof avatarFile === 'object' && 'arrayBuffer' in avatarFile) {
@@ -161,11 +148,11 @@ profile.patch('/', async (c) => {
     }
 
     const fields: string[] = [];
-    const params: any[] = [];
+    const params: (string | null)[] = [];
 
-    Object.entries(updates).forEach(([key, value]) => {
+    (Object.entries(updates) as [string, string | undefined][]).forEach(([key, value]) => {
       fields.push(`${key} = ?`);
-      params.push(value);
+      params.push(value ?? null);
     });
 
     if (fields.length === 0) {
@@ -186,11 +173,7 @@ profile.patch('/', async (c) => {
 
     return c.json({ profile: updatedUser }, 200);
   } catch (error: unknown) {
-    const msg = toMessage(error);
-    if (msg === 'Unauthorized' || msg === 'Session expired') {
-      return c.json({ error: msg }, 401);
-    }
-    return c.json({ error: msg }, 500);
+    return c.json({ error: toMessage(error) }, 500);
   }
 });
 

@@ -21,7 +21,7 @@ resumes.post('/', async (c) => {
     }
 
     const formData = await c.req.formData();
-    const file = formData.get('file') as File;
+    const file = formData.get('file') as File | null;
     const isPrimary = formData.get('isPrimary') === 'true';
 
     if (!file) {

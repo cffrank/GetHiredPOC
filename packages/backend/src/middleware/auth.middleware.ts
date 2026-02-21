@@ -3,11 +3,20 @@ import type { User } from '@gethiredpoc/shared';
 import { getCurrentUser } from '../services/auth.service';
 import type { Env } from '../services/db.service';
 
+// Shared Variables type for Hono context — all routes that use requireAuth
+// have access to c.get('user') as User after this middleware runs
+export interface AppVariables {
+  user: User;
+}
+
+type AppContext = Context<{ Bindings: Env; Variables: AppVariables }>;
+
 /**
  * Middleware to require authentication
  * Returns 401 if user is not authenticated
+ * Sets c.var.user (accessible via c.get('user')) for downstream handlers
  */
-export async function requireAuth(c: Context<{ Bindings: Env }>, next: Next) {
+export async function requireAuth(c: AppContext, next: Next) {
   const user = await getCurrentUser(c);
 
   if (!user) {
@@ -24,8 +33,8 @@ export async function requireAuth(c: Context<{ Bindings: Env }>, next: Next) {
  * Must be used after requireAuth middleware
  * Returns 403 if user is not an admin
  */
-export async function requireAdmin(c: Context<{ Bindings: Env }>, next: Next) {
-  const user = c.get('user') as User | undefined;
+export async function requireAdmin(c: AppContext, next: Next) {
+  const user = c.get('user');
 
   if (!user) {
     return c.json({ error: 'Authentication required' }, 401);
@@ -33,7 +42,7 @@ export async function requireAdmin(c: Context<{ Bindings: Env }>, next: Next) {
 
   // Get admin emails from environment variable
   const adminEmailsString = c.env.ADMIN_EMAILS || '';
-  const adminEmails = adminEmailsString.split(',').map(email => email.trim().toLowerCase());
+  const adminEmails = adminEmailsString.split(',').map((email: string) => email.trim().toLowerCase());
 
   // Check if user's email is in the admin list OR user has admin role
   const isAdmin = adminEmails.includes(user.email.toLowerCase()) || user.role === 'admin';
@@ -50,8 +59,8 @@ export async function requireAdmin(c: Context<{ Bindings: Env }>, next: Next) {
  * Must be used after requireAuth middleware
  * Returns 403 if user does not have an active paid membership
  */
-export async function requirePaidMembership(c: Context<{ Bindings: Env }>, next: Next) {
-  const user = c.get('user') as User | undefined;
+export async function requirePaidMembership(c: AppContext, next: Next) {
+  const user = c.get('user');
 
   if (!user) {
     return c.json({ error: 'Authentication required' }, 401);

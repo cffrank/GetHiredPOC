@@ -1,4 +1,4 @@
-import { Hono } from 'hono';
+import { Hono, type Context } from 'hono';
 import type { Env } from '../services/db.service';
 import { getSession, getCookie } from '../services/auth.service';
 import {
@@ -11,34 +11,18 @@ import {
 } from '../services/db.service';
 import { mockJobAnalysis } from '../services/ai.service';
 import type { User } from '@gethiredpoc/shared';
+import { requireAuth, type AppVariables } from '../middleware/auth.middleware';
 import { toMessage } from '../utils/errors';
 
-type Variables = {
-  env: Env;
-};
+const jobs = new Hono<{ Bindings: Env; Variables: AppVariables }>();
 
-const jobs = new Hono<{ Bindings: Env; Variables: Variables }>();
-
-// Middleware to get user (optional)
-async function getOptionalUser(c: any): Promise<User | null> {
+// Helper to get optional user (unauthenticated requests allowed)
+async function getOptionalUser(
+  c: Context<{ Bindings: Env; Variables: AppVariables }>
+): Promise<User | null> {
   const sessionId = getCookie(c.req.raw, "session");
   if (!sessionId) return null;
   return await getSession(c.env, sessionId);
-}
-
-// Middleware to require auth
-async function requireAuth(c: any): Promise<User> {
-  const sessionId = getCookie(c.req.raw, "session");
-  if (!sessionId) {
-    throw new Error('Unauthorized');
-  }
-
-  const user = await getSession(c.env, sessionId);
-  if (!user) {
-    throw new Error('Session expired');
-  }
-
-  return user;
 }
 
 // GET /api/jobs
@@ -94,48 +78,8 @@ jobs.get('/', async (c) => {
                 return job.remote === 2; // Hybrid only
               }
 
-              // Handle actual location strings
-              // Check state field first (e.g., "WI", "Wisconsin", or "Madison, WI")
-              if (job.state) {
-                const stateLower = job.state.toLowerCase();
-
-                // Direct state code match (e.g., "WI")
-                if (locLower === stateLower) {
-                  return true;
-                }
-
-                // State name match (e.g., "wisconsin")
-                const stateNames: Record<string, string> = {
-                  'al': 'alabama', 'ak': 'alaska', 'az': 'arizona', 'ar': 'arkansas', 'ca': 'california',
-                  'co': 'colorado', 'ct': 'connecticut', 'de': 'delaware', 'fl': 'florida', 'ga': 'georgia',
-                  'hi': 'hawaii', 'id': 'idaho', 'il': 'illinois', 'in': 'indiana', 'ia': 'iowa',
-                  'ks': 'kansas', 'ky': 'kentucky', 'la': 'louisiana', 'me': 'maine', 'md': 'maryland',
-                  'ma': 'massachusetts', 'mi': 'michigan', 'mn': 'minnesota', 'ms': 'mississippi',
-                  'mo': 'missouri', 'mt': 'montana', 'ne': 'nebraska', 'nv': 'nevada', 'nh': 'new hampshire',
-                  'nj': 'new jersey', 'nm': 'new mexico', 'ny': 'new york', 'nc': 'north carolina',
-                  'nd': 'north dakota', 'oh': 'ohio', 'ok': 'oklahoma', 'or': 'oregon', 'pa': 'pennsylvania',
-                  'ri': 'rhode island', 'sc': 'south carolina', 'sd': 'south dakota', 'tn': 'tennessee',
-                  'tx': 'texas', 'ut': 'utah', 'vt': 'vermont', 'va': 'virginia', 'wa': 'washington',
-                  'wv': 'west virginia', 'wi': 'wisconsin', 'wy': 'wyoming'
-                };
-
-                const stateName = stateNames[stateLower];
-                if (stateName && locLower === stateName) {
-                  return true;
-                }
-
-                // Check if location string contains state (e.g., "Madison, WI")
-                const locParts = desiredLoc.split(',').map(s => s.trim().toLowerCase());
-                if (locParts.length > 1) {
-                  const lastPart = locParts[locParts.length - 1];
-                  if (lastPart === stateLower || lastPart === stateName) {
-                    return true;
-                  }
-                }
-              }
-
-              // Fallback to location string matching (for backward compatibility)
-              return job.location.toLowerCase().includes(desiredLoc.toLowerCase());
+              // Location string matching
+              return (job.location ?? '').toLowerCase().includes(desiredLoc.toLowerCase());
             });
 
             if (!locationMatch) return false;
@@ -175,58 +119,46 @@ jobs.get('/:id', async (c) => {
 });
 
 // POST /api/jobs/:id/save
-jobs.post('/:id/save', async (c) => {
+jobs.post('/:id/save', requireAuth, async (c) => {
   try {
-    const user = await requireAuth(c);
+    const user = c.get('user');
     const jobId = c.req.param('id');
 
     await saveJob(c.env, user.id, jobId);
     return c.json({ success: true }, 200);
   } catch (error: unknown) {
-    const msg = toMessage(error);
-    if (msg === 'Unauthorized' || msg === 'Session expired') {
-      return c.json({ error: msg }, 401);
-    }
-    return c.json({ error: msg }, 500);
+    return c.json({ error: toMessage(error) }, 500);
   }
 });
 
 // DELETE /api/jobs/:id/save
-jobs.delete('/:id/save', async (c) => {
+jobs.delete('/:id/save', requireAuth, async (c) => {
   try {
-    const user = await requireAuth(c);
+    const user = c.get('user');
     const jobId = c.req.param('id');
 
     await unsaveJob(c.env, user.id, jobId);
     return c.json({ success: true }, 200);
   } catch (error: unknown) {
-    const msg = toMessage(error);
-    if (msg === 'Unauthorized' || msg === 'Session expired') {
-      return c.json({ error: msg }, 401);
-    }
-    return c.json({ error: msg }, 500);
+    return c.json({ error: toMessage(error) }, 500);
   }
 });
 
 // GET /api/jobs/saved
-jobs.get('/saved/list', async (c) => {
+jobs.get('/saved/list', requireAuth, async (c) => {
   try {
-    const user = await requireAuth(c);
+    const user = c.get('user');
     const jobsList = await getSavedJobs(c.env, user.id);
     return c.json({ jobs: jobsList }, 200);
   } catch (error: unknown) {
-    const msg = toMessage(error);
-    if (msg === 'Unauthorized' || msg === 'Session expired') {
-      return c.json({ error: msg }, 401);
-    }
-    return c.json({ error: msg }, 500);
+    return c.json({ error: toMessage(error) }, 500);
   }
 });
 
 // POST /api/jobs/:id/analyze
-jobs.post('/:id/analyze', async (c) => {
+jobs.post('/:id/analyze', requireAuth, async (c) => {
   try {
-    const user = await requireAuth(c);
+    const user = c.get('user');
     const jobId = c.req.param('id');
 
     // Check cache first
@@ -256,18 +188,14 @@ jobs.post('/:id/analyze', async (c) => {
 
     return c.json({ analysis, cached: false }, 200);
   } catch (error: unknown) {
-    const msg = toMessage(error);
-    if (msg === 'Unauthorized' || msg === 'Session expired') {
-      return c.json({ error: msg }, 401);
-    }
-    return c.json({ error: msg }, 500);
+    return c.json({ error: toMessage(error) }, 500);
   }
 });
 
 // POST /api/jobs/:id/hide - Hide a job from recommendations
-jobs.post('/:id/hide', async (c) => {
+jobs.post('/:id/hide', requireAuth, async (c) => {
   try {
-    const user = await requireAuth(c);
+    const user = c.get('user');
     const jobId = c.req.param('id');
 
     // Check if job exists
@@ -292,18 +220,14 @@ jobs.post('/:id/hide', async (c) => {
 
     return c.json({ success: true }, 201);
   } catch (error: unknown) {
-    const msg = toMessage(error);
-    if (msg === 'Unauthorized' || msg === 'Session expired') {
-      return c.json({ error: msg }, 401);
-    }
-    return c.json({ error: msg }, 500);
+    return c.json({ error: toMessage(error) }, 500);
   }
 });
 
 // DELETE /api/jobs/:id/hide - Unhide a job
-jobs.delete('/:id/hide', async (c) => {
+jobs.delete('/:id/hide', requireAuth, async (c) => {
   try {
-    const user = await requireAuth(c);
+    const user = c.get('user');
     const jobId = c.req.param('id');
 
     await c.env.DB.prepare(
@@ -312,11 +236,7 @@ jobs.delete('/:id/hide', async (c) => {
 
     return c.json({ success: true }, 200);
   } catch (error: unknown) {
-    const msg = toMessage(error);
-    if (msg === 'Unauthorized' || msg === 'Session expired') {
-      return c.json({ error: msg }, 401);
-    }
-    return c.json({ error: msg }, 500);
+    return c.json({ error: toMessage(error) }, 500);
   }
 });
 
