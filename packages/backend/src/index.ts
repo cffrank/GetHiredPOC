@@ -1,4 +1,5 @@
 import { Hono } from 'hono';
+import { secureHeaders } from 'hono/secure-headers';
 import type { Env } from './services/db.service';
 import auth from './routes/auth';
 import jobs from './routes/jobs';
@@ -18,6 +19,20 @@ import chat from './routes/chat';
 import { getFile } from './services/storage.service';
 
 const app = new Hono<{ Bindings: Env }>();
+
+// Security headers — applied globally before all routes
+app.use(secureHeaders({
+  strictTransportSecurity: 'max-age=63072000; includeSubDomains; preload',
+  xFrameOptions: 'SAMEORIGIN',
+  contentSecurityPolicy: {
+    defaultSrc: ["'self'"],
+    scriptSrc: ["'self'"],
+    styleSrc: ["'self'", 'https://fonts.googleapis.com'],
+    fontSrc: ["'self'", 'https://fonts.gstatic.com'],
+    objectSrc: ["'none'"],
+    frameAncestors: ["'none'"],
+  },
+}));
 
 // Manual CORS middleware for development
 app.use('*', async (c, next) => {
