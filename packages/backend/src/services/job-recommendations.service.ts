@@ -1,12 +1,15 @@
 import type { Env } from './db.service';
 import { analyzeJobMatch, type JobMatch } from './job-matching.service';
+import { createLogger } from '../utils/logger';
+
+const logger = createLogger('job-recommendations');
 
 export async function getTopJobRecommendations(
   env: Env,
   userId: string,
   limit: number = 10
 ): Promise<JobMatch[]> {
-  console.log(`[Job Recommendations] Getting top ${limit} recommendations for user ${userId}`);
+  logger.info('Getting top recommendations', { limit, userId });
 
   // Get user profile
   const user = await env.DB.prepare(
@@ -28,7 +31,7 @@ export async function getTopJobRecommendations(
     LIMIT 50
   `).bind(userId).all();
 
-  console.log(`[Job Recommendations] Analyzing ${jobs.results.length} jobs`);
+  logger.info('Analyzing jobs', { count: jobs.results.length });
 
   // Analyze each job
   const matches: JobMatch[] = [];
@@ -38,7 +41,7 @@ export async function getTopJobRecommendations(
       const match = await analyzeJobMatch(env, user, job);
       matches.push(match);
     } catch (error) {
-      console.error(`[Job Recommendations] Failed to analyze job ${job.id}:`, error);
+      logger.error('Failed to analyze job', { jobId: job.id, error: String(error) });
     }
   }
 
@@ -46,7 +49,7 @@ export async function getTopJobRecommendations(
   matches.sort((a, b) => b.score - a.score);
   const topMatches = matches.slice(0, limit);
 
-  console.log(`[Job Recommendations] Returning ${topMatches.length} recommendations`);
+  logger.info('Returning recommendations', { count: topMatches.length });
   return topMatches;
 }
 

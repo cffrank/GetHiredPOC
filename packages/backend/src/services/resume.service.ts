@@ -1,6 +1,10 @@
 import type { Env } from './db.service';
 import type { ParsedResume } from '@gethiredpoc/shared';
 import { sanitizeResumeData } from '../utils/sanitize';
+import { extractText, getDocumentProxy } from 'unpdf';
+import { createLogger } from '../utils/logger';
+
+const logger = createLogger('resume');
 
 export type { ParsedResume };
 
@@ -20,7 +24,7 @@ export async function parseResume(
     const pdfText = await extractTextFromPDF(pdfBuffer);
 
     if (!pdfText || pdfText.trim().length === 0) {
-      console.warn('No text extracted from PDF');
+      logger.warn('No text extracted from PDF');
       return {
         workExperience: [],
         education: [],
@@ -95,7 +99,7 @@ ${pdfText.substring(0, 10000)}`; // Limit to 10k chars to stay within token limi
       skills: parsed.skills || []
     };
   } catch (error) {
-    console.error('Resume parsing error:', error);
+    logger.error('Resume parsing error', { error: String(error) });
     // Return empty structure if parsing fails
     return {
       workExperience: [],
@@ -106,28 +110,16 @@ ${pdfText.substring(0, 10000)}`; // Limit to 10k chars to stay within token limi
 }
 
 /**
- * Basic PDF text extraction
- * This is a simplified implementation. For production, consider using a dedicated PDF library
+ * PDF text extraction using unpdf (Cloudflare Workers-compatible PDF.js build)
+ * Replaces the broken TextDecoder approach which produces garbled binary output.
  */
 async function extractTextFromPDF(pdfBuffer: ArrayBuffer): Promise<string> {
   try {
-    // Convert ArrayBuffer to string and look for text content
-    // This is a very basic approach that works for simple PDFs
-    // For complex PDFs, you'd need a proper PDF parsing library
-
-    const uint8Array = new Uint8Array(pdfBuffer);
-    const decoder = new TextDecoder('utf-8', { fatal: false });
-    let text = decoder.decode(uint8Array);
-
-    // Remove PDF control characters and binary data
-    text = text.replace(/[^\x20-\x7E\n\r]/g, ' ');
-
-    // Clean up multiple spaces and newlines
-    text = text.replace(/\s+/g, ' ').trim();
-
+    const pdf = await getDocumentProxy(new Uint8Array(pdfBuffer));
+    const { text } = await extractText(pdf, { mergePages: true });
     return text;
   } catch (error) {
-    console.error('PDF text extraction error:', error);
+    logger.error('PDF text extraction error', { error: String(error) });
     return '';
   }
 }

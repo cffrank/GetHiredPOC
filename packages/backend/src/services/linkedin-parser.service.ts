@@ -1,5 +1,8 @@
 import type { Env } from './db.service';
 import { getPrompt, renderPrompt, parseModelConfig } from './ai-prompt.service';
+import { createLogger } from '../utils/logger';
+
+const logger = createLogger('linkedin-parser');
 
 interface ParsedLinkedInProfile {
   fullName?: string;
@@ -64,15 +67,17 @@ export async function parseLinkedInProfileText(
     // Parse AI response
     let jsonText = (response as any).response || '';
 
-    console.log('[LinkedIn Parser] AI raw response:', jsonText.substring(0, 500));
+    logger.debug('AI raw response', { responseSample: jsonText.substring(0, 500) });
 
     // Clean up markdown code blocks if present
     jsonText = jsonText.replace(/```json\n?/g, '').replace(/```\n?/g, '').trim();
 
     const parsed = JSON.parse(jsonText) as ParsedLinkedInProfile;
 
-    console.log('[LinkedIn Parser] Parsed work experience count:', parsed.workExperience?.length || 0);
-    console.log('[LinkedIn Parser] Parsed education count:', parsed.education?.length || 0);
+    logger.info('Parsed profile', {
+      workExperienceCount: parsed.workExperience?.length || 0,
+      educationCount: parsed.education?.length || 0
+    });
 
     // Ensure required arrays exist
     return {
@@ -85,7 +90,7 @@ export async function parseLinkedInProfileText(
       skills: parsed.skills || []
     };
   } catch (error) {
-    console.error('LinkedIn profile parsing error:', error);
+    logger.error('LinkedIn profile parsing error', { error: String(error) });
 
     // Return empty structure if parsing fails
     return {
@@ -130,11 +135,11 @@ export async function saveLinkedInProfileData(
   // Save work experience
   for (const exp of profileData.workExperience) {
     if (!exp.company || !exp.title) {
-      console.warn('[LinkedIn Parser] Skipping work experience - missing required fields:', JSON.stringify(exp));
+      logger.warn('Skipping work experience - missing required fields', { exp: JSON.stringify(exp) });
       continue; // Skip incomplete entries
     }
 
-    console.log('[LinkedIn Parser] Saving work experience:', { company: exp.company, title: exp.title });
+    logger.debug('Saving work experience', { company: exp.company, title: exp.title });
 
     await db.prepare(`
       INSERT INTO work_experience (user_id, company, title, location, start_date, end_date, description)

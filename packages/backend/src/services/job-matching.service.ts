@@ -1,8 +1,27 @@
 import type { Env } from './db.service';
 import { getPrompt, renderPrompt, parseModelConfig } from './ai-prompt.service';
 import type { JobMatch } from '@gethiredpoc/shared';
+import { createLogger } from '../utils/logger';
+
+const logger = createLogger('job-matching');
 
 export type { JobMatch };
+
+interface MatchResult {
+  score: number;
+  strengths: string[];
+  concerns: string[];
+  recommendation: 'strong' | 'good' | 'fair' | 'weak';
+  summary?: string;
+}
+
+const PARSE_FALLBACK: MatchResult = {
+  score: 50,
+  strengths: ['Unable to analyze at this time'],
+  concerns: ['Analysis temporarily unavailable'],
+  recommendation: 'fair',
+  summary: 'Analysis could not be completed. Please try again.'
+};
 
 export async function analyzeJobMatch(
   env: Env,
@@ -14,7 +33,7 @@ export async function analyzeJobMatch(
   // Check KV cache (7 days)
   const cached = await env.KV_CACHE.get(cacheKey);
   if (cached) {
-    console.log(`[Job Match] Cache hit for ${cacheKey}`);
+    logger.info('Cache hit', { cacheKey });
     return JSON.parse(cached);
   }
 
@@ -71,7 +90,7 @@ export async function analyzeJobMatch(
   const modelConfig = parseModelConfig(promptConfig.model_config);
 
   try {
-    console.log(`[Job Match] Analyzing match for job ${job.id}`);
+    logger.info('Analyzing match for job', { jobId: job.id });
 
     const response = await env.AI.run(modelConfig.model as any, {
       prompt,
@@ -103,15 +122,19 @@ export async function analyzeJobMatch(
       expirationTtl: 7 * 24 * 60 * 60
     });
 
-    console.log(`[Job Match] Generated match score ${match.score}% for ${cacheKey}`);
+    logger.info('Generated match score', { score: match.score, cacheKey });
     return match;
   } catch (error: unknown) {
-    console.error('[Job Match] Analysis error:', error);
-    throw new Error('Failed to analyze job match: ' + (error instanceof Error ? error.message : String(error)));
+    logger.error('Analysis error, using fallback template', { error: String(error), jobId: job.id });
+    // Return fallback so the job still appears in recommendations with a neutral score
+    return {
+      jobId: job.id,
+      ...PARSE_FALLBACK
+    };
   }
 }
 
-function parseMatchJSON(text: string): any {
+function parseMatchJSON(text: string): MatchResult {
   try {
     let jsonText = text.trim();
 
@@ -134,9 +157,9 @@ function parseMatchJSON(text: string): any {
       throw new Error('Missing required fields in AI response');
     }
 
-    return parsed;
+    return parsed as MatchResult;
   } catch (error: unknown) {
-    console.error('[Job Match] Parse error:', error, 'Text:', text);
-    throw new Error('Failed to parse match analysis');
+    logger.error('Parse error, using fallback template', { error: String(error), textSample: text.substring(0, 200) });
+    return { ...PARSE_FALLBACK };
   }
 }
