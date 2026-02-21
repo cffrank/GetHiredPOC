@@ -1,3 +1,4 @@
+// SECURITY: Resume fields rendered via React JSX expressions — React auto-escapes HTML entities (render-time sanitization)
 import { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { apiClient } from '../lib/api-client';

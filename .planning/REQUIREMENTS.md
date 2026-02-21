@@ -35,8 +35,8 @@ Requirements for production readiness. Each maps to roadmap phases.
 
 ### Error Handling
 
-- [ ] **ERR-01**: Typed error classes (NotFoundError, ValidationError, ForbiddenError) with correct HTTP status codes
-- [ ] **ERR-02**: Global error handler converts typed errors to consistent JSON responses
+- [x] **ERR-01**: Typed error classes (NotFoundError, ValidationError, ForbiddenError) with correct HTTP status codes
+- [x] **ERR-02**: Global error handler converts typed errors to consistent JSON responses
 - [x] **ERR-03**: React error boundaries contain crashes per UI domain (Profile, Applications, JobDetail)
 - [x] **ERR-04**: User-friendly error notifications replace alert() calls
 
@@ -112,8 +112,8 @@ Which phases cover which requirements. Updated during roadmap creation.
 | SEC-03 | Phase 3 | Complete |
 | SEC-04 | Phase 3 | Complete |
 | SEC-05 | Phase 3 | Pending |
-| ERR-01 | Phase 3 | Pending |
-| ERR-02 | Phase 3 | Pending |
+| ERR-01 | Phase 3 | Complete |
+| ERR-02 | Phase 3 | Complete |
 | ERR-03 | Phase 3 | Complete |
 | ERR-04 | Phase 3 | Complete |
 | PERF-01 | Phase 4 | Pending |

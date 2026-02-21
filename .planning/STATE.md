@@ -36,6 +36,7 @@ Progress: [███████░░░] 72%
 - Trend: On track
 
 *Updated after each plan completion*
+| Phase 03-security-error-handling P03 | 3 | 2 tasks | 6 files |
 
 ## Accumulated Context
 
@@ -70,6 +71,8 @@ Recent decisions affecting current work:
 - [Phase 03-04]: confirmingDeleteId state replaces confirm() dialog — shows inline "Delete? Yes / No" UI within the application card
 - [Phase 03-05]: AdminJobs confirm() replaced with inline yellow-tinted panels showing query count/userId context — better UX for non-reversible bulk operations
 - [Phase 03-05]: AdminPrompts delete confirmation moved inline to viewer panel (confirmingDeleteKey state) — keeps list view uncluttered
+- [Phase 03-03]: Catch blocks use 'if (error instanceof AppError) throw error' pattern to allow typed errors to propagate to global handler while still catching unexpected errors
+- [Phase 03-03]: applications PUT/PATCH now check application existence and ownership before updating — adds NotFoundError and ForbiddenError guards that were previously missing
 
 ### Pending Todos
 
@@ -84,5 +87,5 @@ None yet.
 ## Session Continuity
 
 Last session: 2026-02-21
-Stopped at: Completed 03-05-PLAN.md — packages/frontend ErrorBoundary, Toast infrastructure, and all alert()/confirm() replacements (ERR-03, ERR-04)
+Stopped at: Completed 03-03-PLAN.md — typed error classes (AppError hierarchy) and global error handler update (ERR-01, ERR-02)
 Resume file: None
