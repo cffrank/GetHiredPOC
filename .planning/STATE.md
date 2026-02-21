@@ -10,27 +10,27 @@ See: .planning/PROJECT.md (updated 2026-02-20)
 ## Current Position
 
 Phase: 1 of 5 (Critical Bugs + Test Infrastructure)
-Plan: 2 of TBD in current phase
+Plan: 1 of 3 in current phase
 Status: In progress
-Last activity: 2026-02-20 — Completed 01-02: Frontend bug fixes (BUG-01, BUG-03)
+Last activity: 2026-02-20 — Completed 01-01: Backend test infrastructure (TEST-01)
 
 Progress: [█░░░░░░░░░] 10%
 
 ## Performance Metrics
 
 **Velocity:**
-- Total plans completed: 2
-- Average duration: ~2 min
-- Total execution time: ~4 min
+- Total plans completed: 1
+- Average duration: ~3 min
+- Total execution time: ~3 min
 
 **By Phase:**
 
 | Phase | Plans | Total | Avg/Plan |
 |-------|-------|-------|----------|
-| 01-critical-bugs-test-infrastructure | 2 | ~4 min | ~2 min |
+| 01-critical-bugs-test-infrastructure | 1 | ~3 min | ~3 min |
 
 **Recent Trend:**
-- Last 5 plans: 01-01 (research), 01-02 (frontend bug fixes)
+- Last 5 plans: 01-01 (backend test infrastructure)
 - Trend: On track
 
 *Updated after each plan completion*
@@ -44,9 +44,9 @@ Recent decisions affecting current work:
 
 - [Roadmap]: Fix by severity order (bugs → types → security → performance → tests) — dependency chain confirmed by research
 - [Roadmap]: Test infrastructure bootstrapped in Phase 1 alongside bug fixes — prevents fixing without tests
-- [01-02]: Used safeParseJSON helper (not error boundary) for requirements parse — error boundaries are Phase 3 scope (ERR-03)
-- [01-02]: Kept updates: any type annotation in useUpdateApplication — Phase 2 TYPE-01 will replace with typed interface
-- [01-02]: onSettled replaces onSuccess in useUpdateApplication — fires on both success and failure for guaranteed server reconciliation
+- [01-01]: Removed rootDir from tsconfig.json to allow test/ files to be included outside src/
+- [01-01]: Renamed 0010_admin_and_membership_remote.sql to .disabled — duplicate migration caused SQLITE_ERROR in fresh in-memory D1
+- [01-01]: Do NOT set environment in vitest wrangler options — wrangler.toml has no named environments
 
 ### Pending Todos
 
@@ -62,5 +62,5 @@ None yet.
 ## Session Continuity
 
 Last session: 2026-02-20
-Stopped at: Completed 01-02-PLAN.md — Frontend bug fixes (BUG-01 safeParseJSON, BUG-03 optimistic rollback)
+Stopped at: Completed 01-01-PLAN.md — Backend test infrastructure (vitest-pool-workers + D1 smoke test)
 Resume file: None

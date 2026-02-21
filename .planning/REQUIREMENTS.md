@@ -55,7 +55,7 @@ Requirements for production readiness. Each maps to roadmap phases.
 
 ### Testing
 
-- [ ] **TEST-01**: Backend test infrastructure set up with vitest-pool-workers and D1 bindings
+- [x] **TEST-01**: Backend test infrastructure set up with vitest-pool-workers and D1 bindings
 - [ ] **TEST-02**: Unit tests for auth, resume parsing, and job matching services
 - [ ] **TEST-03**: Integration tests for all API route handlers
 - [ ] **TEST-04**: Frontend component tests for Profile, Applications, and JobDetail pages

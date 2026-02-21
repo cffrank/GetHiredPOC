@@ -32,7 +32,7 @@ Decimal phases appear between their surrounding integers in numeric order.
 **Plans**: 3 plans
 
 Plans:
-- [ ] 01-01-PLAN.md — Backend test infrastructure (vitest-pool-workers + D1 smoke test)
+- [x] 01-01-PLAN.md — Backend test infrastructure (vitest-pool-workers + D1 smoke test)
 - [x] 01-02-PLAN.md — Frontend crash fixes (safe JSON parse + optimistic update rollback)
 - [ ] 01-03-PLAN.md — Application status schema audit and alignment
 
