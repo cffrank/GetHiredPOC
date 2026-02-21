@@ -6,6 +6,15 @@ import { Button } from '../components/ui/Button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '../components/ui/Card';
 import { Badge } from '../components/ui/Badge';
 
+function safeParseJSON<T>(value: string | null | undefined, fallback: T): T {
+  if (!value) return fallback;
+  try {
+    return JSON.parse(value) as T;
+  } catch {
+    return fallback;
+  }
+}
+
 export default function JobDetail() {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
@@ -52,7 +61,7 @@ export default function JobDetail() {
   if (!data?.job) return <div className="p-8">Job not found</div>;
 
   const job = data.job;
-  const requirements = job.requirements ? JSON.parse(job.requirements) : [];
+  const requirements = safeParseJSON<string[]>(job.requirements, []);
 
   return (
     <div className="min-h-full bg-gray-50">
