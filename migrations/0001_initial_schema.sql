@@ -47,7 +47,7 @@ CREATE TABLE applications (
   id TEXT PRIMARY KEY DEFAULT (lower(hex(randomblob(16)))),
   user_id TEXT NOT NULL,
   job_id TEXT NOT NULL,
-  status TEXT DEFAULT 'saved', -- saved|applied|interview|offer|rejected
+  status TEXT DEFAULT 'saved', -- saved|applied|screening|interview|offer|rejected
   notes TEXT,
   ai_match_score INTEGER, -- 0-100
   ai_analysis TEXT, -- JSON: cached AI response
