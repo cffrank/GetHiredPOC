@@ -12,7 +12,7 @@ See: .planning/PROJECT.md (updated 2026-02-20)
 Phase: 5 of 5 (Comprehensive Test Suite)
 Plan: 3 of 4 in current phase
 Status: In Progress — 05-03 complete (frontend component tests: Profile, Applications, JobDetail)
-Last activity: 2026-02-21 — Completed 05-03: frontend Vitest+MSW component tests (TEST-04)
+Last activity: 2026-02-21 — Completed 05-01: backend unit tests for password, sanitization, auth service, job matching (TEST-02)
 
 Progress: [█████████░] 95%
 
@@ -43,6 +43,7 @@ Progress: [█████████░] 95%
 | Phase 04-performance-graceful-degradation P03 | 3 | 2 tasks | 3 files |
 | Phase 04-performance-graceful-degradation P04 | 3 | 2 tasks | 5 files |
 | Phase 05-comprehensive-test-suite P03 | 18 | 2 tasks | 8 files |
+| Phase 05-comprehensive-test-suite P01 | 4 | 2 tasks | 4 files |
 
 ## Accumulated Context
 
@@ -95,6 +96,10 @@ Recent decisions affecting current work:
 - [Phase 05-03]: Profile page reads user data from AuthContext via /api/auth/me — no separate /api/profile call needed in tests
 - [Phase 05-03]: JobDetail wrapped in Routes+Route path=/jobs/:id so useParams() returns correct id in tests
 - [Phase 05-03]: MSW onUnhandledRequest:error caught missing work-experience and education endpoints; added to default handlers
+- [Phase 05-01]: Tests use cloudflare:test env directly — no mocking of D1 or crypto.subtle since vitest-pool-workers provides real Workers bindings
+- [Phase 05-01]: buildUserContext is in job-recommendations.service.ts, not job-matching.service.ts — imported from the correct source
+- [Phase 05-01]: analyzeJobMatch test skipped with it.skip — requires AI binding mock in miniflare.bindings; adding that is out of scope for unit test plan
+- [Phase 05-01]: uniqueEmail() helper uses timestamp+random suffix to avoid D1 unique constraint errors in sequential singleWorker tests
 
 ### Pending Todos
 
