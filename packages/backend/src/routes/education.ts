@@ -1,6 +1,7 @@
 import { Hono } from 'hono';
 import type { Env } from '../services/db.service';
 import { getCurrentUser } from '../services/auth.service';
+import { toMessage } from '../utils/errors';
 
 const education = new Hono<{ Bindings: Env }>();
 
@@ -20,9 +21,9 @@ education.get('/', async (c) => {
     `).bind(user.id).all();
 
     return c.json(result.results);
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error('Get education error:', error);
-    return c.json({ error: error.message }, 500);
+    return c.json({ error: toMessage(error) }, 500);
   }
 });
 
@@ -79,9 +80,9 @@ education.post('/', async (c) => {
       end_date,
       gpa
     }, 201);
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error('Create education error:', error);
-    return c.json({ error: error.message }, 500);
+    return c.json({ error: toMessage(error) }, 500);
   }
 });
 
@@ -129,9 +130,9 @@ education.put('/:id', async (c) => {
       end_date,
       gpa
     });
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error('Update education error:', error);
-    return c.json({ error: error.message }, 500);
+    return c.json({ error: toMessage(error) }, 500);
   }
 });
 
@@ -159,9 +160,9 @@ education.delete('/:id', async (c) => {
       .run();
 
     return c.json({ success: true });
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error('Delete education error:', error);
-    return c.json({ error: error.message }, 500);
+    return c.json({ error: toMessage(error) }, 500);
   }
 });
 

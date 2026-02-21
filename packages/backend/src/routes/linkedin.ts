@@ -11,6 +11,7 @@ import {
   parseLinkedInProfileText,
   saveLinkedInProfileData
 } from '../services/linkedin-parser.service';
+import { toMessage } from '../utils/errors';
 
 const linkedin = new Hono<{ Bindings: Env }>();
 
@@ -53,7 +54,7 @@ linkedin.get('/initiate', async (c) => {
 
     // Redirect to LinkedIn
     return c.redirect(authUrl.toString());
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error('LinkedIn initiate error:', error);
     return c.redirect(`${c.env.FRONTEND_URL || 'http://localhost:5173'}/profile?error=linkedin_init_failed`);
   }
@@ -98,10 +99,10 @@ linkedin.get('/callback', async (c) => {
 
     // Redirect back to profile with success message
     return c.redirect(`${frontendUrl}/profile?success=linkedin_imported`);
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error('LinkedIn callback error:', error);
     const frontendUrl = c.env.FRONTEND_URL || 'http://localhost:5173';
-    return c.redirect(`${frontendUrl}/profile?error=import_failed&message=${encodeURIComponent(error.message)}`);
+    return c.redirect(`${frontendUrl}/profile?error=import_failed&message=${encodeURIComponent(toMessage(error))}`);
   }
 });
 
@@ -134,9 +135,9 @@ linkedin.post('/parse', async (c) => {
       success: true,
       data: parsedProfile
     });
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error('LinkedIn parse error:', error);
-    return c.json({ error: error.message || 'Failed to parse LinkedIn profile' }, 500);
+    return c.json({ error: toMessage(error) || 'Failed to parse LinkedIn profile' }, 500);
   }
 });
 

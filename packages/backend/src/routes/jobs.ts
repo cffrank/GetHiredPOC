@@ -11,6 +11,7 @@ import {
 } from '../services/db.service';
 import { mockJobAnalysis } from '../services/ai.service';
 import type { User } from '@gethiredpoc/shared';
+import { toMessage } from '../utils/errors';
 
 type Variables = {
   env: Env;
@@ -146,8 +147,8 @@ jobs.get('/', async (c) => {
     }
 
     return c.json({ jobs: jobsList }, 200);
-  } catch (error: any) {
-    return c.json({ error: error.message }, 500);
+  } catch (error: unknown) {
+    return c.json({ error: toMessage(error) }, 500);
   }
 });
 
@@ -168,8 +169,8 @@ jobs.get('/:id', async (c) => {
     }
 
     return c.json({ job, saved }, 200);
-  } catch (error: any) {
-    return c.json({ error: error.message }, 500);
+  } catch (error: unknown) {
+    return c.json({ error: toMessage(error) }, 500);
   }
 });
 
@@ -181,11 +182,12 @@ jobs.post('/:id/save', async (c) => {
 
     await saveJob(c.env, user.id, jobId);
     return c.json({ success: true }, 200);
-  } catch (error: any) {
-    if (error.message === 'Unauthorized' || error.message === 'Session expired') {
-      return c.json({ error: error.message }, 401);
+  } catch (error: unknown) {
+    const msg = toMessage(error);
+    if (msg === 'Unauthorized' || msg === 'Session expired') {
+      return c.json({ error: msg }, 401);
     }
-    return c.json({ error: error.message }, 500);
+    return c.json({ error: msg }, 500);
   }
 });
 
@@ -197,11 +199,12 @@ jobs.delete('/:id/save', async (c) => {
 
     await unsaveJob(c.env, user.id, jobId);
     return c.json({ success: true }, 200);
-  } catch (error: any) {
-    if (error.message === 'Unauthorized' || error.message === 'Session expired') {
-      return c.json({ error: error.message }, 401);
+  } catch (error: unknown) {
+    const msg = toMessage(error);
+    if (msg === 'Unauthorized' || msg === 'Session expired') {
+      return c.json({ error: msg }, 401);
     }
-    return c.json({ error: error.message }, 500);
+    return c.json({ error: msg }, 500);
   }
 });
 
@@ -211,11 +214,12 @@ jobs.get('/saved/list', async (c) => {
     const user = await requireAuth(c);
     const jobsList = await getSavedJobs(c.env, user.id);
     return c.json({ jobs: jobsList }, 200);
-  } catch (error: any) {
-    if (error.message === 'Unauthorized' || error.message === 'Session expired') {
-      return c.json({ error: error.message }, 401);
+  } catch (error: unknown) {
+    const msg = toMessage(error);
+    if (msg === 'Unauthorized' || msg === 'Session expired') {
+      return c.json({ error: msg }, 401);
     }
-    return c.json({ error: error.message }, 500);
+    return c.json({ error: msg }, 500);
   }
 });
 
@@ -251,11 +255,12 @@ jobs.post('/:id/analyze', async (c) => {
     });
 
     return c.json({ analysis, cached: false }, 200);
-  } catch (error: any) {
-    if (error.message === 'Unauthorized' || error.message === 'Session expired') {
-      return c.json({ error: error.message }, 401);
+  } catch (error: unknown) {
+    const msg = toMessage(error);
+    if (msg === 'Unauthorized' || msg === 'Session expired') {
+      return c.json({ error: msg }, 401);
     }
-    return c.json({ error: error.message }, 500);
+    return c.json({ error: msg }, 500);
   }
 });
 
@@ -286,11 +291,12 @@ jobs.post('/:id/hide', async (c) => {
     ).bind(user.id, jobId).run();
 
     return c.json({ success: true }, 201);
-  } catch (error: any) {
-    if (error.message === 'Unauthorized' || error.message === 'Session expired') {
-      return c.json({ error: error.message }, 401);
+  } catch (error: unknown) {
+    const msg = toMessage(error);
+    if (msg === 'Unauthorized' || msg === 'Session expired') {
+      return c.json({ error: msg }, 401);
     }
-    return c.json({ error: error.message }, 500);
+    return c.json({ error: msg }, 500);
   }
 });
 
@@ -305,11 +311,12 @@ jobs.delete('/:id/hide', async (c) => {
     ).bind(user.id, jobId).run();
 
     return c.json({ success: true }, 200);
-  } catch (error: any) {
-    if (error.message === 'Unauthorized' || error.message === 'Session expired') {
-      return c.json({ error: error.message }, 401);
+  } catch (error: unknown) {
+    const msg = toMessage(error);
+    if (msg === 'Unauthorized' || msg === 'Session expired') {
+      return c.json({ error: msg }, 401);
     }
-    return c.json({ error: error.message }, 500);
+    return c.json({ error: msg }, 500);
   }
 });
 

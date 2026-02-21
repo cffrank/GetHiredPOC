@@ -4,6 +4,7 @@ import { getCurrentUser } from '../services/auth.service';
 import { generateTailoredResume } from '../services/ai-resume.service';
 import { generateCoverLetter } from '../services/ai-cover-letter.service';
 import { analyzeJobMatch } from '../services/job-matching.service';
+import { toMessage } from '../utils/errors';
 
 const aiJobs = new Hono<{ Bindings: Env }>();
 
@@ -41,9 +42,9 @@ aiJobs.post('/:id/generate-resume', async (c) => {
     }
 
     return c.json(resume);
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error('Generate resume error:', error);
-    return c.json({ error: error.message }, 500);
+    return c.json({ error: toMessage(error) }, 500);
   }
 });
 
@@ -81,9 +82,9 @@ aiJobs.post('/:id/generate-cover-letter', async (c) => {
     }
 
     return c.json({ coverLetter });
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error('Generate cover letter error:', error);
-    return c.json({ error: error.message }, 500);
+    return c.json({ error: toMessage(error) }, 500);
   }
 });
 
@@ -121,9 +122,9 @@ aiJobs.post('/:id/analyze-match', async (c) => {
     }
 
     return c.json(match);
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error('Analyze match error:', error);
-    return c.json({ error: error.message }, 500);
+    return c.json({ error: toMessage(error) }, 500);
   }
 });
 
@@ -169,9 +170,9 @@ aiJobs.get('/:id/quick-match', async (c) => {
         description: job.description
       }
     });
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error('Quick match error:', error);
-    return c.json({ error: error.message }, 500);
+    return c.json({ error: toMessage(error) }, 500);
   }
 });
 

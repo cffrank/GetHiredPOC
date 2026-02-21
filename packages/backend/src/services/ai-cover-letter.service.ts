@@ -65,8 +65,8 @@ export async function generateCoverLetter(
 
     console.log(`[AI Cover Letter] Generated and cached for ${cacheKey}`);
     return coverLetter;
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error('[AI Cover Letter] Generation error:', error);
-    throw new Error('Failed to generate cover letter: ' + error.message);
+    throw new Error('Failed to generate cover letter: ' + (error instanceof Error ? error.message : String(error)));
   }
 }

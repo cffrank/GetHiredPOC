@@ -110,9 +110,9 @@ export async function analyzeJobMatch(
 
     console.log(`[Job Match] Generated match score ${match.score}% for ${cacheKey}`);
     return match;
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error('[Job Match] Analysis error:', error);
-    throw new Error('Failed to analyze job match: ' + error.message);
+    throw new Error('Failed to analyze job match: ' + (error instanceof Error ? error.message : String(error)));
   }
 }
 
@@ -140,7 +140,7 @@ function parseMatchJSON(text: string): any {
     }
 
     return parsed;
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error('[Job Match] Parse error:', error, 'Text:', text);
     throw new Error('Failed to parse match analysis');
   }

@@ -249,13 +249,13 @@ export async function importJobsFromAdzuna(
           } else {
             updated++;
           }
-        } catch (error: any) {
-          console.error('Error saving job:', error.message);
+        } catch (error: unknown) {
+          console.error('Error saving job:', error instanceof Error ? error.message : String(error));
           errors++;
         }
       }
-    } catch (error: any) {
-      console.error(`Error searching for "${query}":`, error.message);
+    } catch (error: unknown) {
+      console.error(`Error searching for "${query}":`, error instanceof Error ? error.message : String(error));
       errors++;
     }
   }

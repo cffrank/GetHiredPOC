@@ -1,6 +1,7 @@
 import { Hono } from 'hono';
 import type { Env } from '../services/db.service';
 import { getCurrentUser } from '../services/auth.service';
+import { toMessage } from '../utils/errors';
 
 const workExperience = new Hono<{ Bindings: Env }>();
 
@@ -20,9 +21,9 @@ workExperience.get('/', async (c) => {
     `).bind(user.id).all();
 
     return c.json(result.results);
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error('Get work experience error:', error);
-    return c.json({ error: error.message }, 500);
+    return c.json({ error: toMessage(error) }, 500);
   }
 });
 
@@ -79,9 +80,9 @@ workExperience.post('/', async (c) => {
       end_date,
       description
     }, 201);
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error('Create work experience error:', error);
-    return c.json({ error: error.message }, 500);
+    return c.json({ error: toMessage(error) }, 500);
   }
 });
 
@@ -129,9 +130,9 @@ workExperience.put('/:id', async (c) => {
       end_date,
       description
     });
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error('Update work experience error:', error);
-    return c.json({ error: error.message }, 500);
+    return c.json({ error: toMessage(error) }, 500);
   }
 });
 
@@ -159,9 +160,9 @@ workExperience.delete('/:id', async (c) => {
       .run();
 
     return c.json({ success: true });
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error('Delete work experience error:', error);
-    return c.json({ error: error.message }, 500);
+    return c.json({ error: toMessage(error) }, 500);
   }
 });
 

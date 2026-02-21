@@ -9,6 +9,7 @@ import {
   createConversation,
   deleteConversation
 } from '../services/chat.service';
+import { toMessage } from '../utils/errors';
 
 type Variables = {
   env: Env;
@@ -51,15 +52,16 @@ chat.post('/message', async (c) => {
     );
 
     return c.json(result, 200);
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error('Error sending chat message:', error);
-    if (error.message === 'Unauthorized' || error.message === 'Session expired') {
-      return c.json({ error: error.message }, 401);
+    const msg = toMessage(error);
+    if (msg === 'Unauthorized' || msg === 'Session expired') {
+      return c.json({ error: msg }, 401);
     }
-    if (error.message.includes('ANTHROPIC_API_KEY')) {
-      return c.json({ error: error.message }, 500);
+    if (msg.includes('ANTHROPIC_API_KEY')) {
+      return c.json({ error: msg }, 500);
     }
-    return c.json({ error: error.message || 'Failed to send message' }, 500);
+    return c.json({ error: msg || 'Failed to send message' }, 500);
   }
 });
 
@@ -69,12 +71,13 @@ chat.get('/conversations', async (c) => {
     const user = await requireAuth(c);
     const conversations = await getConversations(c.env, user.id);
     return c.json({ conversations }, 200);
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error('Error getting conversations:', error);
-    if (error.message === 'Unauthorized' || error.message === 'Session expired') {
-      return c.json({ error: error.message }, 401);
+    const msg = toMessage(error);
+    if (msg === 'Unauthorized' || msg === 'Session expired') {
+      return c.json({ error: msg }, 401);
     }
-    return c.json({ error: error.message || 'Failed to get conversations' }, 500);
+    return c.json({ error: msg || 'Failed to get conversations' }, 500);
   }
 });
 
@@ -95,12 +98,13 @@ chat.get('/conversations/:id', async (c) => {
     }
 
     return c.json({ conversation }, 200);
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error('Error getting conversation:', error);
-    if (error.message === 'Unauthorized' || error.message === 'Session expired') {
-      return c.json({ error: error.message }, 401);
+    const msg = toMessage(error);
+    if (msg === 'Unauthorized' || msg === 'Session expired') {
+      return c.json({ error: msg }, 401);
     }
-    return c.json({ error: error.message || 'Failed to get conversation' }, 500);
+    return c.json({ error: msg || 'Failed to get conversation' }, 500);
   }
 });
 
@@ -114,12 +118,13 @@ chat.post('/conversations', async (c) => {
     const conversation = await createConversation(c.env, user.id, title);
 
     return c.json({ conversation }, 201);
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error('Error creating conversation:', error);
-    if (error.message === 'Unauthorized' || error.message === 'Session expired') {
-      return c.json({ error: error.message }, 401);
+    const msg = toMessage(error);
+    if (msg === 'Unauthorized' || msg === 'Session expired') {
+      return c.json({ error: msg }, 401);
     }
-    return c.json({ error: error.message || 'Failed to create conversation' }, 500);
+    return c.json({ error: msg || 'Failed to create conversation' }, 500);
   }
 });
 
@@ -132,12 +137,13 @@ chat.delete('/conversations/:id', async (c) => {
     await deleteConversation(c.env, conversationId, user.id);
 
     return c.json({ success: true }, 200);
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error('Error deleting conversation:', error);
-    if (error.message === 'Unauthorized' || error.message === 'Session expired') {
-      return c.json({ error: error.message }, 401);
+    const msg = toMessage(error);
+    if (msg === 'Unauthorized' || msg === 'Session expired') {
+      return c.json({ error: msg }, 401);
     }
-    return c.json({ error: error.message || 'Failed to delete conversation' }, 500);
+    return c.json({ error: msg || 'Failed to delete conversation' }, 500);
   }
 });
 

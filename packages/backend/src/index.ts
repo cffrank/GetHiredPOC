@@ -69,8 +69,8 @@ app.get('/api/files/*', async (c) => {
         'Cache-Control': 'public, max-age=31536000',
       },
     });
-  } catch (error: any) {
-    return c.json({ error: error.message }, 500);
+  } catch (error: unknown) {
+    return c.json({ error: error instanceof Error ? error.message : 'An unexpected error occurred' }, 500);
   }
 });
 

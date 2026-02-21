@@ -10,6 +10,7 @@ import {
 } from '../services/db.service';
 import { sendStatusUpdateEmail } from '../services/email.service';
 import type { User } from '@gethiredpoc/shared';
+import { toMessage } from '../utils/errors';
 
 type Variables = {
   env: Env;
@@ -38,11 +39,12 @@ applications.get('/', async (c) => {
     const user = await requireAuth(c);
     const applicationsList = await getApplications(c.env, user.id);
     return c.json({ applications: applicationsList }, 200);
-  } catch (error: any) {
-    if (error.message === 'Unauthorized' || error.message === 'Session expired') {
-      return c.json({ error: error.message }, 401);
+  } catch (error: unknown) {
+    const msg = toMessage(error);
+    if (msg === 'Unauthorized' || msg === 'Session expired') {
+      return c.json({ error: msg }, 401);
     }
-    return c.json({ error: error.message }, 500);
+    return c.json({ error: msg }, 500);
   }
 });
 
@@ -59,11 +61,12 @@ applications.post('/', async (c) => {
 
     const application = await createApplication(c.env, user.id, job_id, status);
     return c.json({ application }, 201);
-  } catch (error: any) {
-    if (error.message === 'Unauthorized' || error.message === 'Session expired') {
-      return c.json({ error: error.message }, 401);
+  } catch (error: unknown) {
+    const msg = toMessage(error);
+    if (msg === 'Unauthorized' || msg === 'Session expired') {
+      return c.json({ error: msg }, 401);
     }
-    return c.json({ error: error.message }, 500);
+    return c.json({ error: msg }, 500);
   }
 });
 
@@ -98,11 +101,12 @@ applications.put('/:id', async (c) => {
     }
 
     return c.json({ application }, 200);
-  } catch (error: any) {
-    if (error.message === 'Unauthorized' || error.message === 'Session expired') {
-      return c.json({ error: error.message }, 401);
+  } catch (error: unknown) {
+    const msg = toMessage(error);
+    if (msg === 'Unauthorized' || msg === 'Session expired') {
+      return c.json({ error: msg }, 401);
     }
-    return c.json({ error: error.message }, 500);
+    return c.json({ error: msg }, 500);
   }
 });
 
@@ -137,11 +141,12 @@ applications.patch('/:id', async (c) => {
     }
 
     return c.json({ application }, 200);
-  } catch (error: any) {
-    if (error.message === 'Unauthorized' || error.message === 'Session expired') {
-      return c.json({ error: error.message }, 401);
+  } catch (error: unknown) {
+    const msg = toMessage(error);
+    if (msg === 'Unauthorized' || msg === 'Session expired') {
+      return c.json({ error: msg }, 401);
     }
-    return c.json({ error: error.message }, 500);
+    return c.json({ error: msg }, 500);
   }
 });
 
@@ -153,11 +158,12 @@ applications.delete('/:id', async (c) => {
 
     await deleteApplication(c.env, applicationId);
     return c.json({ success: true }, 200);
-  } catch (error: any) {
-    if (error.message === 'Unauthorized' || error.message === 'Session expired') {
-      return c.json({ error: error.message }, 401);
+  } catch (error: unknown) {
+    const msg = toMessage(error);
+    if (msg === 'Unauthorized' || msg === 'Session expired') {
+      return c.json({ error: msg }, 401);
     }
-    return c.json({ error: error.message }, 500);
+    return c.json({ error: msg }, 500);
   }
 });
 

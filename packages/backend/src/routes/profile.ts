@@ -3,6 +3,7 @@ import type { Env } from '../services/db.service';
 import { getSession, getCookie } from '../services/auth.service';
 import { uploadFile } from '../services/storage.service';
 import type { User } from '@gethiredpoc/shared';
+import { toMessage } from '../utils/errors';
 
 type Variables = {
   env: Env;
@@ -30,11 +31,12 @@ profile.get('/', async (c) => {
   try {
     const user = await requireAuth(c);
     return c.json({ profile: user }, 200);
-  } catch (error: any) {
-    if (error.message === 'Unauthorized' || error.message === 'Session expired') {
-      return c.json({ error: error.message }, 401);
+  } catch (error: unknown) {
+    const msg = toMessage(error);
+    if (msg === 'Unauthorized' || msg === 'Session expired') {
+      return c.json({ error: msg }, 401);
     }
-    return c.json({ error: error.message }, 500);
+    return c.json({ error: msg }, 500);
   }
 });
 
@@ -113,11 +115,12 @@ profile.put('/', async (c) => {
     console.log('[Profile Update] Updated user data:', JSON.stringify(updatedUser));
 
     return c.json({ profile: updatedUser }, 200);
-  } catch (error: any) {
-    if (error.message === 'Unauthorized' || error.message === 'Session expired') {
-      return c.json({ error: error.message }, 401);
+  } catch (error: unknown) {
+    const msg = toMessage(error);
+    if (msg === 'Unauthorized' || msg === 'Session expired') {
+      return c.json({ error: msg }, 401);
     }
-    return c.json({ error: error.message }, 500);
+    return c.json({ error: msg }, 500);
   }
 });
 
@@ -182,11 +185,12 @@ profile.patch('/', async (c) => {
       .first<User>();
 
     return c.json({ profile: updatedUser }, 200);
-  } catch (error: any) {
-    if (error.message === 'Unauthorized' || error.message === 'Session expired') {
-      return c.json({ error: error.message }, 401);
+  } catch (error: unknown) {
+    const msg = toMessage(error);
+    if (msg === 'Unauthorized' || msg === 'Session expired') {
+      return c.json({ error: msg }, 401);
     }
-    return c.json({ error: error.message }, 500);
+    return c.json({ error: msg }, 500);
   }
 });
 

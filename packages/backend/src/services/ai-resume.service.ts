@@ -109,9 +109,9 @@ export async function generateTailoredResume(
 
     console.log(`[AI Resume] Generated and cached resume for ${cacheKey}`);
     return result;
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error('[AI Resume] Generation error:', error);
-    throw new Error('Failed to generate resume: ' + error.message);
+    throw new Error('Failed to generate resume: ' + (error instanceof Error ? error.message : String(error)));
   }
 }
 
@@ -140,7 +140,7 @@ function parseResumeJSON(text: string): ResumeSection {
     }
 
     return parsed;
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error('[AI Resume] Parse error:', error, 'Text:', text);
     throw new Error('Failed to parse AI response');
   }

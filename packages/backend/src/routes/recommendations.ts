@@ -2,6 +2,7 @@ import { Hono } from 'hono';
 import type { Env } from '../services/db.service';
 import { getCurrentUser } from '../services/auth.service';
 import { getRecommendationsWithJobDetails } from '../services/job-recommendations.service';
+import { toMessage } from '../utils/errors';
 
 const recommendations = new Hono<{ Bindings: Env }>();
 
@@ -18,9 +19,9 @@ recommendations.get('/', async (c) => {
     const results = await getRecommendationsWithJobDetails(c.env, user.id, limit);
 
     return c.json(results);
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error('Get recommendations error:', error);
-    return c.json({ error: error.message }, 500);
+    return c.json({ error: toMessage(error) }, 500);
   }
 });
 

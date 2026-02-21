@@ -2,6 +2,7 @@ import { Hono } from 'hono';
 import type { Env } from '../services/db.service';
 import { getCurrentUser } from '../services/auth.service';
 import { getEmailPreferences, updateEmailPreferences } from '../services/email.service';
+import { toMessage } from '../utils/errors';
 
 const emailPreferences = new Hono<{ Bindings: Env }>();
 
@@ -15,9 +16,9 @@ emailPreferences.get('/', async (c) => {
 
     const preferences = await getEmailPreferences(c.env.DB, user.id);
     return c.json(preferences);
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error('Get email preferences error:', error);
-    return c.json({ error: error.message }, 500);
+    return c.json({ error: toMessage(error) }, 500);
   }
 });
 
@@ -41,9 +42,9 @@ emailPreferences.put('/', async (c) => {
 
     const updatedPreferences = await getEmailPreferences(c.env.DB, user.id);
     return c.json(updatedPreferences);
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error('Update email preferences error:', error);
-    return c.json({ error: error.message }, 500);
+    return c.json({ error: toMessage(error) }, 500);
   }
 });
 

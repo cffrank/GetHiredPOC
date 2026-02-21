@@ -455,9 +455,9 @@ ${toolInput.job_text}`;
       default:
         return JSON.stringify({ error: `Unknown tool: ${toolName}` });
     }
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error(`Error executing tool ${toolName}:`, error);
-    return JSON.stringify({ error: error.message || 'Tool execution failed' });
+    return JSON.stringify({ error: (error instanceof Error ? error.message : String(error)) || 'Tool execution failed' });
   }
 }
 
@@ -619,7 +619,7 @@ export async function sendChatMessage(
       finalContent = aiContent.trim();
       break;
 
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error('[Chat] OpenAI API error:', error);
       // Fallback to error message
       finalContent = 'I apologize, but I encountered an error processing your request. Please try again.';

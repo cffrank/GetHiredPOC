@@ -15,6 +15,7 @@ import {
   upsertPrompt,
   deletePrompt,
 } from '../services/ai-prompt.service';
+import { toMessage } from '../utils/errors';
 
 const admin = new Hono<{ Bindings: Env }>();
 
@@ -28,9 +29,9 @@ admin.get('/metrics', async (c) => {
   try {
     const metrics = await getSystemMetrics(c.env);
     return c.json(metrics);
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error('Failed to fetch metrics:', error);
-    return c.json({ error: error.message }, 500);
+    return c.json({ error: toMessage(error) }, 500);
   }
 });
 
@@ -44,9 +45,9 @@ admin.get('/users', async (c) => {
 
     const result = await getAllUsers(c.env, { page, limit, searchQuery });
     return c.json(result);
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error('Failed to fetch users:', error);
-    return c.json({ error: error.message }, 500);
+    return c.json({ error: toMessage(error) }, 500);
   }
 });
 
@@ -69,9 +70,9 @@ admin.put('/users/:userId/role', async (c) => {
       user: updatedUser,
       message: `User role updated to ${role}`,
     });
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error('Failed to update user role:', error);
-    return c.json({ error: error.message }, 500);
+    return c.json({ error: toMessage(error) }, 500);
   }
 });
 
@@ -114,9 +115,9 @@ admin.post('/import-jobs', async (c) => {
       errors: result.errors,
       message: `Imported ${result.imported} new jobs, updated ${result.updated} existing jobs. ${result.errors} errors.`
     });
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error('Job import error:', error);
-    return c.json({ error: error.message }, 500);
+    return c.json({ error: toMessage(error) }, 500);
   }
 });
 
@@ -148,9 +149,9 @@ admin.post('/import-jobs-for-user/:userId', async (c) => {
       errors: result.errors,
       message: `Imported ${result.imported} new jobs, updated ${result.updated} existing jobs based on user preferences. ${result.errors} errors.`
     });
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error('User job import error:', error);
-    return c.json({ error: error.message }, 500);
+    return c.json({ error: toMessage(error) }, 500);
   }
 });
 
@@ -170,9 +171,9 @@ admin.get('/prompts', async (c) => {
       count: prompts.length,
       prompts
     });
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error('Failed to list prompts:', error);
-    return c.json({ error: error.message }, 500);
+    return c.json({ error: toMessage(error) }, 500);
   }
 });
 
@@ -191,9 +192,9 @@ admin.get('/prompts/:key', async (c) => {
       success: true,
       prompt
     });
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error('Failed to fetch prompt:', error);
-    return c.json({ error: error.message }, 500);
+    return c.json({ error: toMessage(error) }, 500);
   }
 });
 
@@ -247,9 +248,9 @@ admin.post('/prompts', async (c) => {
       message: `Prompt '${body.prompt_key}' saved successfully`,
       prompt
     });
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error('Failed to save prompt:', error);
-    return c.json({ error: error.message }, 500);
+    return c.json({ error: toMessage(error) }, 500);
   }
 });
 
@@ -302,9 +303,9 @@ admin.put('/prompts/:key', async (c) => {
       message: `Prompt '${promptKey}' updated successfully`,
       prompt
     });
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error('Failed to update prompt:', error);
-    return c.json({ error: error.message }, 500);
+    return c.json({ error: toMessage(error) }, 500);
   }
 });
 
@@ -334,9 +335,9 @@ admin.delete('/prompts/:key', async (c) => {
       success: true,
       message: `Prompt '${promptKey}' deleted successfully`
     });
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error('Failed to delete prompt:', error);
-    return c.json({ error: error.message }, 500);
+    return c.json({ error: toMessage(error) }, 500);
   }
 });
 

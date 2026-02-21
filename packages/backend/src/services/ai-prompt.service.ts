@@ -71,9 +71,9 @@ export async function getPrompt(
 
     console.log(`[AI Prompt] Loaded and cached prompt: ${promptKey}`);
     return prompt;
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error(`[AI Prompt] Error fetching prompt ${promptKey}:`, error);
-    throw new Error(`Failed to fetch prompt: ${error.message}`);
+    throw new Error(`Failed to fetch prompt: ${error instanceof Error ? error.message : String(error)}`);
   }
 }
 
@@ -121,7 +121,7 @@ export function parseModelConfig(modelConfigJson: string): ModelConfig {
       max_tokens: config.max_tokens || 1000,
       gateway: config.gateway
     };
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error('[AI Prompt] Failed to parse model config:', error);
     // Return safe defaults
     return {
@@ -152,9 +152,9 @@ export async function listPrompts(
 
     console.log(`[AI Prompt] Listed ${result.results.length} prompts (activeOnly: ${activeOnly})`);
     return result.results;
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error('[AI Prompt] Error listing prompts:', error);
-    throw new Error(`Failed to list prompts: ${error.message}`);
+    throw new Error(`Failed to list prompts: ${error instanceof Error ? error.message : String(error)}`);
   }
 }
 
@@ -236,9 +236,9 @@ export async function upsertPrompt(
     }
 
     return updatedPrompt;
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error('[AI Prompt] Error upserting prompt:', error);
-    throw new Error(`Failed to upsert prompt: ${error.message}`);
+    throw new Error(`Failed to upsert prompt: ${error instanceof Error ? error.message : String(error)}`);
   }
 }
 
@@ -266,8 +266,8 @@ export async function deletePrompt(
 
     console.log(`[AI Prompt] Soft deleted prompt: ${promptKey}`);
     return true;
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error('[AI Prompt] Error deleting prompt:', error);
-    throw new Error(`Failed to delete prompt: ${error.message}`);
+    throw new Error(`Failed to delete prompt: ${error instanceof Error ? error.message : String(error)}`);
   }
 }

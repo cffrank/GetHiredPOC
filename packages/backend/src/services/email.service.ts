@@ -46,8 +46,8 @@ export async function sendWelcomeEmail(
 
     console.log(`Welcome email sent to ${userEmail}`);
     await logEmail(env.DB, userEmail, 'welcome', 'Welcome to GetHired POC!', 'sent');
-  } catch (error: any) {
-    console.error('Resend error:', error.message);
+  } catch (error: unknown) {
+    console.error('Resend error:', error instanceof Error ? error.message : String(error));
     await logEmail(env.DB, userEmail, 'welcome', 'Welcome to GetHired POC!', 'failed');
   }
 }
@@ -104,8 +104,8 @@ export async function sendStatusUpdateEmail(
 
     console.log(`Status update email sent to ${userEmail}`);
     await logEmail(env.DB, userEmail, 'status_update', subject, 'sent');
-  } catch (error: any) {
-    console.error('Resend error:', error.message);
+  } catch (error: unknown) {
+    console.error('Resend error:', error instanceof Error ? error.message : String(error));
     await logEmail(env.DB, userEmail, 'status_update', subject, 'failed');
   }
 }

@@ -9,6 +9,7 @@ import {
   type ResumeData,
   type CoverLetterData
 } from '../services/document-export.service';
+import { toMessage } from '../utils/errors';
 
 const exportRoutes = new Hono<{ Bindings: Env }>();
 
@@ -105,9 +106,9 @@ exportRoutes.get('/resume/:format', async (c) => {
         'Access-Control-Allow-Credentials': 'true'
       }
     });
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error('Resume export error:', error);
-    return c.json({ error: error.message }, 500);
+    return c.json({ error: toMessage(error) }, 500);
   }
 });
 
@@ -175,9 +176,9 @@ exportRoutes.post('/cover-letter/:format', async (c) => {
         'Access-Control-Allow-Credentials': 'true'
       }
     });
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error('Cover letter export error:', error);
-    return c.json({ error: error.message }, 500);
+    return c.json({ error: toMessage(error) }, 500);
   }
 });
 

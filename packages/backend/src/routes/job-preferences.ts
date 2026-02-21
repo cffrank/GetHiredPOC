@@ -6,6 +6,7 @@ import {
   updateJobSearchPreferences
 } from '../services/job-preferences.service';
 import { INDUSTRIES } from '@gethiredpoc/shared';
+import { toMessage } from '../utils/errors';
 
 const jobPreferences = new Hono<{ Bindings: Env }>();
 
@@ -19,9 +20,9 @@ jobPreferences.get('/', async (c) => {
 
     const preferences = await getJobSearchPreferences(c.env.DB, user.id);
     return c.json(preferences);
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error('Get job preferences error:', error);
-    return c.json({ error: error.message }, 500);
+    return c.json({ error: toMessage(error) }, 500);
   }
 });
 
@@ -39,9 +40,9 @@ jobPreferences.put('/', async (c) => {
 
     const updatedPreferences = await getJobSearchPreferences(c.env.DB, user.id);
     return c.json(updatedPreferences);
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error('Update job preferences error:', error);
-    return c.json({ error: error.message }, 500);
+    return c.json({ error: toMessage(error) }, 500);
   }
 });
 

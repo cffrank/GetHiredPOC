@@ -10,6 +10,7 @@ import {
   clearSessionCookie,
 } from '../services/auth.service';
 import { sendWelcomeEmail } from '../services/email.service';
+import { toMessage } from '../utils/errors';
 
 type Variables = {
   env: Env;
@@ -42,8 +43,8 @@ auth.post('/signup', async (c) => {
         'Set-Cookie': setSessionCookie(sessionId, isProduction),
       }
     );
-  } catch (error: any) {
-    return c.json({ error: error.message }, 400);
+  } catch (error: unknown) {
+    return c.json({ error: toMessage(error) }, 400);
   }
 });
 
@@ -67,8 +68,8 @@ auth.post('/login', async (c) => {
         'Set-Cookie': setSessionCookie(sessionId, isProduction),
       }
     );
-  } catch (error: any) {
-    return c.json({ error: error.message }, 401);
+  } catch (error: unknown) {
+    return c.json({ error: toMessage(error) }, 401);
   }
 });
 

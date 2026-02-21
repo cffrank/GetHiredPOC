@@ -8,6 +8,7 @@ import {
   getUserResumes,
   deleteResume
 } from '../services/resume.service';
+import { toMessage } from '../utils/errors';
 
 const resumes = new Hono<{ Bindings: Env }>();
 
@@ -59,9 +60,9 @@ resumes.post('/', async (c) => {
       parsedData,
       isPrimary
     }, 201);
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error('Resume upload error:', error);
-    return c.json({ error: error.message }, 500);
+    return c.json({ error: toMessage(error) }, 500);
   }
 });
 
@@ -75,9 +76,9 @@ resumes.get('/', async (c) => {
 
     const resumes = await getUserResumes(c.env.DB, user.id);
     return c.json(resumes);
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error('Get resumes error:', error);
-    return c.json({ error: error.message }, 500);
+    return c.json({ error: toMessage(error) }, 500);
   }
 });
 
@@ -97,9 +98,9 @@ resumes.delete('/:id', async (c) => {
     }
 
     return c.json({ success: true });
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error('Delete resume error:', error);
-    return c.json({ error: error.message }, 500);
+    return c.json({ error: toMessage(error) }, 500);
   }
 });
 
@@ -133,9 +134,9 @@ resumes.patch('/:id/primary', async (c) => {
       .run();
 
     return c.json({ success: true });
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error('Set primary resume error:', error);
-    return c.json({ error: error.message }, 500);
+    return c.json({ error: toMessage(error) }, 500);
   }
 });
 

@@ -101,7 +101,7 @@ export async function sendDailyJobAlert(env: Env, userId: string): Promise<boole
 
     console.log(`[Job Alert] Successfully sent alert to ${user.email}`);
     return true;
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error(`[Job Alert] Error sending alert to user ${userId}:`, error);
     return false;
   }
