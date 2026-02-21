@@ -10,18 +10,18 @@ See: .planning/PROJECT.md (updated 2026-02-20)
 ## Current Position
 
 Phase: 3 of 5 (Security + Error Handling)
-Plan: 4 of ? in current phase
-Status: In progress — 03-01 and 03-04 complete
-Last activity: 2026-02-21 — Completed 03-01: Security headers, magic byte validation, session cleanup (SEC-01, SEC-03, SEC-04) + 03-04: Error boundaries and toast notifications (ERR-03, ERR-04)
+Plan: 5 of ? in current phase
+Status: In progress — 03-01, 03-04, and 03-05 complete
+Last activity: 2026-02-21 — Completed 03-05: packages/frontend ErrorBoundary + Toast infrastructure, all alert()/confirm() replaced with toast notifications and inline confirmation UI (ERR-03, ERR-04)
 
-Progress: [███████░░░] 70%
+Progress: [███████░░░] 72%
 
 ## Performance Metrics
 
 **Velocity:**
-- Total plans completed: 8
+- Total plans completed: 9
 - Average duration: ~14 min
-- Total execution time: ~114 min
+- Total execution time: ~129 min
 
 **By Phase:**
 
@@ -29,7 +29,7 @@ Progress: [███████░░░] 70%
 |-------|-------|-------|----------|
 | 01-critical-bugs-test-infrastructure | 3 | ~30 min | ~10 min |
 | 02-type-safety-input-validation | 3 | ~78 min | ~26 min |
-| 03-security-error-handling | 2+ | ~6 min | ~3 min |
+| 03-security-error-handling | 3+ | ~21 min | ~7 min |
 
 **Recent Trend:**
 - Last 5 plans: 02-01 (shared types + typed errors), 02-02 (route any types + Zod validation), 02-03 (shared type import migration), 03-01 (security headers + file validation + session cleanup), 03-04 (error boundaries + toast notifications)
@@ -68,6 +68,8 @@ Recent decisions affecting current work:
 - [Phase 03-04]: ErrorBoundary uses "use client" directive for rwsdk RSC compatibility — Navigation always placed outside ErrorBoundary to stay visible on section crash
 - [Phase 03-04]: handleResumeUpload signature made optional (e?: React.FormEvent) to support both form submit and Retry toast action callback
 - [Phase 03-04]: confirmingDeleteId state replaces confirm() dialog — shows inline "Delete? Yes / No" UI within the application card
+- [Phase 03-05]: AdminJobs confirm() replaced with inline yellow-tinted panels showing query count/userId context — better UX for non-reversible bulk operations
+- [Phase 03-05]: AdminPrompts delete confirmation moved inline to viewer panel (confirmingDeleteKey state) — keeps list view uncluttered
 
 ### Pending Todos
 
@@ -82,5 +84,5 @@ None yet.
 ## Session Continuity
 
 Last session: 2026-02-21
-Stopped at: Completed 03-01-PLAN.md — Security headers, magic byte file validation, D1 session cleanup (SEC-01, SEC-03, SEC-04)
+Stopped at: Completed 03-05-PLAN.md — packages/frontend ErrorBoundary, Toast infrastructure, and all alert()/confirm() replacements (ERR-03, ERR-04)
 Resume file: None
