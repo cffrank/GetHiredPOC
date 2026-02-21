@@ -98,7 +98,13 @@ Plans:
   2. Running `npm test` in the backend workspace executes integration tests against all API route handlers using real D1 bindings via vitest-pool-workers and all tests pass
   3. Running `npm test` in the frontend workspace executes component tests for the Profile, Applications, and JobDetail pages and all tests pass
   4. Running `npx playwright test` executes the signup → profile setup → job search → apply flow end-to-end against a running dev server and the flow completes without errors
-**Plans**: TBD
+**Plans**: 4 plans
+
+Plans:
+- [ ] 05-01-PLAN.md — Backend unit tests (password, sanitization, auth service, job matching)
+- [ ] 05-02-PLAN.md — Backend integration tests (auth, jobs, applications, profile routes)
+- [ ] 05-03-PLAN.md — Frontend component tests (Profile, Applications, JobDetail with MSW)
+- [ ] 05-04-PLAN.md — E2E test (Playwright signup-to-apply flow)
 
 ## Progress
 
@@ -111,4 +117,4 @@ Phases execute in numeric order: 1 → 2 → 3 → 4 → 5
 | 2. Type Safety + Input Validation | 3/3 | Complete    | 2026-02-21 |
 | 3. Security + Error Handling | 5/5 | Complete   | 2026-02-21 |
 | 4. Performance + Graceful Degradation | 4/4 | Complete    | 2026-02-21 |
-| 5. Comprehensive Test Suite | 0/TBD | Not started | - |
+| 5. Comprehensive Test Suite | 0/4 | Not started | - |
