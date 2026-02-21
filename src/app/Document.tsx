@@ -1,3 +1,5 @@
+import { ToastProvider } from "@/app/components/Toast";
+
 export const Document: React.FC<{ children: React.ReactNode }> = ({
   children,
 }) => (
@@ -10,6 +12,7 @@ export const Document: React.FC<{ children: React.ReactNode }> = ({
     </head>
     <body>
       <div id="root">{children}</div>
+      <ToastProvider />
     </body>
   </html>
 );
