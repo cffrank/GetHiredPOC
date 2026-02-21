@@ -11,17 +11,17 @@ See: .planning/PROJECT.md (updated 2026-02-20)
 
 Phase: 3 of 5 (Security + Error Handling)
 Plan: 4 of ? in current phase
-Status: In progress — 03-04 complete (error boundaries + toast notifications)
-Last activity: 2026-02-21 — Completed 03-04: Added React error boundaries and toast notifications to rwsdk app pages, replacing all alert()/confirm() calls (ERR-03, ERR-04)
+Status: In progress — 03-01 and 03-04 complete
+Last activity: 2026-02-21 — Completed 03-01: Security headers, magic byte validation, session cleanup (SEC-01, SEC-03, SEC-04) + 03-04: Error boundaries and toast notifications (ERR-03, ERR-04)
 
 Progress: [███████░░░] 70%
 
 ## Performance Metrics
 
 **Velocity:**
-- Total plans completed: 7
-- Average duration: ~16 min
-- Total execution time: ~111 min
+- Total plans completed: 8
+- Average duration: ~14 min
+- Total execution time: ~114 min
 
 **By Phase:**
 
@@ -29,10 +29,10 @@ Progress: [███████░░░] 70%
 |-------|-------|-------|----------|
 | 01-critical-bugs-test-infrastructure | 3 | ~30 min | ~10 min |
 | 02-type-safety-input-validation | 3 | ~78 min | ~26 min |
-| 03-security-error-handling | 1+ | ~3 min | ~3 min |
+| 03-security-error-handling | 2+ | ~6 min | ~3 min |
 
 **Recent Trend:**
-- Last 5 plans: 02-01 (shared types + typed errors), 02-02 (route any types + Zod validation), 02-03 (shared type import migration), 03-04 (error boundaries + toast notifications)
+- Last 5 plans: 02-01 (shared types + typed errors), 02-02 (route any types + Zod validation), 02-03 (shared type import migration), 03-01 (security headers + file validation + session cleanup), 03-04 (error boundaries + toast notifications)
 - Trend: On track
 
 *Updated after each plan completion*
@@ -61,6 +61,10 @@ Recent decisions affecting current work:
 - [Phase 02-02]: ADMIN_EMAILS added to Env interface — was in wrangler.toml but missing from TypeScript type, caused requireAdmin to fail compile
 - [Phase 02-03]: Re-export JobMatch/ParsedResume from service files — job-recommendations.service.ts imports JobMatch from service file; re-export preserves consumers without changes
 - [Phase 02-03]: Renamed local wrapper type to JobRecommendation in Recommendations.tsx — avoids naming conflict with imported shared JobMatch
+- [Phase 03-01]: secureHeaders applied before CORS middleware on backend API — headers set on all responses including CORS preflight
+- [Phase 03-01]: validateFileMagicBytes inlined in src/app/api/resume-upload.ts — two codebases cannot share packages/backend/src/utils/
+- [Phase 03-01]: DOC/DOCX types pass through magic byte check — no reliable magic byte check for compound binary formats in Workers runtime
+- [Phase 03-01]: cleanupExpiredSessions uses ctx.waitUntil() alongside importJobsForAllUsers — non-blocking, independently failable
 - [Phase 03-04]: ErrorBoundary uses "use client" directive for rwsdk RSC compatibility — Navigation always placed outside ErrorBoundary to stay visible on section crash
 - [Phase 03-04]: handleResumeUpload signature made optional (e?: React.FormEvent) to support both form submit and Retry toast action callback
 - [Phase 03-04]: confirmingDeleteId state replaces confirm() dialog — shows inline "Delete? Yes / No" UI within the application card
@@ -78,5 +82,5 @@ None yet.
 ## Session Continuity
 
 Last session: 2026-02-21
-Stopped at: Completed 03-04-PLAN.md — Added React error boundaries and toast notifications (ERR-03, ERR-04)
+Stopped at: Completed 03-01-PLAN.md — Security headers, magic byte file validation, D1 session cleanup (SEC-01, SEC-03, SEC-04)
 Resume file: None
