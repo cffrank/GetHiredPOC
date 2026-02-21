@@ -5,6 +5,7 @@ import { Navigation } from "@/app/components/Navigation";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/app/components/ui/Card";
 import { Badge } from "@/app/components/ui/Badge";
 import { Button } from "@/app/components/ui/Button";
+import { ErrorBoundary, ErrorFallback } from "@/app/components/ErrorBoundary";
 
 interface Application {
   id: string;
@@ -17,10 +18,11 @@ interface Application {
   updated_at: number;
 }
 
-export function Applications() {
+function ApplicationsContent() {
   const [applications, setApplications] = useState<Application[]>([]);
   const [loading, setLoading] = useState(true);
   const [draggedApp, setDraggedApp] = useState<string | null>(null);
+  const [confirmingDeleteId, setConfirmingDeleteId] = useState<string | null>(null);
 
   useEffect(() => {
     loadApplications();
@@ -36,11 +38,10 @@ export function Applications() {
   };
 
   const handleDelete = async (id: string) => {
-    if (!confirm("Are you sure you want to delete this application?")) return;
-
     const response = await fetch(`/api/applications/${id}`, { method: "DELETE" });
     if (response.ok) {
       setApplications(applications.filter((app) => app.id !== id));
+      setConfirmingDeleteId(null);
     }
   };
 
@@ -118,134 +119,161 @@ export function Applications() {
 
   if (loading) {
     return (
-      <>
-        <Navigation />
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-          <div className="h-96 animate-pulse bg-[hsl(var(--muted))] rounded-lg" />
-        </div>
-      </>
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        <div className="h-96 animate-pulse bg-[hsl(var(--muted))] rounded-lg" />
+      </div>
     );
   }
 
   const grouped = groupByStatus();
 
   return (
-    <>
-      <Navigation />
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        <div className="mb-8">
-          <h1 className="text-3xl font-bold mb-2">Application Tracker</h1>
-          <p className="text-[hsl(var(--muted-foreground))]">
-            Track and manage your job applications
-          </p>
-        </div>
+    <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+      <div className="mb-8">
+        <h1 className="text-3xl font-bold mb-2">Application Tracker</h1>
+        <p className="text-[hsl(var(--muted-foreground))]">
+          Track and manage your job applications
+        </p>
+      </div>
 
-        {applications.length === 0 ? (
-          <Card>
-            <CardContent className="py-12 text-center">
-              <p className="text-[hsl(var(--muted-foreground))] mb-4">
-                No applications yet. Start by browsing jobs!
-              </p>
-              <a href="/jobs">
-                <Button>Browse Jobs</Button>
-              </a>
-            </CardContent>
-          </Card>
-        ) : (
-          <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {Object.entries(grouped).map(([status, apps]) => (
-              <div key={status}>
-                <div className="mb-4 flex items-center justify-between">
-                  <h2 className="text-lg font-semibold capitalize">{status}</h2>
-                  <Badge variant="outline">{apps.length}</Badge>
-                </div>
-                <div
-                  className="space-y-3 min-h-[200px] p-2 rounded-lg transition-colors"
-                  onDragOver={handleDragOver}
-                  onDrop={(e) => handleDrop(e, status)}
-                  style={{
-                    backgroundColor: draggedApp ? 'hsl(var(--muted) / 0.3)' : 'transparent'
-                  }}
-                >
-                  {apps.length === 0 ? (
-                    <div className="text-sm text-[hsl(var(--muted-foreground))] text-center py-8 border-2 border-dashed border-[hsl(var(--border))] rounded-lg">
-                      No {status} applications
-                    </div>
-                  ) : (
-                    apps.map((app) => (
-                      <Card
-                        key={app.id}
-                        className="hover:shadow-md transition-shadow cursor-move"
-                        draggable
-                        onDragStart={(e) => handleDragStart(e, app.id)}
-                        onDragEnd={handleDragEnd}
-                        style={{
-                          opacity: draggedApp === app.id ? 0.5 : 1
-                        }}
-                      >
-                        <CardHeader className="pb-3">
-                          <div className="flex justify-between items-start">
-                            <div className="flex-1">
-                              <CardTitle className="text-base mb-1">
-                                {app.job_title}
-                              </CardTitle>
-                              <CardDescription className="text-sm">
-                                {app.job_company}
-                              </CardDescription>
-                            </div>
-                            {getStatusBadge(app.status)}
+      {applications.length === 0 ? (
+        <Card>
+          <CardContent className="py-12 text-center">
+            <p className="text-[hsl(var(--muted-foreground))] mb-4">
+              No applications yet. Start by browsing jobs!
+            </p>
+            <a href="/jobs">
+              <Button>Browse Jobs</Button>
+            </a>
+          </CardContent>
+        </Card>
+      ) : (
+        <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
+          {Object.entries(grouped).map(([status, apps]) => (
+            <div key={status}>
+              <div className="mb-4 flex items-center justify-between">
+                <h2 className="text-lg font-semibold capitalize">{status}</h2>
+                <Badge variant="outline">{apps.length}</Badge>
+              </div>
+              <div
+                className="space-y-3 min-h-[200px] p-2 rounded-lg transition-colors"
+                onDragOver={handleDragOver}
+                onDrop={(e) => handleDrop(e, status)}
+                style={{
+                  backgroundColor: draggedApp ? 'hsl(var(--muted) / 0.3)' : 'transparent'
+                }}
+              >
+                {apps.length === 0 ? (
+                  <div className="text-sm text-[hsl(var(--muted-foreground))] text-center py-8 border-2 border-dashed border-[hsl(var(--border))] rounded-lg">
+                    No {status} applications
+                  </div>
+                ) : (
+                  apps.map((app) => (
+                    <Card
+                      key={app.id}
+                      className="hover:shadow-md transition-shadow cursor-move"
+                      draggable
+                      onDragStart={(e) => handleDragStart(e, app.id)}
+                      onDragEnd={handleDragEnd}
+                      style={{
+                        opacity: draggedApp === app.id ? 0.5 : 1
+                      }}
+                    >
+                      <CardHeader className="pb-3">
+                        <div className="flex justify-between items-start">
+                          <div className="flex-1">
+                            <CardTitle className="text-base mb-1">
+                              {app.job_title}
+                            </CardTitle>
+                            <CardDescription className="text-sm">
+                              {app.job_company}
+                            </CardDescription>
                           </div>
-                        </CardHeader>
-                        <CardContent className="pt-0">
-                          {app.notes && (
-                            <p className="text-xs text-[hsl(var(--muted-foreground))] mb-3 line-clamp-2">
-                              {app.notes}
-                            </p>
-                          )}
-                          <div className="mb-3">
-                            <label className="text-xs text-[hsl(var(--muted-foreground))] block mb-1">
-                              Update Status
-                            </label>
-                            <select
-                              value={app.status}
-                              onChange={(e) => handleStatusChange(app.id, e.target.value)}
-                              className="w-full text-xs rounded-md border border-[hsl(var(--input))] bg-transparent px-2 py-1.5"
-                            >
-                              <option value="applied">Applied</option>
-                              <option value="screening">Screening</option>
-                              <option value="interview">Interview</option>
-                              <option value="offer">Offer</option>
-                              <option value="rejected">Rejected</option>
-                            </select>
-                          </div>
-                          <div className="flex gap-2">
-                            <a href={`/jobs/${app.job_id}`} className="flex-1">
-                              <Button variant="outline" size="sm" className="w-full text-xs">
-                                View Job
+                          {getStatusBadge(app.status)}
+                        </div>
+                      </CardHeader>
+                      <CardContent className="pt-0">
+                        {app.notes && (
+                          <p className="text-xs text-[hsl(var(--muted-foreground))] mb-3 line-clamp-2">
+                            {app.notes}
+                          </p>
+                        )}
+                        <div className="mb-3">
+                          <label className="text-xs text-[hsl(var(--muted-foreground))] block mb-1">
+                            Update Status
+                          </label>
+                          <select
+                            value={app.status}
+                            onChange={(e) => handleStatusChange(app.id, e.target.value)}
+                            className="w-full text-xs rounded-md border border-[hsl(var(--input))] bg-transparent px-2 py-1.5"
+                          >
+                            <option value="applied">Applied</option>
+                            <option value="screening">Screening</option>
+                            <option value="interview">Interview</option>
+                            <option value="offer">Offer</option>
+                            <option value="rejected">Rejected</option>
+                          </select>
+                        </div>
+                        <div className="flex gap-2">
+                          <a href={`/jobs/${app.job_id}`} className="flex-1">
+                            <Button variant="outline" size="sm" className="w-full text-xs">
+                              View Job
+                            </Button>
+                          </a>
+                          {confirmingDeleteId === app.id ? (
+                            <div className="flex gap-1 items-center">
+                              <span className="text-xs text-[hsl(var(--muted-foreground))]">Delete?</span>
+                              <Button
+                                variant="destructive"
+                                size="sm"
+                                className="text-xs"
+                                onClick={() => handleDelete(app.id)}
+                              >
+                                Yes
                               </Button>
-                            </a>
+                              <Button
+                                variant="outline"
+                                size="sm"
+                                className="text-xs"
+                                onClick={() => setConfirmingDeleteId(null)}
+                              >
+                                No
+                              </Button>
+                            </div>
+                          ) : (
                             <Button
                               variant="destructive"
                               size="sm"
                               className="text-xs"
-                              onClick={() => handleDelete(app.id)}
+                              onClick={() => setConfirmingDeleteId(app.id)}
                             >
                               Delete
                             </Button>
-                          </div>
-                          <p className="text-xs text-[hsl(var(--muted-foreground))] mt-2">
-                            Updated {new Date(app.updated_at * 1000).toLocaleDateString()}
-                          </p>
-                        </CardContent>
-                      </Card>
-                    ))
-                  )}
-                </div>
+                          )}
+                        </div>
+                        <p className="text-xs text-[hsl(var(--muted-foreground))] mt-2">
+                          Updated {new Date(app.updated_at * 1000).toLocaleDateString()}
+                        </p>
+                      </CardContent>
+                    </Card>
+                  ))
+                )}
               </div>
-            ))}
-          </div>
-        )}
-      </div>
+            </div>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
+
+export function Applications() {
+  return (
+    <>
+      <Navigation />
+      <ErrorBoundary FallbackComponent={ErrorFallback}>
+        <ApplicationsContent />
+      </ErrorBoundary>
     </>
   );
 }
