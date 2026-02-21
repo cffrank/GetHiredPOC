@@ -1,17 +1,8 @@
-import bcrypt from 'bcryptjs';
 import type { User } from '@gethiredpoc/shared';
 import type { Env } from './db.service';
+import { hashPassword, verifyPassword, isLegacyHash } from '../utils/password';
 
-export async function hashPassword(password: string): Promise<string> {
-  return bcrypt.hash(password, 10);
-}
-
-export async function verifyPassword(
-  password: string,
-  hash: string
-): Promise<boolean> {
-  return bcrypt.compare(password, hash);
-}
+export { hashPassword, verifyPassword };
 
 export async function signup(
   env: Env,
@@ -64,6 +55,14 @@ export async function login(
   const isValid = await verifyPassword(password, result.password_hash);
   if (!isValid) {
     throw new Error("Invalid credentials");
+  }
+
+  // Lazy migration: re-hash bcryptjs passwords to PBKDF2 on successful login
+  if (isLegacyHash(result.password_hash)) {
+    const newHash = await hashPassword(password);
+    await env.DB.prepare("UPDATE users SET password_hash = ? WHERE id = ?")
+      .bind(newHash, result.id)
+      .run();
   }
 
   const sessionId = await createSession(env, result.id);

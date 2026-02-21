@@ -1,4 +1,6 @@
-import bcrypt from "bcryptjs";
+import { hashPassword, verifyPassword, isLegacyHash } from './password';
+
+export { hashPassword, verifyPassword };
 
 export interface User {
   id: string;
@@ -10,17 +12,6 @@ export interface User {
   avatar_url: string | null;
   created_at: number;
   updated_at: number;
-}
-
-export async function hashPassword(password: string): Promise<string> {
-  return bcrypt.hash(password, 10);
-}
-
-export async function verifyPassword(
-  password: string,
-  hash: string
-): Promise<boolean> {
-  return bcrypt.compare(password, hash);
 }
 
 export async function signup(
@@ -74,6 +65,14 @@ export async function login(
   const isValid = await verifyPassword(password, result.password_hash);
   if (!isValid) {
     throw new Error("Invalid credentials");
+  }
+
+  // Lazy migration: re-hash bcryptjs passwords to PBKDF2 on successful login
+  if (isLegacyHash(result.password_hash)) {
+    const newHash = await hashPassword(password);
+    await env.DB.prepare("UPDATE users SET password_hash = ? WHERE id = ?")
+      .bind(newHash, result.id)
+      .run();
   }
 
   const sessionId = await createSession(env, result.id);
