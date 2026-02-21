@@ -169,8 +169,10 @@ jobs.post('/:id/analyze', requireAuth, async (c) => {
     const user = c.get('user');
     const jobId = c.req.param('id');
 
-    // Check cache first
-    const cacheKey = `job-analysis:${user.id}:${jobId}`;
+    // Include profile version (updated_at) in cache key so stale results are never
+    // served after the user updates their profile. Old keys expire via 7-day KV TTL.
+    const profileVersion = user.updated_at || 0;
+    const cacheKey = `job-analysis:${user.id}:${jobId}:v${profileVersion}`;
     const cached = await c.env.KV_CACHE.get(cacheKey);
     if (cached) {
       return c.json({ analysis: JSON.parse(cached), cached: true }, 200);
