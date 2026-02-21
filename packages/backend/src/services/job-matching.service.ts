@@ -1,13 +1,8 @@
 import type { Env } from './db.service';
 import { getPrompt, renderPrompt, parseModelConfig } from './ai-prompt.service';
+import type { JobMatch } from '@gethiredpoc/shared';
 
-export interface JobMatch {
-  jobId: string;
-  score: number; // 0-100
-  strengths: string[];
-  concerns: string[];
-  recommendation: 'strong' | 'good' | 'fair' | 'weak';
-}
+export type { JobMatch };
 
 export async function analyzeJobMatch(
   env: Env,
