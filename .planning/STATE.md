@@ -10,9 +10,9 @@ See: .planning/PROJECT.md (updated 2026-02-20)
 ## Current Position
 
 Phase: 5 of 5 (Comprehensive Test Suite)
-Plan: 3 of 4 in current phase
-Status: In Progress — 05-03 complete (frontend component tests: Profile, Applications, JobDetail)
-Last activity: 2026-02-21 — Completed 05-01: backend unit tests for password, sanitization, auth service, job matching (TEST-02)
+Plan: 2 of 4 in current phase
+Status: In Progress — 05-02 complete (backend route integration tests: auth, jobs, applications, profile)
+Last activity: 2026-02-21 — Completed 05-02: backend route integration tests using worker.fetch() with real D1/KV (TEST-03)
 
 Progress: [█████████░] 95%
 
@@ -44,6 +44,7 @@ Progress: [█████████░] 95%
 | Phase 04-performance-graceful-degradation P04 | 3 | 2 tasks | 5 files |
 | Phase 05-comprehensive-test-suite P03 | 18 | 2 tasks | 8 files |
 | Phase 05-comprehensive-test-suite P01 | 4 | 2 tasks | 4 files |
+| Phase 05-comprehensive-test-suite P02 | 22 | 2 tasks | 4 files |
 
 ## Accumulated Context
 
@@ -100,6 +101,9 @@ Recent decisions affecting current work:
 - [Phase 05-01]: buildUserContext is in job-recommendations.service.ts, not job-matching.service.ts — imported from the correct source
 - [Phase 05-01]: analyzeJobMatch test skipped with it.skip — requires AI binding mock in miniflare.bindings; adding that is out of scope for unit test plan
 - [Phase 05-01]: uniqueEmail() helper uses timestamp+random suffix to avoid D1 unique constraint errors in sequential singleWorker tests
+- [Phase 05-02]: worker.fetch() pattern required for integration tests — index.ts exports Cloudflare Worker handler {fetch, scheduled} not the Hono app instance
+- [Phase 05-02]: Jobs table uses external_url column (from 0003 migration) not url — test seed INSERTs must match actual schema
+- [Phase 05-02]: GET /api/auth/me returns 200 with {user: null} when no session — not 401; auth guard not applied to /me route
 
 ### Pending Todos
 
