@@ -16,8 +16,8 @@ Requirements for production readiness. Each maps to roadmap phases.
 ### Type Safety
 
 - [ ] **TYPE-01**: All `any` types in API handlers replaced with proper TypeScript interfaces
-- [ ] **TYPE-02**: ParsedResume, JobMatch, and ApplicationUpdate types defined in shared package
-- [ ] **TYPE-03**: Error catch blocks use typed error handling instead of `catch (error: any)`
+- [x] **TYPE-02**: ParsedResume, JobMatch, and ApplicationUpdate types defined in shared package
+- [x] **TYPE-03**: Error catch blocks use typed error handling instead of `catch (error: any)`
 
 ### Input Validation
 
@@ -102,8 +102,8 @@ Which phases cover which requirements. Updated during roadmap creation.
 | BUG-03 | Phase 1 | Complete |
 | TEST-01 | Phase 1 | Complete |
 | TYPE-01 | Phase 2 | Pending |
-| TYPE-02 | Phase 2 | Pending |
-| TYPE-03 | Phase 2 | Pending |
+| TYPE-02 | Phase 2 | Complete |
+| TYPE-03 | Phase 2 | Complete |
 | VALID-01 | Phase 2 | Pending |
 | VALID-02 | Phase 2 | Pending |
 | VALID-03 | Phase 2 | Pending |

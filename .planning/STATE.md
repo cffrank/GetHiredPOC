@@ -5,32 +5,33 @@
 See: .planning/PROJECT.md (updated 2026-02-20)
 
 **Core value:** The app must not crash, lose data, or expose users to security vulnerabilities — every core flow works reliably for real users.
-**Current focus:** Phase 1 — Critical Bugs + Test Infrastructure
+**Current focus:** Phase 2 — Type Safety + Input Validation
 
 ## Current Position
 
-Phase: 1 of 5 (Critical Bugs + Test Infrastructure)
-Plan: 3 of 3 in current phase
+Phase: 2 of 5 (Type Safety + Input Validation)
+Plan: 1 of 3 in current phase
 Status: In progress
-Last activity: 2026-02-20 — Completed 01-03: ApplicationStatus alignment with live D1 audit (BUG-02)
+Last activity: 2026-02-21 — Completed 02-01: Shared types, typed error handling, Zod deps installed (TYPE-02, TYPE-03)
 
-Progress: [███░░░░░░░] 30%
+Progress: [████░░░░░░] 40%
 
 ## Performance Metrics
 
 **Velocity:**
-- Total plans completed: 3
+- Total plans completed: 4
 - Average duration: ~10 min
-- Total execution time: ~30 min
+- Total execution time: ~40 min
 
 **By Phase:**
 
 | Phase | Plans | Total | Avg/Plan |
 |-------|-------|-------|----------|
 | 01-critical-bugs-test-infrastructure | 3 | ~30 min | ~10 min |
+| 02-type-safety-input-validation | 1 | ~10 min | ~10 min |
 
 **Recent Trend:**
-- Last 5 plans: 01-01 (backend test infra), 01-02 (frontend bug fixes), 01-03 (status alignment)
+- Last 5 plans: 01-01 (backend test infra), 01-02 (frontend bug fixes), 01-03 (status alignment), 02-01 (shared types + typed errors)
 - Trend: On track
 
 *Updated after each plan completion*
@@ -51,6 +52,9 @@ Recent decisions affecting current work:
 - [01-02]: JobDetail uses safeParseJSON helper to avoid crash on malformed JSON
 - [01-03]: Case A confirmed — only 'saved' and 'applied' in production; no data migration needed
 - [01-03]: Kept 'screening' in ApplicationStatus type; column is unconstrained TEXT so it is safe
+- [02-01]: ApplicationUpdate added as type alias for UpdateApplicationRequest (identical shape, avoids duplication)
+- [02-01]: Route files use local msg variable from toMessage() to enable string comparisons for auth error detection
+- [02-01]: Service files use inline instanceof narrowing rather than toMessage() import when constructing new Error() messages
 
 ### Pending Todos
 
@@ -64,6 +68,6 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-02-20
-Stopped at: Completed 01-03-PLAN.md — ApplicationStatus alignment (live D1 audit, schema comment updated)
+Last session: 2026-02-21
+Stopped at: Completed 02-01-PLAN.md — Shared types (ParsedResume, JobMatch, ApplicationUpdate) + typed error handling (77 catch blocks migrated) + zod installed
 Resume file: None
