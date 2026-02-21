@@ -118,4 +118,13 @@ export const handlers = [
   http.delete(`${API_URL}/api/jobs/:id/save`, () => {
     return HttpResponse.json({ success: true });
   }),
+
+  // Work experience and education (used by Profile page sub-components)
+  http.get(`${API_URL}/api/work-experience`, () => {
+    return HttpResponse.json({ workExperience: [] });
+  }),
+
+  http.get(`${API_URL}/api/education`, () => {
+    return HttpResponse.json({ education: [] });
+  }),
 ];
