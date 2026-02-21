@@ -11,8 +11,8 @@ See: .planning/PROJECT.md (updated 2026-02-20)
 
 Phase: 3 of 5 (Security + Error Handling)
 Plan: 5 of ? in current phase
-Status: In progress — 03-01, 03-04, and 03-05 complete
-Last activity: 2026-02-21 — Completed 03-05: packages/frontend ErrorBoundary + Toast infrastructure, all alert()/confirm() replaced with toast notifications and inline confirmation UI (ERR-03, ERR-04)
+Status: In progress — 03-01, 03-02, 03-03, 03-04, and 03-05 complete
+Last activity: 2026-02-21 — Completed 03-02: js-xss sanitization of AI-parsed resume fields + PBKDF2 password hashing with bcryptjs lazy migration (SEC-02, SEC-05)
 
 Progress: [███████░░░] 72%
 
@@ -37,6 +37,7 @@ Progress: [███████░░░] 72%
 
 *Updated after each plan completion*
 | Phase 03-security-error-handling P03 | 3 | 2 tasks | 6 files |
+| Phase 03-security-error-handling P02 | 6 | 3 tasks | 11 files |
 
 ## Accumulated Context
 
@@ -73,6 +74,9 @@ Recent decisions affecting current work:
 - [Phase 03-05]: AdminPrompts delete confirmation moved inline to viewer panel (confirmingDeleteKey state) — keeps list view uncluttered
 - [Phase 03-03]: Catch blocks use 'if (error instanceof AppError) throw error' pattern to allow typed errors to propagate to global handler while still catching unexpected errors
 - [Phase 03-03]: applications PUT/PATCH now check application existence and ownership before updating — adds NotFoundError and ForbiddenError guards that were previously missing
+- [Phase 03-02]: Two parallel sanitize.ts utilities (backend + rwsdk app) — codebases cannot share packages/backend imports at runtime
+- [Phase 03-02]: bcryptjs retained as dynamic import in verifyPassword for legacy hash support only; all new hashes use PBKDF2 via crypto.subtle
+- [Phase 03-02]: Lazy PBKDF2 migration: isLegacyHash() check after successful login triggers re-hash — no forced password reset
 
 ### Pending Todos
 
@@ -81,11 +85,11 @@ None yet.
 ### Blockers/Concerns
 
 - [Phase 2 - RESOLVED]: Frontend request shapes audited in 02-02 — schemas use .passthrough() where needed, all schemas match api-client.ts patterns
-- [Phase 3]: Benchmark bcryptjs CPU usage in the actual Workers environment before deciding whether to replace with PBKDF2
-- [Phase 3]: Identify exactly which AI-parsed resume fields are user-influenced and need XSS sanitization vs safe structured fields
+- [Phase 3 - RESOLVED]: Benchmarked bcryptjs — replaced with PBKDF2 via crypto.subtle in 03-02; lazy migration for existing users
+- [Phase 3 - RESOLVED]: Audited AI-parsed fields in 03-02 — plain-text fields get trim+maxLength only, rich-text fields get js-xss + maxLength
 
 ## Session Continuity
 
 Last session: 2026-02-21
-Stopped at: Completed 03-03-PLAN.md — typed error classes (AppError hierarchy) and global error handler update (ERR-01, ERR-02)
+Stopped at: Completed 03-02-PLAN.md — js-xss sanitization + PBKDF2 password hashing (SEC-02, SEC-05)
 Resume file: None

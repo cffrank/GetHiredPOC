@@ -28,10 +28,10 @@ Requirements for production readiness. Each maps to roadmap phases.
 ### Security
 
 - [x] **SEC-01**: Security headers (CSP, HSTS, X-Frame-Options) applied globally via Hono secureHeaders
-- [ ] **SEC-02**: AI-parsed resume fields sanitized for XSS before database storage
+- [x] **SEC-02**: AI-parsed resume fields sanitized for XSS before database storage
 - [x] **SEC-03**: File uploads validated via magic byte inspection before processing
 - [x] **SEC-04**: Expired sessions cleaned up from D1 database periodically
-- [ ] **SEC-05**: bcryptjs CPU usage profiled in Workers; replaced with PBKDF2 if exceeding limits
+- [x] **SEC-05**: bcryptjs CPU usage profiled in Workers; replaced with PBKDF2 if exceeding limits
 
 ### Error Handling
 
@@ -108,10 +108,10 @@ Which phases cover which requirements. Updated during roadmap creation.
 | VALID-02 | Phase 2 | Complete |
 | VALID-03 | Phase 2 | Complete |
 | SEC-01 | Phase 3 | Complete |
-| SEC-02 | Phase 3 | Pending |
+| SEC-02 | Phase 3 | Complete |
 | SEC-03 | Phase 3 | Complete |
 | SEC-04 | Phase 3 | Complete |
-| SEC-05 | Phase 3 | Pending |
+| SEC-05 | Phase 3 | Complete |
 | ERR-01 | Phase 3 | Complete |
 | ERR-02 | Phase 3 | Complete |
 | ERR-03 | Phase 3 | Complete |
