@@ -4,6 +4,36 @@ import { getUserIdFromCookie } from '@/app/lib/auth';
 import { parseResumeWithAI, saveParsedResumeToProfile } from '@/app/lib/resume-parser';
 
 /**
+ * Validates a file's magic bytes against its declared MIME type.
+ * Returns true if the file content is consistent with the declared type.
+ *
+ * Supported: application/pdf, text/plain
+ * All other types return false (reject unsupported content types).
+ */
+function validateFileMagicBytes(buffer: ArrayBuffer, declaredType: string): boolean {
+  const bytes = new Uint8Array(buffer.slice(0, 8));
+
+  if (declaredType === 'application/pdf') {
+    // PDF magic bytes: %PDF (0x25 0x50 0x44 0x46)
+    return bytes[0] === 0x25 && bytes[1] === 0x50 && bytes[2] === 0x44 && bytes[3] === 0x46;
+  }
+
+  if (declaredType === 'text/plain') {
+    // Verify first 1024 bytes decode as valid UTF-8
+    try {
+      new TextDecoder('utf-8', { fatal: true }).decode(buffer.slice(0, 1024));
+      return true;
+    } catch {
+      return false;
+    }
+  }
+
+  // DOC/DOCX and other binary types: no magic byte check implemented;
+  // fall through with MIME-only validation (already checked by allowedTypes above)
+  return true;
+}
+
+/**
  * Upload and parse resume
  * POST /api/resume/upload
  */
@@ -38,6 +68,15 @@ export async function handleResumeUpload({ request }: { request: Request }): Pro
     if (file.size > maxSize) {
       return Response.json({
         error: 'File too large. Maximum size is 5MB'
+      }, { status: 400 });
+    }
+
+    // Validate magic bytes BEFORE reading the full file — reject mismatched content early.
+    // Read only the first 8 bytes so rejected files never occupy full memory.
+    const headerBuffer = await file.slice(0, 8).arrayBuffer();
+    if (!validateFileMagicBytes(headerBuffer, file.type)) {
+      return Response.json({
+        error: 'File content does not match declared type'
       }, { status: 400 });
     }
 

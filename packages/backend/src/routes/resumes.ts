@@ -9,6 +9,7 @@ import {
   deleteResume
 } from '../services/resume.service';
 import { toMessage } from '../utils/errors';
+import { validateFileMagicBytes } from '../utils/file-validation';
 
 const resumes = new Hono<{ Bindings: Env }>();
 
@@ -34,6 +35,12 @@ resumes.post('/', async (c) => {
 
     if (file.size > 10 * 1024 * 1024) {
       return c.json({ error: 'File size must be less than 10MB' }, 400);
+    }
+
+    // Validate magic bytes BEFORE reading the full file — reject mismatched content early
+    const headerBuffer = await file.slice(0, 8).arrayBuffer();
+    if (!validateFileMagicBytes(headerBuffer, file.type)) {
+      return c.json({ error: 'File content does not match declared type' }, 400);
     }
 
     // Upload PDF to R2

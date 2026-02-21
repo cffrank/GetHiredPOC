@@ -105,6 +105,20 @@ app.onError((err, c) => {
   return c.json({ error: 'Internal server error' }, 500);
 });
 
+/**
+ * Deletes expired D1 session rows.
+ *
+ * KV sessions auto-expire via TTL and do not need cleanup.
+ * The sessions table has an idx_sessions_expires_at index so this DELETE is fast.
+ */
+async function cleanupExpiredSessions(env: Env): Promise<void> {
+  const now = Math.floor(Date.now() / 1000);
+  const result = await env.DB.prepare(
+    'DELETE FROM sessions WHERE expires_at < ?'
+  ).bind(now).run();
+  console.log(`[SessionCleanup] Deleted ${result.meta.changes} expired sessions`);
+}
+
 // Cron trigger for daily job imports (runs at 1 AM UTC daily)
 export default {
   fetch: app.fetch,
@@ -121,5 +135,8 @@ export default {
         console.error('[Cron] Daily job import failed:', error);
       })
     );
+
+    // Clean up expired D1 sessions alongside the daily job import
+    ctx.waitUntil(cleanupExpiredSessions(env));
   }
 };
