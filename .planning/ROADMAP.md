@@ -45,7 +45,11 @@ Plans:
   2. The `ParsedResume`, `JobMatch`, and `ApplicationUpdate` types exist in a shared package and are imported by both backend services and frontend code
   3. Submitting a malformed request body to any API endpoint (missing required fields, wrong types) returns a structured JSON error with field-level details and an HTTP 400 status — not a 500 or an unhandled exception
   4. All `catch (error: any)` blocks are replaced with typed error handling that preserves error type information
-**Plans**: TBD
+**Plans**: 2 plans
+
+Plans:
+- [ ] 02-01-PLAN.md — Shared types (ParsedResume, JobMatch, ApplicationUpdate), typed error handling, Zod deps
+- [ ] 02-02-PLAN.md — Replace all `any` in route handlers, wire Zod validation middleware on all JSON body routes
 
 ### Phase 3: Security + Error Handling
 **Goal**: The security surface is closed — headers applied, AI output sanitized, file uploads verified, sessions cleaned up, password hashing confirmed safe — and all errors reach users as friendly messages rather than raw crashes or alert() dialogs
