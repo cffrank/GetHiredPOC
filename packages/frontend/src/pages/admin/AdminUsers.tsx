@@ -3,6 +3,7 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { apiClient } from '../../lib/api-client';
 import type { User } from '@gethiredpoc/shared';
 import { Button } from '../../components/ui/Button';
+import { toast } from 'sonner';
 
 interface UsersResponse {
   users: User[];
@@ -16,6 +17,7 @@ export default function AdminUsers() {
   const [page, setPage] = useState(1);
   const [searchQuery, setSearchQuery] = useState('');
   const [searchInput, setSearchInput] = useState('');
+  const [confirmingRoleChangeId, setConfirmingRoleChangeId] = useState<string | null>(null);
   const queryClient = useQueryClient();
 
   const { data, isLoading, error } = useQuery<UsersResponse>({
@@ -38,6 +40,12 @@ export default function AdminUsers() {
       }),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['admin', 'users'] });
+      setConfirmingRoleChangeId(null);
+      toast.success('User role updated successfully', { duration: 3000 });
+    },
+    onError: (err: Error) => {
+      toast.error(`Failed to update role: ${err.message}`, { duration: 5000 });
+      setConfirmingRoleChangeId(null);
     },
   });
 
@@ -47,11 +55,13 @@ export default function AdminUsers() {
     setPage(1);
   };
 
-  const handleRoleChange = async (userId: string, currentRole: string) => {
+  const handleRoleChange = (userId: string) => {
+    setConfirmingRoleChangeId(userId);
+  };
+
+  const handleRoleChangeConfirm = async (userId: string, currentRole: string) => {
     const newRole = currentRole === 'admin' ? 'user' : 'admin';
-    if (confirm(`Change user role to ${newRole}?`)) {
-      await updateRoleMutation.mutateAsync({ userId, role: newRole });
-    }
+    await updateRoleMutation.mutateAsync({ userId, role: newRole });
   };
 
   if (isLoading) {
@@ -191,14 +201,35 @@ export default function AdminUsers() {
                   {formatDate(user.created_at)}
                 </td>
                 <td className="px-6 py-4 whitespace-nowrap text-sm">
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={() => handleRoleChange(user.id, user.role || 'user')}
-                    disabled={updateRoleMutation.isPending}
-                  >
-                    {user.role === 'admin' ? 'Revoke Admin' : 'Make Admin'}
-                  </Button>
+                  {confirmingRoleChangeId === user.id ? (
+                    <div className="flex items-center gap-2">
+                      <span className="text-sm text-gray-500">
+                        Change to {user.role === 'admin' ? 'user' : 'admin'}?
+                      </span>
+                      <button
+                        onClick={() => handleRoleChangeConfirm(user.id, user.role || 'user')}
+                        disabled={updateRoleMutation.isPending}
+                        className="text-sm text-blue-600 hover:text-blue-800 font-medium disabled:opacity-50"
+                      >
+                        Confirm
+                      </button>
+                      <button
+                        onClick={() => setConfirmingRoleChangeId(null)}
+                        className="text-sm text-gray-400 hover:text-gray-600"
+                      >
+                        Cancel
+                      </button>
+                    </div>
+                  ) : (
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => handleRoleChange(user.id)}
+                      disabled={updateRoleMutation.isPending}
+                    >
+                      {user.role === 'admin' ? 'Revoke Admin' : 'Make Admin'}
+                    </Button>
+                  )}
                 </td>
               </tr>
             ))}

@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { useMutation } from '@tanstack/react-query';
 import { apiClient } from '../../lib/api-client';
 import { Button } from '../../components/ui/Button';
+import { toast } from 'sonner';
 
 interface ImportResult {
   success: boolean;
@@ -15,6 +16,8 @@ export default function AdminJobs() {
   const [queries, setQueries] = useState('software engineer remote\nweb developer remote\nfrontend engineer remote');
   const [userId, setUserId] = useState('');
   const [importResult, setImportResult] = useState<ImportResult | null>(null);
+  const [confirmingBulkImport, setConfirmingBulkImport] = useState(false);
+  const [confirmingUserImport, setConfirmingUserImport] = useState(false);
 
   const bulkImportMutation = useMutation({
     mutationFn: (searchQueries: string[]) =>
@@ -24,6 +27,11 @@ export default function AdminJobs() {
       }),
     onSuccess: (data) => {
       setImportResult(data);
+      setConfirmingBulkImport(false);
+    },
+    onError: (err: Error) => {
+      toast.error(`Import failed: ${err.message}`, { duration: 5000 });
+      setConfirmingBulkImport(false);
     },
   });
 
@@ -34,12 +42,17 @@ export default function AdminJobs() {
       }),
     onSuccess: (data) => {
       setImportResult(data);
+      setConfirmingUserImport(false);
+    },
+    onError: (err: Error) => {
+      toast.error(`Import failed: ${err.message}`, { duration: 5000 });
+      setConfirmingUserImport(false);
     },
   });
 
   const handleBulkImport = () => {
     if (!queries.trim()) {
-      alert('Please enter at least one search query');
+      toast.error('Please enter at least one search query', { duration: 5000 });
       return;
     }
 
@@ -49,24 +62,28 @@ export default function AdminJobs() {
       .filter(q => q.length > 0);
 
     if (searchQueries.length === 0) {
-      alert('Please enter valid search queries');
+      toast.error('Please enter valid search queries', { duration: 5000 });
       return;
     }
 
-    if (confirm(`Import jobs with ${searchQueries.length} search queries?`)) {
-      bulkImportMutation.mutate(searchQueries);
-    }
+    setConfirmingBulkImport(true);
+  };
+
+  const handleBulkImportConfirm = () => {
+    const searchQueries = queries
+      .split('\n')
+      .map(q => q.trim())
+      .filter(q => q.length > 0);
+    bulkImportMutation.mutate(searchQueries);
   };
 
   const handleUserImport = () => {
     if (!userId.trim()) {
-      alert('Please enter a user ID');
+      toast.error('Please enter a user ID', { duration: 5000 });
       return;
     }
 
-    if (confirm(`Import jobs for user ${userId} based on their preferences?`)) {
-      userImportMutation.mutate(userId);
-    }
+    setConfirmingUserImport(true);
   };
 
   const isLoading = bulkImportMutation.isPending || userImportMutation.isPending;
@@ -136,12 +153,33 @@ export default function AdminJobs() {
           </p>
         </div>
 
-        <Button
-          onClick={handleBulkImport}
-          disabled={isLoading}
-        >
-          {bulkImportMutation.isPending ? 'Importing...' : 'Start Bulk Import'}
-        </Button>
+        {confirmingBulkImport ? (
+          <div className="flex items-center gap-3 p-3 bg-yellow-50 border border-yellow-200 rounded-lg">
+            <span className="text-sm text-gray-700">
+              Import jobs with {queries.split('\n').filter(q => q.trim()).length} search queries?
+            </span>
+            <button
+              onClick={handleBulkImportConfirm}
+              disabled={isLoading}
+              className="text-sm text-green-700 font-medium hover:text-green-900 disabled:opacity-50"
+            >
+              Confirm
+            </button>
+            <button
+              onClick={() => setConfirmingBulkImport(false)}
+              className="text-sm text-gray-400 hover:text-gray-600"
+            >
+              Cancel
+            </button>
+          </div>
+        ) : (
+          <Button
+            onClick={handleBulkImport}
+            disabled={isLoading}
+          >
+            {bulkImportMutation.isPending ? 'Importing...' : 'Start Bulk Import'}
+          </Button>
+        )}
 
         {bulkImportMutation.isPending && (
           <div className="mt-4 p-3 bg-blue-50 border border-blue-200 rounded-lg">
@@ -175,13 +213,34 @@ export default function AdminJobs() {
           </p>
         </div>
 
-        <Button
-          onClick={handleUserImport}
-          disabled={isLoading}
-          variant="outline"
-        >
-          {userImportMutation.isPending ? 'Importing...' : 'Import for User'}
-        </Button>
+        {confirmingUserImport ? (
+          <div className="flex items-center gap-3 p-3 bg-yellow-50 border border-yellow-200 rounded-lg">
+            <span className="text-sm text-gray-700">
+              Import jobs for user {userId} based on their preferences?
+            </span>
+            <button
+              onClick={() => userImportMutation.mutate(userId)}
+              disabled={isLoading}
+              className="text-sm text-green-700 font-medium hover:text-green-900 disabled:opacity-50"
+            >
+              Confirm
+            </button>
+            <button
+              onClick={() => setConfirmingUserImport(false)}
+              className="text-sm text-gray-400 hover:text-gray-600"
+            >
+              Cancel
+            </button>
+          </div>
+        ) : (
+          <Button
+            onClick={handleUserImport}
+            disabled={isLoading}
+            variant="outline"
+          >
+            {userImportMutation.isPending ? 'Importing...' : 'Import for User'}
+          </Button>
+        )}
 
         {userImportMutation.isPending && (
           <div className="mt-4 p-3 bg-blue-50 border border-blue-200 rounded-lg">

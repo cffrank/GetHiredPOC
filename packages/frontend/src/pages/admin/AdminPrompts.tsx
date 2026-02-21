@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { apiClient } from '../../lib/api-client';
 import { Button } from '../../components/ui/Button';
+import { toast } from 'sonner';
 
 interface AIPrompt {
   prompt_key: string;
@@ -18,6 +19,7 @@ interface AIPrompt {
 export default function AdminPrompts() {
   const [selectedPrompt, setSelectedPrompt] = useState<AIPrompt | null>(null);
   const [isEditing, setIsEditing] = useState(false);
+  const [confirmingDeleteKey, setConfirmingDeleteKey] = useState<string | null>(null);
   const [formData, setFormData] = useState({
     prompt_key: '',
     prompt_name: '',
@@ -43,7 +45,16 @@ export default function AdminPrompts() {
       setIsEditing(false);
       setSelectedPrompt(null);
       resetForm();
-      alert('Prompt saved successfully!');
+      toast.success('Prompt saved successfully!', { duration: 3000 });
+    },
+    onError: (err: Error) => {
+      toast.error(`Failed to save prompt: ${err.message}`, {
+        duration: 5000,
+        action: {
+          label: 'Retry',
+          onClick: () => saveMutation.mutate(formData),
+        },
+      });
     },
   });
 
@@ -55,7 +66,12 @@ export default function AdminPrompts() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['admin', 'prompts'] });
       setSelectedPrompt(null);
-      alert('Prompt deleted successfully!');
+      setConfirmingDeleteKey(null);
+      toast.success('Prompt deleted successfully!', { duration: 3000 });
+    },
+    onError: (err: Error) => {
+      toast.error(`Failed to delete prompt: ${err.message}`, { duration: 5000 });
+      setConfirmingDeleteKey(null);
     },
   });
 
@@ -95,7 +111,7 @@ export default function AdminPrompts() {
 
   const handleSave = () => {
     if (!formData.prompt_key || !formData.prompt_name || !formData.prompt_template) {
-      alert('Please fill in all required fields');
+      toast.error('Please fill in all required fields', { duration: 5000 });
       return;
     }
 
@@ -104,18 +120,12 @@ export default function AdminPrompts() {
       try {
         JSON.parse(formData.model_config);
       } catch (e) {
-        alert('Invalid JSON in model configuration');
+        toast.error('Invalid JSON in model configuration', { duration: 5000 });
         return;
       }
     }
 
     saveMutation.mutate(formData);
-  };
-
-  const handleDelete = (promptKey: string) => {
-    if (confirm(`Are you sure you want to delete prompt '${promptKey}'? This will deactivate it.`)) {
-      deleteMutation.mutate(promptKey);
-    }
   };
 
   if (isLoading) {
@@ -303,14 +313,33 @@ export default function AdminPrompts() {
                   <Button size="sm" onClick={() => handleEdit(selectedPrompt)}>
                     Edit
                   </Button>
-                  <Button
-                    size="sm"
-                    variant="outline"
-                    onClick={() => handleDelete(selectedPrompt.prompt_key)}
-                    disabled={deleteMutation.isPending}
-                  >
-                    Delete
-                  </Button>
+                  {confirmingDeleteKey === selectedPrompt.prompt_key ? (
+                    <div className="flex items-center gap-2">
+                      <span className="text-sm text-gray-500">Delete?</span>
+                      <button
+                        onClick={() => deleteMutation.mutate(selectedPrompt.prompt_key)}
+                        disabled={deleteMutation.isPending}
+                        className="text-sm text-red-600 hover:text-red-800 disabled:opacity-50"
+                      >
+                        Confirm
+                      </button>
+                      <button
+                        onClick={() => setConfirmingDeleteKey(null)}
+                        className="text-sm text-gray-400 hover:text-gray-600"
+                      >
+                        Cancel
+                      </button>
+                    </div>
+                  ) : (
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      onClick={() => setConfirmingDeleteKey(selectedPrompt.prompt_key)}
+                      disabled={deleteMutation.isPending}
+                    >
+                      Delete
+                    </Button>
+                  )}
                 </div>
               </div>
 

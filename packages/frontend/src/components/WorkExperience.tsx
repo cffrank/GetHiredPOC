@@ -5,6 +5,7 @@ import { Button } from './ui/Button';
 import { Input } from './ui/Input';
 import { Label } from './ui/Label';
 import { Card, CardContent, CardHeader, CardTitle } from './ui/Card';
+import { toast } from 'sonner';
 
 interface WorkExperience {
   id: string;
@@ -20,6 +21,7 @@ export function WorkExperience() {
   const queryClient = useQueryClient();
   const [isAdding, setIsAdding] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
+  const [confirmingDeleteId, setConfirmingDeleteId] = useState<string | null>(null);
   const [formData, setFormData] = useState({
     company: '',
     title: '',
@@ -63,6 +65,12 @@ export function WorkExperience() {
       apiClient.request(`/api/work-experience/${id}`, { method: 'DELETE' }),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['work-experience'] });
+      setConfirmingDeleteId(null);
+      toast.success('Work experience deleted', { duration: 3000 });
+    },
+    onError: (err: Error) => {
+      toast.error(`Failed to delete work experience: ${err.message}`, { duration: 5000 });
+      setConfirmingDeleteId(null);
     }
   });
 
@@ -233,17 +241,32 @@ export function WorkExperience() {
                     >
                       Edit
                     </button>
-                    <button
-                      onClick={() => {
-                        if (confirm('Are you sure you want to delete this experience?')) {
-                          deleteMutation.mutate(exp.id);
-                        }
-                      }}
-                      disabled={deleteMutation.isPending}
-                      className="text-red-600 hover:text-red-800 text-sm disabled:opacity-50"
-                    >
-                      Delete
-                    </button>
+                    {confirmingDeleteId === exp.id ? (
+                      <div className="flex items-center gap-2">
+                        <span className="text-sm text-gray-500">Delete?</span>
+                        <button
+                          onClick={() => deleteMutation.mutate(exp.id)}
+                          disabled={deleteMutation.isPending}
+                          className="text-sm text-red-600 hover:text-red-800 disabled:opacity-50"
+                        >
+                          Confirm
+                        </button>
+                        <button
+                          onClick={() => setConfirmingDeleteId(null)}
+                          className="text-sm text-gray-400 hover:text-gray-600"
+                        >
+                          Cancel
+                        </button>
+                      </div>
+                    ) : (
+                      <button
+                        onClick={() => setConfirmingDeleteId(exp.id)}
+                        disabled={deleteMutation.isPending}
+                        className="text-red-600 hover:text-red-800 text-sm disabled:opacity-50"
+                      >
+                        Delete
+                      </button>
+                    )}
                   </div>
                 </div>
                 <p className="text-sm text-gray-600 mb-2">

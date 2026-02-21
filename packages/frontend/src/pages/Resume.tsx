@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { apiClient } from '../lib/api-client';
+import { toast } from 'sonner';
 
 interface Resume {
   id: string;
@@ -16,6 +17,7 @@ export default function Resume() {
   const queryClient = useQueryClient();
   const [uploading, setUploading] = useState(false);
   const [uploadError, setUploadError] = useState<string | null>(null);
+  const [confirmingDeleteId, setConfirmingDeleteId] = useState<string | null>(null);
 
   // Fetch user's resumes
   const { data: resumes, isLoading } = useQuery<Resume[]>({
@@ -57,6 +59,12 @@ export default function Resume() {
     mutationFn: (id: string) => apiClient.request(`/api/resumes/${id}`, { method: 'DELETE' }),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['resumes'] });
+      setConfirmingDeleteId(null);
+      toast.success('Resume deleted', { duration: 3000 });
+    },
+    onError: (err: Error) => {
+      toast.error(`Failed to delete resume: ${err.message}`, { duration: 5000 });
+      setConfirmingDeleteId(null);
     }
   });
 
@@ -200,17 +208,32 @@ export default function Resume() {
                   >
                     View
                   </a>
-                  <button
-                    onClick={() => {
-                      if (confirm('Are you sure you want to delete this resume?')) {
-                        deleteMutation.mutate(resume.id);
-                      }
-                    }}
-                    disabled={deleteMutation.isPending}
-                    className="px-3 py-1.5 text-sm text-red-600 hover:bg-red-50 rounded-lg transition-colors disabled:opacity-50"
-                  >
-                    Delete
-                  </button>
+                  {confirmingDeleteId === resume.id ? (
+                    <div className="flex items-center gap-2">
+                      <span className="text-sm text-gray-500">Delete?</span>
+                      <button
+                        onClick={() => deleteMutation.mutate(resume.id)}
+                        disabled={deleteMutation.isPending}
+                        className="text-sm text-red-600 hover:text-red-800 disabled:opacity-50"
+                      >
+                        Confirm
+                      </button>
+                      <button
+                        onClick={() => setConfirmingDeleteId(null)}
+                        className="text-sm text-gray-400 hover:text-gray-600"
+                      >
+                        Cancel
+                      </button>
+                    </div>
+                  ) : (
+                    <button
+                      onClick={() => setConfirmingDeleteId(resume.id)}
+                      disabled={deleteMutation.isPending}
+                      className="px-3 py-1.5 text-sm text-red-600 hover:bg-red-50 rounded-lg transition-colors disabled:opacity-50"
+                    >
+                      Delete
+                    </button>
+                  )}
                 </div>
               </div>
             </div>

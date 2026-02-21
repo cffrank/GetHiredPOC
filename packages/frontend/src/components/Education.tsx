@@ -5,6 +5,7 @@ import { Button } from './ui/Button';
 import { Input } from './ui/Input';
 import { Label } from './ui/Label';
 import { Card, CardContent, CardHeader, CardTitle } from './ui/Card';
+import { toast } from 'sonner';
 
 interface Education {
   id: string;
@@ -20,6 +21,7 @@ export function Education() {
   const queryClient = useQueryClient();
   const [isAdding, setIsAdding] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
+  const [confirmingDeleteId, setConfirmingDeleteId] = useState<string | null>(null);
   const [formData, setFormData] = useState({
     school: '',
     degree: '',
@@ -63,6 +65,12 @@ export function Education() {
       apiClient.request(`/api/education/${id}`, { method: 'DELETE' }),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['education'] });
+      setConfirmingDeleteId(null);
+      toast.success('Education deleted', { duration: 3000 });
+    },
+    onError: (err: Error) => {
+      toast.error(`Failed to delete education: ${err.message}`, { duration: 5000 });
+      setConfirmingDeleteId(null);
     }
   });
 
@@ -235,17 +243,32 @@ export function Education() {
                     >
                       Edit
                     </button>
-                    <button
-                      onClick={() => {
-                        if (confirm('Are you sure you want to delete this education?')) {
-                          deleteMutation.mutate(edu.id);
-                        }
-                      }}
-                      disabled={deleteMutation.isPending}
-                      className="text-red-600 hover:text-red-800 text-sm disabled:opacity-50"
-                    >
-                      Delete
-                    </button>
+                    {confirmingDeleteId === edu.id ? (
+                      <div className="flex items-center gap-2">
+                        <span className="text-sm text-gray-500">Delete?</span>
+                        <button
+                          onClick={() => deleteMutation.mutate(edu.id)}
+                          disabled={deleteMutation.isPending}
+                          className="text-sm text-red-600 hover:text-red-800 disabled:opacity-50"
+                        >
+                          Confirm
+                        </button>
+                        <button
+                          onClick={() => setConfirmingDeleteId(null)}
+                          className="text-sm text-gray-400 hover:text-gray-600"
+                        >
+                          Cancel
+                        </button>
+                      </div>
+                    ) : (
+                      <button
+                        onClick={() => setConfirmingDeleteId(edu.id)}
+                        disabled={deleteMutation.isPending}
+                        className="text-red-600 hover:text-red-800 text-sm disabled:opacity-50"
+                      >
+                        Delete
+                      </button>
+                    )}
                   </div>
                 </div>
                 <p className="text-sm text-gray-600 mb-2">
