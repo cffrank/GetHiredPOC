@@ -4,15 +4,10 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '../co
 import { Badge } from '../components/ui/Badge';
 import { Button } from '../components/ui/Button';
 import { apiClient } from '../lib/api-client';
+import type { JobMatch } from '@gethiredpoc/shared';
 
-interface JobMatch {
-  match: {
-    jobId: string;
-    score: number;
-    strengths: string[];
-    concerns: string[];
-    recommendation: string;
-  };
+interface JobRecommendation {
+  match: JobMatch;
   job: {
     id: string;
     title: string;
@@ -28,7 +23,7 @@ interface JobMatch {
 export default function Recommendations() {
   const navigate = useNavigate();
   const [jobIds, setJobIds] = useState<string[]>([]);
-  const [recommendations, setRecommendations] = useState<JobMatch[]>([]);
+  const [recommendations, setRecommendations] = useState<JobRecommendation[]>([]);
   const [loading, setLoading] = useState(true);
   const [loadingJobs, setLoadingJobs] = useState<Set<string>>(new Set());
   const [error, setError] = useState<string | null>(null);
