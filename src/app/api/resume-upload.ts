@@ -2,6 +2,7 @@
 import { getEnv } from '@/app/lib/env';
 import { getUserIdFromCookie } from '@/app/lib/auth';
 import { parseResumeWithAI, saveParsedResumeToProfile } from '@/app/lib/resume-parser';
+import { sanitizeResumeData } from '@/app/lib/sanitize';
 
 /**
  * Validates a file's magic bytes against its declared MIME type.
@@ -112,10 +113,13 @@ export async function handleResumeUpload({ request }: { request: Request }): Pro
     // Parse with AI
     const parsedData = await parseResumeWithAI(env.AI, resumeText);
 
+    // Sanitize AI-parsed fields before returning to client (defense-in-depth point 1)
+    const sanitizedData = sanitizeResumeData(parsedData);
+
     // Return parsed data for user review (don't auto-save yet)
     return Response.json({
       success: true,
-      data: parsedData,
+      data: sanitizedData,
       message: 'Resume parsed successfully. Review and confirm to import.'
     });
   } catch (error) {
@@ -148,8 +152,12 @@ export async function handleResumeConfirm({ request }: { request: Request }): Pr
       return Response.json({ error: 'Missing parsed resume data' }, { status: 400 });
     }
 
+    // Sanitize client-submitted data again before saving (defense-in-depth point 2:
+    // client could have modified the parsedResume data between upload and confirm)
+    const sanitizedResume = sanitizeResumeData(parsedResume);
+
     // Save to database
-    await saveParsedResumeToProfile(env.DB, userId, parsedResume);
+    await saveParsedResumeToProfile(env.DB, userId, sanitizedResume);
 
     return Response.json({
       success: true,

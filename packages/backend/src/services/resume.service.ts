@@ -1,5 +1,6 @@
 import type { Env } from './db.service';
 import type { ParsedResume } from '@gethiredpoc/shared';
+import { sanitizeResumeData } from '../utils/sanitize';
 
 export type { ParsedResume };
 
@@ -170,10 +171,14 @@ export async function saveResume(
     isPrimary?: boolean;
   }
 ): Promise<string> {
+  // Sanitize AI-parsed resume fields before storage (write-time XSS defense)
+  const sanitizedParsedData = sanitizeResumeData(resumeData.parsedData);
+  const safeResumeData = { ...resumeData, parsedData: sanitizedParsedData };
+
   // If this is set as primary, unset other primary resumes
-  if (resumeData.isPrimary) {
+  if (safeResumeData.isPrimary) {
     await db.prepare('UPDATE resumes SET is_primary = 0 WHERE user_id = ?')
-      .bind(resumeData.userId)
+      .bind(safeResumeData.userId)
       .run();
   }
 
@@ -181,24 +186,24 @@ export async function saveResume(
     INSERT INTO resumes (user_id, file_name, file_url, file_size, parsed_data, is_primary)
     VALUES (?, ?, ?, ?, ?, ?)
   `).bind(
-    resumeData.userId,
-    resumeData.fileName,
-    resumeData.fileUrl,
-    resumeData.fileSize,
-    JSON.stringify(resumeData.parsedData),
-    resumeData.isPrimary ? 1 : 0
+    safeResumeData.userId,
+    safeResumeData.fileName,
+    safeResumeData.fileUrl,
+    safeResumeData.fileSize,
+    JSON.stringify(safeResumeData.parsedData),
+    safeResumeData.isPrimary ? 1 : 0
   ).run();
 
   // Extract the resume ID from the result
   const resumeId = result.meta.last_row_id?.toString() || '';
 
   // Save work experience
-  for (const exp of resumeData.parsedData.workExperience) {
+  for (const exp of safeResumeData.parsedData.workExperience) {
     await db.prepare(`
       INSERT INTO work_experience (user_id, resume_id, company, title, location, start_date, end_date, description)
       VALUES (?, ?, ?, ?, ?, ?, ?, ?)
     `).bind(
-      resumeData.userId,
+      safeResumeData.userId,
       resumeId,
       exp.company,
       exp.title,
@@ -210,12 +215,12 @@ export async function saveResume(
   }
 
   // Save education
-  for (const edu of resumeData.parsedData.education) {
+  for (const edu of safeResumeData.parsedData.education) {
     await db.prepare(`
       INSERT INTO education (user_id, resume_id, school, degree, field_of_study, start_date, end_date, gpa)
       VALUES (?, ?, ?, ?, ?, ?, ?, ?)
     `).bind(
-      resumeData.userId,
+      safeResumeData.userId,
       resumeId,
       edu.school,
       edu.degree || null,
