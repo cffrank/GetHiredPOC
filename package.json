@@ -15,9 +15,11 @@
     "build:frontend": "npm run build --workspace=packages/frontend",
     "deploy": "npm run deploy:backend && npm run deploy:frontend",
     "deploy:backend": "npm run deploy --workspace=packages/backend",
-    "deploy:frontend": "npm run deploy --workspace=packages/frontend"
+    "deploy:frontend": "npm run deploy --workspace=packages/frontend",
+    "test:e2e": "npx playwright test"
   },
   "devDependencies": {
+    "@playwright/test": "^1.58.2",
     "concurrently": "^9.0.0"
   },
   "dependencies": {
