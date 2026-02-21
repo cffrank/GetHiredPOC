@@ -39,6 +39,16 @@ export function AdminLayout() {
                   Users
                 </Link>
                 <Link
+                  to="/admin/subscriptions"
+                  className={`px-3 py-2 rounded-md text-sm font-medium ${
+                    isActive('/admin/subscriptions')
+                      ? 'bg-blue-100 text-blue-700'
+                      : 'text-gray-700 hover:text-gray-900 hover:bg-gray-100'
+                  }`}
+                >
+                  Subscriptions
+                </Link>
+                <Link
                   to="/admin/jobs"
                   className={`px-3 py-2 rounded-md text-sm font-medium ${
                     isActive('/admin/jobs')
@@ -57,6 +67,16 @@ export function AdminLayout() {
                   }`}
                 >
                   Prompts
+                </Link>
+                <Link
+                  to="/admin/analytics"
+                  className={`px-3 py-2 rounded-md text-sm font-medium ${
+                    isActive('/admin/analytics')
+                      ? 'bg-blue-100 text-blue-700'
+                      : 'text-gray-700 hover:text-gray-900 hover:bg-gray-100'
+                  }`}
+                >
+                  Analytics
                 </Link>
               </div>
             </div>

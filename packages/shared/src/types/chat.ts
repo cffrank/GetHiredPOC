@@ -15,6 +15,26 @@ export interface ToolResult {
   error?: string;
 }
 
+// Navigation Actions - for chat-driven UI navigation
+export interface NavigationAction {
+  type: 'navigate';
+  route: string;                    // e.g., '/jobs', '/jobs/:id'
+  state?: Record<string, any>;      // React Router state
+  filters?: JobFilters;             // For Jobs page filtering
+  message?: string;                 // User-facing explanation
+}
+
+export interface JobFilters {
+  keywords?: string;
+  locations?: string[];
+  salary_min?: number;
+  salary_max?: number;
+  experience_levels?: string[];
+  remote?: 'any' | 'remote' | 'hybrid' | 'onsite';
+  required_skills?: string[];
+  job_type?: string[];
+}
+
 export interface ChatMessage {
   id: string;
   conversation_id: string;
@@ -22,6 +42,7 @@ export interface ChatMessage {
   content: string;
   tool_calls?: ToolCall[];
   tool_results?: ToolResult[];
+  navigation_action?: NavigationAction; // NEW: for chat-driven navigation
   created_at: number;
 }
 

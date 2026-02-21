@@ -4,11 +4,16 @@ const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:8787';
 
 export const apiClient = {
   async request(endpoint: string, options?: RequestInit) {
+    // Get session token from localStorage (fallback when cookies don't work cross-origin)
+    const sessionToken = localStorage.getItem('sessionToken');
+
     const response = await fetch(`${API_URL}${endpoint}`, {
       ...options,
-      credentials: 'include',
+      credentials: 'include', // Still try cookies for same-origin
       headers: {
         'Content-Type': 'application/json',
+        // Add Authorization header if we have a session token
+        ...(sessionToken ? { 'Authorization': `Bearer ${sessionToken}` } : {}),
         ...options?.headers,
       },
     });
@@ -22,10 +27,16 @@ export const apiClient = {
   },
 
   async requestFormData(endpoint: string, formData: FormData) {
+    const sessionToken = localStorage.getItem('sessionToken');
+
     const response = await fetch(`${API_URL}${endpoint}`, {
       method: 'PUT',
       body: formData,
       credentials: 'include',
+      headers: {
+        // Add Authorization header if we have a session token
+        ...(sessionToken ? { 'Authorization': `Bearer ${sessionToken}` } : {}),
+      },
     });
 
     if (!response.ok) {
@@ -37,10 +48,30 @@ export const apiClient = {
   },
 
   // Auth
-  signup: (email: string, password: string) =>
+  signup: (
+    email: string,
+    password: string,
+    firstName: string,
+    lastName: string,
+    phone: string,
+    streetAddress: string,
+    city: string,
+    state: string,
+    zipCode: string
+  ) =>
     apiClient.request('/api/auth/signup', {
       method: 'POST',
-      body: JSON.stringify({ email, password }),
+      body: JSON.stringify({
+        email,
+        password,
+        first_name: firstName,
+        last_name: lastName,
+        phone,
+        street_address: streetAddress,
+        city,
+        state,
+        zip_code: zipCode,
+      }),
     }),
 
   login: (email: string, password: string) =>
@@ -168,6 +199,52 @@ export const apiClient = {
 
   deleteChatConversation: (id: string) =>
     apiClient.request(`/api/chat/conversations/${id}`, {
+      method: 'DELETE',
+    }),
+
+  // Gamification
+  getGamificationStats: () => apiClient.request('/api/gamification/me'),
+
+  // Interview Questions
+  getInterviewQuestions: (filters?: { application_id?: string; job_id?: string }) => {
+    const params = new URLSearchParams();
+    if (filters?.application_id) params.set('application_id', filters.application_id);
+    if (filters?.job_id) params.set('job_id', filters.job_id);
+    const query = params.toString();
+    return apiClient.request(`/api/interview-questions${query ? `?${query}` : ''}`);
+  },
+
+  getInterviewQuestion: (id: string) =>
+    apiClient.request(`/api/interview-questions/${id}`),
+
+  createInterviewQuestion: (data: {
+    question: string;
+    answer?: string | null;
+    is_behavioral?: number;
+    difficulty?: 'easy' | 'medium' | 'hard' | null;
+    notes?: string | null;
+    application_id?: string | null;
+    job_id?: string | null;
+  }) =>
+    apiClient.request('/api/interview-questions', {
+      method: 'POST',
+      body: JSON.stringify(data),
+    }),
+
+  updateInterviewQuestion: (id: string, updates: {
+    question?: string;
+    answer?: string | null;
+    is_behavioral?: number;
+    difficulty?: 'easy' | 'medium' | 'hard' | null;
+    notes?: string | null;
+  }) =>
+    apiClient.request(`/api/interview-questions/${id}`, {
+      method: 'PUT',
+      body: JSON.stringify(updates),
+    }),
+
+  deleteInterviewQuestion: (id: string) =>
+    apiClient.request(`/api/interview-questions/${id}`, {
       method: 'DELETE',
     }),
 };

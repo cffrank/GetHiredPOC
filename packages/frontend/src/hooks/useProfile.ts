@@ -13,9 +13,10 @@ export function useUpdateProfile() {
 
   return useMutation({
     mutationFn: (updates: any) => apiClient.updateProfile(updates),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['profile'] });
-      queryClient.invalidateQueries({ queryKey: ['auth', 'me'] });
+    onSuccess: (data) => {
+      // Immediately update both profile and auth caches with response data
+      queryClient.setQueryData(['profile'], data);
+      queryClient.setQueryData(['auth', 'me'], { user: data.profile });
     },
   });
 }
@@ -25,9 +26,10 @@ export function useUpdateProfileWithFile() {
 
   return useMutation({
     mutationFn: (formData: FormData) => apiClient.updateProfileWithFile(formData),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['profile'] });
-      queryClient.invalidateQueries({ queryKey: ['auth', 'me'] });
+    onSuccess: (data) => {
+      // Immediately update both profile and auth caches with response data
+      queryClient.setQueryData(['profile'], data);
+      queryClient.setQueryData(['auth', 'me'], { user: data.profile });
     },
   });
 }

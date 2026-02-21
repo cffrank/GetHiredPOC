@@ -7,7 +7,17 @@ interface AuthContextType {
   user: User | null | undefined;
   isLoading: boolean;
   login: (email: string, password: string) => Promise<void>;
-  signup: (email: string, password: string) => Promise<void>;
+  signup: (
+    email: string,
+    password: string,
+    firstName: string,
+    lastName: string,
+    phone: string,
+    streetAddress: string,
+    city: string,
+    state: string,
+    zipCode: string
+  ) => Promise<void>;
   logout: () => Promise<void>;
 }
 
@@ -25,22 +35,54 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const loginMutation = useMutation({
     mutationFn: ({ email, password }: { email: string; password: string }) =>
       apiClient.login(email, password),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['auth', 'me'] });
+    onSuccess: (data) => {
+      // Store sessionId in localStorage for Authorization header fallback
+      if (data.sessionId) {
+        localStorage.setItem('sessionToken', data.sessionId);
+      }
+      // Immediately set user data from login response instead of refetching
+      queryClient.setQueryData(['auth', 'me'], data);
     },
   });
 
   const signupMutation = useMutation({
-    mutationFn: ({ email, password }: { email: string; password: string }) =>
-      apiClient.signup(email, password),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['auth', 'me'] });
+    mutationFn: (data: {
+      email: string;
+      password: string;
+      firstName: string;
+      lastName: string;
+      phone: string;
+      streetAddress: string;
+      city: string;
+      state: string;
+      zipCode: string;
+    }) =>
+      apiClient.signup(
+        data.email,
+        data.password,
+        data.firstName,
+        data.lastName,
+        data.phone,
+        data.streetAddress,
+        data.city,
+        data.state,
+        data.zipCode
+      ),
+    onSuccess: (data) => {
+      // Store sessionId in localStorage for Authorization header fallback
+      if (data.sessionId) {
+        localStorage.setItem('sessionToken', data.sessionId);
+      }
+      // Immediately set user data from signup response instead of refetching
+      queryClient.setQueryData(['auth', 'me'], data);
     },
   });
 
   const logoutMutation = useMutation({
     mutationFn: () => apiClient.logout(),
     onSuccess: () => {
+      // Clear session token from localStorage
+      localStorage.removeItem('sessionToken');
       queryClient.setQueryData(['auth', 'me'], { user: null });
       queryClient.clear();
     },
@@ -52,8 +94,28 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     login: async (email: string, password: string) => {
       await loginMutation.mutateAsync({ email, password });
     },
-    signup: async (email: string, password: string) => {
-      await signupMutation.mutateAsync({ email, password });
+    signup: async (
+      email: string,
+      password: string,
+      firstName: string,
+      lastName: string,
+      phone: string,
+      streetAddress: string,
+      city: string,
+      state: string,
+      zipCode: string
+    ) => {
+      await signupMutation.mutateAsync({
+        email,
+        password,
+        firstName,
+        lastName,
+        phone,
+        streetAddress,
+        city,
+        state,
+        zipCode,
+      });
     },
     logout: async () => {
       await logoutMutation.mutateAsync();

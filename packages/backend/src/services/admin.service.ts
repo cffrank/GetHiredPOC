@@ -197,7 +197,11 @@ export async function getAllUsers(
   const limit = options.limit || 20;
   const offset = (page - 1) * limit;
 
-  let query = 'SELECT id, email, full_name, bio, location, skills, avatar_url, address, linkedin_url, role, membership_tier, membership_started_at, membership_expires_at, trial_started_at, created_at, updated_at FROM users';
+  let query = `SELECT id, email, full_name, bio, location, skills, avatar_url, address, linkedin_url, role,
+    membership_tier, membership_started_at, membership_expires_at, trial_started_at,
+    subscription_tier, subscription_status, subscription_started_at, subscription_expires_at,
+    polar_customer_id, polar_subscription_id,
+    created_at, updated_at FROM users`;
   let countQuery = 'SELECT COUNT(*) as count FROM users';
   const bindings: any[] = [];
 
@@ -314,7 +318,11 @@ export async function updateUserRole(
 
   // Fetch and return updated user
   const user = await env.DB.prepare(
-    'SELECT id, email, full_name, bio, location, skills, avatar_url, address, linkedin_url, role, membership_tier, membership_started_at, membership_expires_at, trial_started_at, created_at, updated_at FROM users WHERE id = ?'
+    `SELECT id, email, full_name, bio, location, skills, avatar_url, address, linkedin_url, role,
+     membership_tier, membership_started_at, membership_expires_at, trial_started_at,
+     subscription_tier, subscription_status, subscription_started_at, subscription_expires_at,
+     polar_customer_id, polar_subscription_id,
+     created_at, updated_at FROM users WHERE id = ?`
   ).bind(userId).first<User>();
 
   if (!user) {

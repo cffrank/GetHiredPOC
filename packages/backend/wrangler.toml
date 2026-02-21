@@ -3,19 +3,29 @@ main = "src/index.ts"
 compatibility_date = "2024-01-01"
 compatibility_flags = ["nodejs_compat"]
 
+# Disable workers.dev subdomain (only use custom domain)
+workers_dev = false
+
 # CORS allowed origins (update with production frontend URL)
 [vars]
-FRONTEND_URL = "https://gethiredpoc.pages.dev"
-BACKEND_URL = "https://gethiredpoc-api.carl-f-frank.workers.dev"
+FRONTEND_URL = "https://app.allfrontoffice.com"
+BACKEND_URL = "https://api.allfrontoffice.com"
 CLOUDFLARE_ACCOUNT_ID = "280c58ea17d9fe3235c33bd0a52a256b"
 
 # Admin emails (comma-separated list)
 # Note: Update this with actual admin email addresses
 ADMIN_EMAILS = "carl.f.frank@gmail.com,admin@example.com"
 
-# Adzuna API credentials
-ADZUNA_APP_ID = "65f2bced"
-# Note: Add ADZUNA_APP_KEY via: npx wrangler secret put ADZUNA_APP_KEY
+# Apify Scraper Configuration (Uses APIFY_API_TOKEN)
+APIFY_LINKEDIN_ACTOR_ID = "curious_coder~linkedin-jobs-search-scraper"
+APIFY_INDEED_ACTOR_ID = "misceres~indeed-scraper"
+APIFY_DICE_ACTOR_ID = "worldunboxer~dice-jobs-scraper"
+
+# Cost Controls
+MAX_DAILY_SCRAPER_RUNS = "10"
+MAX_USER_IMPORTS_PER_DAY = "1"
+
+# Note: Add APIFY_API_TOKEN via: npx wrangler secret put APIFY_API_TOKEN
 
 # Resend API key for email notifications
 # Note: Add RESEND_API_KEY via: npx wrangler secret put RESEND_API_KEY
@@ -25,6 +35,13 @@ LINKEDIN_CLIENT_ID = "86gnb581r70q6j"
 # Note: Add LINKEDIN_CLIENT_SECRET via: npx wrangler secret put LINKEDIN_CLIENT_SECRET
 
 # Note: OpenAI API key for chat is configured in the AI Gateway dashboard
+
+# Polar.sh API Token for subscription payment processing
+# Note: Add POLAR_ACCESS_TOKEN via: npx wrangler secret put POLAR_ACCESS_TOKEN (DONE)
+# Note: Add POLAR_WEBHOOK_SECRET via: npx wrangler secret put POLAR_WEBHOOK_SECRET (DONE)
+# IMPORTANT: Currently using SANDBOX environment (sandbox.polar.sh)
+POLAR_PRODUCT_ID = "e866b778-608d-41fb-a308-78cdef850f92" # Sandbox PRO product ($39/month)
+POLAR_SANDBOX = "true" # Set to "false" for production, "true" for sandbox testing
 
 # D1 Database
 [[d1_databases]]
@@ -52,6 +69,11 @@ id = "e96d7669b11c4f63b2b1ce41026a0c5d"
 binding = "AI"
 gateway_id = "jobmatch-ai-gateway-dev"
 
+# Vectorize binding for semantic search
+[[vectorize]]
+binding = "VECTORIZE"
+index_name = "job-embeddings"
+
 # Cron triggers
 [triggers]
-crons = ["0 1 * * *"]  # Daily at 1 AM UTC for job imports
+crons = ["0 1 * * *"]  # Daily at 1 AM UTC for Apify scraper imports

@@ -1,4 +1,5 @@
 import { useState, useEffect, useRef } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { Send, Loader2, Bot, User, Wrench } from 'lucide-react';
 import { apiClient } from '../lib/api-client';
 import type { ChatMessage, ToolCall } from '@gethiredpoc/shared';
@@ -8,6 +9,7 @@ interface ChatInterfaceProps {
 }
 
 export function ChatInterface({ isOpen }: ChatInterfaceProps) {
+  const navigate = useNavigate();
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [inputValue, setInputValue] = useState('');
   const [isLoading, setIsLoading] = useState(false);
@@ -27,6 +29,27 @@ export function ChatInterface({ isOpen }: ChatInterfaceProps) {
       inputRef.current?.focus();
     }
   }, [isOpen]);
+
+  // Handle navigation actions from chat messages
+  useEffect(() => {
+    const lastMessage = messages[messages.length - 1];
+    if (lastMessage?.role === 'assistant' && lastMessage.navigation_action) {
+      const action = lastMessage.navigation_action;
+
+      if (action.type === 'navigate') {
+        console.log('[ChatInterface] Navigation action detected:', action);
+
+        // Navigate with state containing filters and message
+        navigate(action.route, {
+          state: {
+            filters: action.filters,
+            message: action.message,
+            ...action.state
+          }
+        });
+      }
+    }
+  }, [messages, navigate]);
 
   const handleSendMessage = async () => {
     if (!inputValue.trim() || isLoading) return;
@@ -82,18 +105,18 @@ export function ChatInterface({ isOpen }: ChatInterfaceProps) {
     if (!toolCalls || toolCalls.length === 0) return null;
 
     return (
-      <div className="mt-2 space-y-1">
+      <div className="mt-3 space-y-2">
         {toolCalls.map((tool, idx) => {
           const args = JSON.parse(tool.function.arguments);
           return (
             <div
               key={tool.id || idx}
-              className="flex items-start gap-2 text-xs text-gray-600 bg-blue-50 rounded px-2 py-1"
+              className="flex items-start gap-2 text-xs text-gray-700 bg-gradient-to-br from-violet/10 to-teal/10 rounded-xl px-3 py-2 border border-violet/20"
             >
-              <Wrench className="w-3 h-3 mt-0.5 flex-shrink-0" />
+              <Wrench className="w-4 h-4 mt-0.5 flex-shrink-0 text-violet" />
               <div>
-                <span className="font-medium">{tool.function.name}</span>
-                <span className="text-gray-500 ml-1">
+                <span className="font-bold text-purple-deep">{tool.function.name}</span>
+                <span className="text-gray-600 ml-1">
                   ({Object.entries(args).map(([key, val]) =>
                     `${key}: ${typeof val === 'string' ? val : JSON.stringify(val)}`
                   ).join(', ')})
@@ -109,12 +132,14 @@ export function ChatInterface({ isOpen }: ChatInterfaceProps) {
   return (
     <div className="flex flex-col h-full">
       {/* Chat Header */}
-      <div className="p-4 border-b border-gray-200">
-        <h2 className="text-lg font-semibold text-gray-900 flex items-center gap-2">
-          <Bot className="w-5 h-5 text-blue-600" />
-          AI Assistant
+      <div className="p-6 border-b-2 border-gray-100 bg-gradient-to-br from-violet/5 to-teal/5">
+        <h2 className="text-xl font-extrabold text-purple-deep flex items-center gap-2">
+          <div className="w-10 h-10 rounded-2xl bg-gradient-to-br from-violet to-teal flex items-center justify-center shadow-3d-sm">
+            <Bot className="w-5 h-5 text-white" />
+          </div>
+          AI Assistant 🤖
         </h2>
-        <p className="text-xs text-gray-500 mt-1">
+        <p className="text-sm text-gray-600 mt-2">
           Ask me to search jobs, update your profile, or help with applications
         </p>
       </div>
@@ -122,11 +147,13 @@ export function ChatInterface({ isOpen }: ChatInterfaceProps) {
       {/* Messages */}
       <div className="flex-1 overflow-y-auto p-4 space-y-4">
         {messages.length === 0 && (
-          <div className="text-center text-gray-500 mt-8">
-            <Bot className="w-12 h-12 mx-auto mb-3 text-gray-400" />
-            <p className="text-sm">Start a conversation with your AI assistant</p>
-            <p className="text-xs mt-2 text-gray-400">
-              Try: "Find me software engineer jobs in San Francisco"
+          <div className="text-center text-gray-500 mt-12">
+            <div className="w-20 h-20 mx-auto mb-4 rounded-3xl bg-gradient-to-br from-violet to-teal flex items-center justify-center shadow-3d-md animate-bounce-gentle">
+              <Bot className="w-10 h-10 text-white" />
+            </div>
+            <p className="text-base font-bold text-purple-deep mb-2">Start a conversation</p>
+            <p className="text-sm text-gray-500">
+              Try: "Find me software engineer jobs in SF" 🔍
             </p>
           </div>
         )}
@@ -139,16 +166,16 @@ export function ChatInterface({ isOpen }: ChatInterfaceProps) {
             }`}
           >
             {message.role === 'assistant' && (
-              <div className="flex-shrink-0 w-8 h-8 rounded-full bg-blue-100 flex items-center justify-center">
-                <Bot className="w-4 h-4 text-blue-600" />
+              <div className="flex-shrink-0 w-10 h-10 rounded-2xl bg-gradient-to-br from-violet to-teal flex items-center justify-center shadow-3d-sm">
+                <Bot className="w-5 h-5 text-white" />
               </div>
             )}
 
             <div
-              className={`max-w-[80%] rounded-lg px-4 py-2 ${
+              className={`max-w-[80%] rounded-2xl px-4 py-3 shadow-3d-sm ${
                 message.role === 'user'
-                  ? 'bg-blue-600 text-white'
-                  : 'bg-gray-100 text-gray-900'
+                  ? 'bg-gradient-to-br from-violet to-teal text-white'
+                  : 'bg-white border-2 border-gray-100 text-gray-900'
               }`}
             >
               <div className="text-sm whitespace-pre-wrap break-words">
@@ -158,8 +185,8 @@ export function ChatInterface({ isOpen }: ChatInterfaceProps) {
             </div>
 
             {message.role === 'user' && (
-              <div className="flex-shrink-0 w-8 h-8 rounded-full bg-gray-200 flex items-center justify-center">
-                <User className="w-4 h-4 text-gray-600" />
+              <div className="flex-shrink-0 w-10 h-10 rounded-2xl bg-gray-200 flex items-center justify-center shadow-3d-sm">
+                <User className="w-5 h-5 text-gray-600" />
               </div>
             )}
           </div>
@@ -167,17 +194,17 @@ export function ChatInterface({ isOpen }: ChatInterfaceProps) {
 
         {isLoading && (
           <div className="flex gap-3 justify-start">
-            <div className="flex-shrink-0 w-8 h-8 rounded-full bg-blue-100 flex items-center justify-center">
-              <Bot className="w-4 h-4 text-blue-600" />
+            <div className="flex-shrink-0 w-10 h-10 rounded-2xl bg-gradient-to-br from-violet to-teal flex items-center justify-center shadow-3d-sm">
+              <Bot className="w-5 h-5 text-white" />
             </div>
-            <div className="bg-gray-100 rounded-lg px-4 py-3">
-              <Loader2 className="w-4 h-4 text-gray-600 animate-spin" />
+            <div className="bg-white border-2 border-gray-100 rounded-2xl px-4 py-3 shadow-3d-sm">
+              <Loader2 className="w-5 h-5 text-violet animate-spin" />
             </div>
           </div>
         )}
 
         {error && (
-          <div className="bg-red-50 border border-red-200 rounded-lg p-3 text-sm text-red-700">
+          <div className="bg-gradient-to-br from-red-50 to-red-100 border-2 border-red-200 rounded-2xl p-4 text-sm text-red-700 font-medium shadow-3d-sm">
             {error}
           </div>
         )}
@@ -186,8 +213,8 @@ export function ChatInterface({ isOpen }: ChatInterfaceProps) {
       </div>
 
       {/* Input */}
-      <div className="p-4 border-t border-gray-200">
-        <div className="flex gap-2">
+      <div className="p-6 border-t-2 border-gray-100 bg-gradient-to-br from-violet/5 to-teal/5">
+        <div className="flex gap-3">
           <input
             ref={inputRef}
             type="text"
@@ -196,18 +223,18 @@ export function ChatInterface({ isOpen }: ChatInterfaceProps) {
             onKeyPress={handleKeyPress}
             placeholder="Type a message..."
             disabled={isLoading}
-            className="flex-1 px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent disabled:bg-gray-100 disabled:cursor-not-allowed text-sm"
+            className="flex-1 px-4 py-3 border-2 border-gray-200 rounded-2xl focus:outline-none focus:ring-2 focus:ring-violet focus:border-violet disabled:bg-gray-100 disabled:cursor-not-allowed text-sm shadow-3d-sm transition-all"
           />
           <button
             onClick={handleSendMessage}
             disabled={!inputValue.trim() || isLoading}
-            className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:bg-gray-300 disabled:cursor-not-allowed transition-colors flex items-center justify-center"
+            className="px-6 py-3 bg-gradient-to-br from-violet to-teal text-white rounded-2xl hover:shadow-3d-md active:shadow-3d-sm disabled:bg-gray-300 disabled:cursor-not-allowed transition-all flex items-center justify-center shadow-3d-sm hover:-translate-y-0.5 active:translate-y-1"
             aria-label="Send message"
           >
             {isLoading ? (
-              <Loader2 className="w-4 h-4 animate-spin" />
+              <Loader2 className="w-5 h-5 animate-spin" />
             ) : (
-              <Send className="w-4 h-4" />
+              <Send className="w-5 h-5" />
             )}
           </button>
         </div>

@@ -38,8 +38,12 @@ export function ProtectedRoute({ requireAdmin = false }: ProtectedRouteProps) {
     );
   }
 
-  // Skip onboarding check for admin routes
-  if (!requireAdmin && preferences && !preferences.onboardingCompleted && location.pathname !== '/onboarding') {
+  // Skip onboarding check for admin routes and non-job-related pages
+  // Allow access to subscription, settings, profile, and resume without onboarding
+  const pagesWithoutOnboarding = ['/onboarding', '/subscription', '/settings', '/profile', '/resume'];
+  const requiresOnboarding = !pagesWithoutOnboarding.includes(location.pathname);
+
+  if (!requireAdmin && preferences && !preferences.onboardingCompleted && requiresOnboarding) {
     return <Navigate to="/onboarding" replace />;
   }
 

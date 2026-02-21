@@ -1,25 +1,229 @@
-import { useState } from 'react';
-import { Link } from 'react-router-dom';
+import { useState, useEffect } from 'react';
+import { Link, useLocation } from 'react-router-dom';
 import { useJobs } from '../hooks/useJobs';
+import { useRecommendations } from '../hooks/useRecommendations';
+import { useGamification } from '../hooks/useGamification';
+import { useAuth } from '../context/AuthContext';
 import { Button } from '../components/ui/Button';
 import { Input } from '../components/ui/Input';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '../components/ui/Card';
 import { Badge } from '../components/ui/Badge';
+import { JobCard3D } from '../components/JobCard3D';
+import { FloatingShapesBackground } from '../components/effects/FloatingShapesBackground';
+import { ProgressGamification } from '../components/gamification/ProgressGamification';
+import { CuteRobotLoader } from '../components/loaders/CuteRobotLoader';
+import { JobFilterPanel, JobFilters } from '../components/JobFilterPanel';
+import { ChevronDown, ChevronUp, Filter } from 'lucide-react';
+
+type TabType = 'all' | 'for-you';
 
 export default function Jobs() {
+  const location = useLocation();
+  const [activeTab, setActiveTab] = useState<TabType>('all');
   const [title, setTitle] = useState('');
   const [remote, setRemote] = useState<boolean | undefined>();
-  const [location, setLocation] = useState('');
+  const [locationFilter, setLocationFilter] = useState('');
+  const [showAdvancedFilters, setShowAdvancedFilters] = useState(true); // Default to open for AI-first experience
+  const [advancedSearchActive, setAdvancedSearchActive] = useState(false);
+  const [advancedSearchLoading, setAdvancedSearchLoading] = useState(false);
+  const [advancedSearchResults, setAdvancedSearchResults] = useState<any[]>([]);
+  const [navigatedFromChat, setNavigatedFromChat] = useState(false);
 
-  const { data, isLoading } = useJobs({ title, remote, location });
+  const { user } = useAuth();
+  const isLoggedIn = !!user;
+
+  const { data, isLoading } = useJobs({ title, remote, location: locationFilter });
+  const { data: recommendationsData, isLoading: recommendationsLoading } = useRecommendations(20);
+  const { data: gamificationData } = useGamification();
+
+  // Advanced filter state
+  const [filters, setFilters] = useState<JobFilters>({
+    keywords: [],
+    locations: [],
+    salary_min: undefined,
+    salary_max: undefined,
+    experience_level: [],
+    remote: 'any',
+    required_skills: [],
+    job_type: []
+  });
+
+  // Check if navigated from chat with filters
+  useEffect(() => {
+    if (location.state?.filters) {
+      const chatFilters = location.state.filters as JobFilters;
+      setFilters(chatFilters);
+      setShowAdvancedFilters(true);
+      setNavigatedFromChat(true);
+      // Auto-run search
+      handleAdvancedSearch(chatFilters);
+    }
+    if (location.state?.message) {
+      // Could show a toast or banner with the message
+      console.log('Chat message:', location.state.message);
+    }
+  }, [location.state]);
+
+  const handleAdvancedSearch = async (searchFilters: JobFilters = filters) => {
+    setAdvancedSearchLoading(true);
+    setAdvancedSearchActive(true);
+    try {
+      const response = await fetch(
+        `${import.meta.env.VITE_API_URL}/api/jobs/advanced-search`,
+        {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${localStorage.getItem('token')}`
+          },
+          body: JSON.stringify(searchFilters)
+        }
+      );
+
+      if (response.ok) {
+        const data = await response.json();
+        setAdvancedSearchResults(data.jobs);
+      } else {
+        console.error('Advanced search failed');
+        setAdvancedSearchResults([]);
+      }
+    } catch (error) {
+      console.error('Advanced search error:', error);
+      setAdvancedSearchResults([]);
+    } finally {
+      setAdvancedSearchLoading(false);
+    }
+  };
+
+  const clearAdvancedSearch = () => {
+    setAdvancedSearchActive(false);
+    setAdvancedSearchResults([]);
+    setNavigatedFromChat(false);
+    setFilters({
+      keywords: [],
+      locations: [],
+      salary_min: undefined,
+      salary_max: undefined,
+      experience_level: [],
+      remote: 'any',
+      required_skills: [],
+      job_type: []
+    });
+  };
+
+  // Determine which jobs to show
+  const getJobsToShow = () => {
+    if (activeTab === 'for-you') {
+      return {
+        jobs: recommendationsData?.jobs || [],
+        loading: recommendationsLoading
+      };
+    }
+
+    if (advancedSearchActive) {
+      return {
+        jobs: advancedSearchResults,
+        loading: advancedSearchLoading
+      };
+    }
+
+    return {
+      jobs: data?.jobs || [],
+      loading: isLoading
+    };
+  };
+
+  const { jobs: displayedJobs, loading: displayLoading } = getJobsToShow();
 
   return (
-    <div className="min-h-full bg-gray-50">
+    <>
+      <FloatingShapesBackground />
+      <div className="relative z-10 min-h-full">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-          <h1 className="text-3xl font-bold mb-8">Browse Jobs</h1>
+          {/* Hero Section */}
+          <div className="text-center mb-8">
+            <h1 className="text-5xl sm:text-6xl font-extrabold text-purple-deep mb-4">
+              Find Your Dream Job <span className="inline-block animate-bounce-gentle">🚀</span>
+            </h1>
+            <p className="text-xl text-gray-600">AI-powered matching that makes job hunting fun!</p>
+          </div>
 
-          {/* Filters */}
-          <Card className="mb-8 shadow-soft">
+          {/* Gamification Progress */}
+          {isLoggedIn && gamificationData && (
+            <ProgressGamification
+              level={gamificationData.level}
+              xp={gamificationData.xp}
+              xpMax={gamificationData.xpMax}
+              achievements={gamificationData.achievements}
+            />
+          )}
+
+        {/* Chat Navigation Banner */}
+        {navigatedFromChat && advancedSearchActive && (
+          <Card className="mb-6 bg-gradient-to-r from-violet-50 to-teal-50 border-violet-200 shadow-card-soft">
+            <CardContent className="pt-6">
+              <div className="flex items-start justify-between">
+                <div className="flex items-start gap-3">
+                  <div className="flex-shrink-0 w-10 h-10 bg-gradient-to-br from-violet to-teal rounded-lg flex items-center justify-center shadow-3d-sm">
+                    <Filter className="w-5 h-5 text-white" />
+                  </div>
+                  <div>
+                    <h3 className="font-semibold text-purple-deep">AI Assistant found {displayedJobs.length} matching jobs</h3>
+                    <p className="text-sm text-gray-600 mt-1">
+                      {location.state?.message || 'Results based on your search criteria'}
+                    </p>
+                  </div>
+                </div>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={clearAdvancedSearch}
+                >
+                  Clear Filters
+                </Button>
+              </div>
+            </CardContent>
+          </Card>
+        )}
+
+        {/* Tabs */}
+        {isLoggedIn && (
+          <div className="flex gap-2 mb-6 border-b border-gray-200">
+            <button
+              onClick={() => {
+                setActiveTab('all');
+                clearAdvancedSearch();
+              }}
+              className={`px-4 py-2 font-bold text-sm transition-colors ${
+                activeTab === 'all'
+                  ? 'border-b-2 border-violet text-violet'
+                  : 'text-gray-600 hover:text-gray-900'
+              }`}
+            >
+              All Jobs
+            </button>
+            <button
+              onClick={() => {
+                setActiveTab('for-you');
+                clearAdvancedSearch();
+              }}
+              className={`px-4 py-2 font-bold text-sm transition-colors ${
+                activeTab === 'for-you'
+                  ? 'border-b-2 border-violet text-violet'
+                  : 'text-gray-600 hover:text-gray-900'
+              }`}
+            >
+              For You
+              <span className="ml-2 px-2 py-0.5 text-xs font-semibold bg-violet-100 text-violet-dark rounded-full">
+                AI
+              </span>
+            </button>
+          </div>
+        )}
+
+        {/* Basic Filters - Only show for "All Jobs" tab when advanced search not active */}
+        {activeTab === 'all' && !advancedSearchActive && (
+          <Card className="mb-6 shadow-soft">
             <CardContent className="pt-6">
               <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
                 <Input
@@ -30,8 +234,8 @@ export default function Jobs() {
                 />
                 <Input
                   placeholder="Location..."
-                  value={location}
-                  onChange={(e) => setLocation(e.target.value)}
+                  value={locationFilter}
+                  onChange={(e) => setLocationFilter(e.target.value)}
                   className="min-h-touch"
                 />
                 <select
@@ -41,7 +245,6 @@ export default function Jobs() {
                     if (e.target.value === 'all') setRemote(undefined);
                     else if (e.target.value === 'yes') setRemote(true);
                     else if (e.target.value === 'no') setRemote(false);
-                    // Note: 'hybrid' filter not yet implemented in backend query params
                   }}
                 >
                   <option value="all">All Jobs</option>
@@ -49,51 +252,101 @@ export default function Jobs() {
                   <option value="no">On-site Only</option>
                   <option value="hybrid">Hybrid Only</option>
                 </select>
-                <Button variant="outline" onClick={() => { setTitle(''); setLocation(''); setRemote(undefined); }}>
+                <Button variant="outline" onClick={() => { setTitle(''); setLocationFilter(''); setRemote(undefined); }}>
                   Clear
                 </Button>
               </div>
+
+              {/* Advanced Filters Toggle */}
+              <div className="mt-4 pt-4 border-t border-gray-200">
+                <button
+                  onClick={() => setShowAdvancedFilters(!showAdvancedFilters)}
+                  className="flex items-center gap-2 text-sm text-violet hover:text-violet-dark font-bold"
+                >
+                  <Filter className="w-4 h-4" />
+                  Advanced Filters
+                  {showAdvancedFilters ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
+                </button>
+              </div>
             </CardContent>
           </Card>
+        )}
 
-          {/* Jobs List */}
-          {isLoading ? (
-            <div className="text-center py-12">Loading jobs...</div>
-          ) : (
-            <div className="space-y-4">
-              {data?.jobs.map((job: any) => (
-                <Card key={job.id} className="shadow-soft hover:shadow-soft-lg transition-shadow">
-                  <CardHeader>
-                    <div className="flex flex-col sm:flex-row sm:justify-between sm:items-start gap-4">
-                      <div className="flex-1">
-                        <CardTitle className="text-xl sm:text-2xl">{job.title}</CardTitle>
-                        <CardDescription className="text-base mt-1">{job.company}</CardDescription>
-                      </div>
-                      <Link to={`/jobs/${job.id}`} className="w-full sm:w-auto">
-                        <Button size="sm" className="w-full sm:w-auto">View Details</Button>
-                      </Link>
-                    </div>
-                  </CardHeader>
-                  <CardContent>
-                    <div className="flex flex-wrap gap-2 mb-3">
-                      {job.remote === 1 && <Badge className="bg-green-100 text-green-800">Remote</Badge>}
-                      {job.remote === 2 && <Badge className="bg-blue-100 text-blue-800">Hybrid</Badge>}
-                      {job.remote === 0 && <Badge className="bg-gray-100 text-gray-800">On-Site</Badge>}
-                      {job.location && <Badge className="bg-primary-100 text-primary-800">{job.location}</Badge>}
-                      {job.salary_min && job.salary_max && (
-                        <Badge className="bg-purple-100 text-purple-800">${job.salary_min.toLocaleString()} - ${job.salary_max.toLocaleString()}</Badge>
-                      )}
-                    </div>
-                    <p className="text-sm text-gray-600 line-clamp-2">{job.description}</p>
-                  </CardContent>
-                </Card>
-              ))}
-              {data?.jobs.length === 0 && (
-                <div className="text-center py-12 text-gray-500">No jobs found matching your criteria</div>
-              )}
-            </div>
-          )}
+        {/* Advanced Filters Panel */}
+        {activeTab === 'all' && showAdvancedFilters && (
+          <JobFilterPanel
+            filters={filters}
+            onChange={setFilters}
+            onSearch={() => handleAdvancedSearch()}
+            isSearching={advancedSearchLoading}
+          />
+        )}
+
+        {/* For You - Personalized Recommendations */}
+        {activeTab === 'for-you' && (
+          <div className="mb-6">
+            <Card className="bg-gradient-to-r from-violet-50 to-teal-50 border-violet-200 shadow-card-soft mb-6">
+              <CardContent className="pt-6">
+                <div className="flex items-start gap-3">
+                  <div className="flex-shrink-0 w-10 h-10 bg-gradient-to-br from-violet to-teal rounded-lg flex items-center justify-center shadow-3d-sm">
+                    <svg className="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" />
+                    </svg>
+                  </div>
+                  <div>
+                    <h3 className="font-bold text-purple-deep">AI-Powered Recommendations ✨</h3>
+                    <p className="text-sm text-gray-600 mt-1">
+                      These jobs are personalized based on your profile, skills, experience, and preferences using semantic matching.
+                    </p>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+          </div>
+        )}
+
+        {/* Jobs List */}
+        {displayLoading ? (
+          <CuteRobotLoader
+            message={advancedSearchActive ? 'Searching for perfect matches...' : 'Finding amazing opportunities...'}
+          />
+        ) : (
+          <div className="space-y-6">
+            {displayedJobs.map((job: any) => (
+              <JobCard3D
+                key={job.id}
+                job={job}
+                showMatchScore={activeTab === 'for-you' || (advancedSearchActive && !!job.relevance_score)}
+                isRecommended={activeTab === 'for-you'}
+              />
+            ))}
+
+            {displayedJobs.length === 0 && activeTab === 'all' && (
+              <div className="text-center py-12 text-gray-500">No jobs found matching your criteria</div>
+            )}
+
+            {displayedJobs.length === 0 && activeTab === 'for-you' && (
+              <Card className="bg-yellow-50 border-yellow-200">
+                <CardContent className="pt-6">
+                  <div className="text-center py-8">
+                    <svg className="w-16 h-16 text-yellow-600 mx-auto mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z" />
+                    </svg>
+                    <h3 className="text-lg font-semibold text-gray-900 mb-2">Complete Your Profile for Better Recommendations</h3>
+                    <p className="text-sm text-gray-600 mb-4">
+                      Add your skills, work experience, and education to get AI-powered job recommendations tailored to you.
+                    </p>
+                    <Link to="/profile">
+                      <Button>Update Profile</Button>
+                    </Link>
+                  </div>
+                </CardContent>
+              </Card>
+            )}
+          </div>
+        )}
         </div>
-    </div>
+      </div>
+    </>
   );
 }
