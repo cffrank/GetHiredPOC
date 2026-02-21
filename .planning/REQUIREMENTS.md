@@ -49,8 +49,8 @@ Requirements for production readiness. Each maps to roadmap phases.
 
 ### Graceful Degradation
 
-- [ ] **GRACE-01**: LinkedIn integration handles empty API data with user notification instead of silent empty loops
-- [ ] **GRACE-02**: AI response parsing uses structured extraction with fallback templates on malformed JSON
+- [x] **GRACE-01**: LinkedIn integration handles empty API data with user notification instead of silent empty loops
+- [x] **GRACE-02**: AI response parsing uses structured extraction with fallback templates on malformed JSON
 - [x] **GRACE-03**: Structured logging with consistent prefixes replaces ad-hoc console.log
 
 ### Testing
@@ -120,8 +120,8 @@ Which phases cover which requirements. Updated during roadmap creation.
 | PERF-02 | Phase 4 | Pending |
 | PERF-03 | Phase 4 | Pending |
 | PERF-04 | Phase 4 | Complete |
-| GRACE-01 | Phase 4 | Pending |
-| GRACE-02 | Phase 4 | Pending |
+| GRACE-01 | Phase 4 | Complete |
+| GRACE-02 | Phase 4 | Complete |
 | GRACE-03 | Phase 4 | Complete |
 | TEST-02 | Phase 5 | Pending |
 | TEST-03 | Phase 5 | Pending |

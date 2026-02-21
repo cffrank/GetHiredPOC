@@ -10,9 +10,9 @@ See: .planning/PROJECT.md (updated 2026-02-20)
 ## Current Position
 
 Phase: 4 of 5 (Performance + Graceful Degradation)
-Plan: 1 of 4 in current phase
-Status: In progress — 04-01 complete
-Last activity: 2026-02-21 — Completed 04-01: structured logger utility + unpdf PDF parsing (GRACE-03, PERF-04)
+Plan: 2 of 4 in current phase
+Status: In progress — 04-01 and 04-02 complete
+Last activity: 2026-02-21 — Completed 04-02: LinkedIn empty data detection + AI parse fallback (GRACE-01, GRACE-02)
 
 Progress: [████████░░] 80%
 
@@ -39,6 +39,7 @@ Progress: [████████░░] 80%
 | Phase 03-security-error-handling P03 | 3 | 2 tasks | 6 files |
 | Phase 03-security-error-handling P02 | 6 | 3 tasks | 11 files |
 | Phase 04-performance-graceful-degradation P01 | 4 | 2 tasks | 6 files |
+| Phase 04-performance-graceful-degradation P02 | 4 | 2 tasks | 7 files |
 
 ## Accumulated Context
 
@@ -80,6 +81,9 @@ Recent decisions affecting current work:
 - [Phase 03-02]: Lazy PBKDF2 migration: isLegacyHash() check after successful login triggers re-hash — no forced password reset
 - [Phase 04-performance-graceful-degradation]: unpdf replaces TextDecoder for PDF parsing in resume.service.ts — TextDecoder garbles compressed PDF binary; unpdf uses Workers-compatible PDF.js per Cloudflare official docs (PERF-04)
 - [Phase 04-performance-graceful-degradation]: createLogger(module) factory pattern for Cloudflare Workers — thin console.* wrapper producing JSON.stringify objects queryable in Workers Logs; no external library needed (GRACE-03)
+- [Phase 04-02]: hasLinkedInData() checks positions/educations/skills arrays — all empty signals only basic OpenID Connect data (name/email); redirects to ?warning=linkedin_limited_data
+- [Phase 04-02]: Both codebase paths updated for LinkedIn warning — packages/backend + src/app each have independent LinkedIn OAuth implementations
+- [Phase 04-02]: PARSE_FALLBACK constant for AI parse errors — score:50 'fair' returned instead of throwing; jobs with failed AI analysis still appear in recommendations
 
 ### Pending Todos
 
@@ -94,5 +98,5 @@ None yet.
 ## Session Continuity
 
 Last session: 2026-02-21
-Stopped at: Completed 04-01-PLAN.md — structured logger utility + unpdf PDF parsing (GRACE-03, PERF-04)
+Stopped at: Completed 04-02-PLAN.md — LinkedIn graceful degradation + AI parse fallback (GRACE-01, GRACE-02)
 Resume file: None
