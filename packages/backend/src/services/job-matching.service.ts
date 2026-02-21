@@ -23,12 +23,20 @@ const PARSE_FALLBACK: MatchResult = {
   summary: 'Analysis could not be completed. Please try again.'
 };
 
+export interface UserContext {
+  user: any;
+  workHistory: any[];
+  education: any[];
+}
+
 export async function analyzeJobMatch(
   env: Env,
   userProfile: any,
-  job: any
+  job: any,
+  userContext?: UserContext
 ): Promise<JobMatch> {
-  const cacheKey = `match:${userProfile.id}:${job.id}`;
+  const profileVersion = userProfile.updated_at || 0;
+  const cacheKey = `match:${userProfile.id}:${job.id}:v${profileVersion}`;
 
   // Check KV cache (7 days)
   const cached = await env.KV_CACHE.get(cacheKey);
@@ -37,22 +45,35 @@ export async function analyzeJobMatch(
     return JSON.parse(cached);
   }
 
-  // Get work experience and education
-  const workHistory = await env.DB.prepare(`
-    SELECT company, title, description
-    FROM work_experience
-    WHERE user_id = ?
-    ORDER BY start_date DESC
-    LIMIT 3
-  `).bind(userProfile.id).all();
+  // Use pre-loaded context when available (recommendation loop) to avoid N+1 queries.
+  // When not provided (single-job analysis), load inline for backward compatibility.
+  let workHistoryResults: any[];
+  let educationResults: any[];
 
-  const education = await env.DB.prepare(`
-    SELECT school, degree, field_of_study
-    FROM education
-    WHERE user_id = ?
-    ORDER BY start_date DESC
-    LIMIT 2
-  `).bind(userProfile.id).all();
+  if (userContext) {
+    workHistoryResults = userContext.workHistory;
+    educationResults = userContext.education;
+  } else {
+    // Get work experience and education
+    const workHistory = await env.DB.prepare(`
+      SELECT company, title, description
+      FROM work_experience
+      WHERE user_id = ?
+      ORDER BY start_date DESC
+      LIMIT 3
+    `).bind(userProfile.id).all();
+
+    const education = await env.DB.prepare(`
+      SELECT school, degree, field_of_study
+      FROM education
+      WHERE user_id = ?
+      ORDER BY start_date DESC
+      LIMIT 2
+    `).bind(userProfile.id).all();
+
+    workHistoryResults = workHistory.results;
+    educationResults = education.results;
+  }
 
   // Parse user skills
   const userSkills = userProfile.skills ? JSON.parse(userProfile.skills) : [];
@@ -64,12 +85,12 @@ export async function analyzeJobMatch(
   }
 
   // Format work experience and education for prompt
-  const workExperienceText = workHistory.results.length > 0
-    ? workHistory.results.map((w: any) => `- ${w.title} at ${w.company}: ${w.description?.substring(0, 150) || 'N/A'}`).join('\n')
+  const workExperienceText = workHistoryResults.length > 0
+    ? workHistoryResults.map((w: any) => `- ${w.title} at ${w.company}: ${w.description?.substring(0, 150) || 'N/A'}`).join('\n')
     : 'No work experience';
 
-  const educationText = education.results.length > 0
-    ? education.results.map((e: any) => `- ${e.degree} in ${e.field_of_study} from ${e.school}`).join('\n')
+  const educationText = educationResults.length > 0
+    ? educationResults.map((e: any) => `- ${e.degree} in ${e.field_of_study} from ${e.school}`).join('\n')
     : 'No education listed';
 
   // Render prompt with variables

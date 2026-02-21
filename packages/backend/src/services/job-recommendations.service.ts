@@ -1,8 +1,31 @@
 import type { Env } from './db.service';
-import { analyzeJobMatch, type JobMatch } from './job-matching.service';
+import { analyzeJobMatch, type JobMatch, type UserContext } from './job-matching.service';
 import { createLogger } from '../utils/logger';
 
 const logger = createLogger('job-recommendations');
+
+/**
+ * Pre-loads all user profile data needed for job matching in a single parallel batch.
+ * Calling this once before the recommendation loop avoids N+1 queries (3 queries instead
+ * of 3 per job when processing 50 jobs).
+ */
+export async function buildUserContext(env: Env, userId: string): Promise<UserContext> {
+  const [user, workHistory, education] = await Promise.all([
+    env.DB.prepare('SELECT * FROM users WHERE id = ?').bind(userId).first(),
+    env.DB.prepare(
+      'SELECT company, title, description FROM work_experience WHERE user_id = ? ORDER BY start_date DESC LIMIT 3'
+    ).bind(userId).all(),
+    env.DB.prepare(
+      'SELECT school, degree, field_of_study FROM education WHERE user_id = ? ORDER BY start_date DESC LIMIT 2'
+    ).bind(userId).all(),
+  ]);
+
+  return {
+    user,
+    workHistory: workHistory.results,
+    education: education.results,
+  };
+}
 
 export async function getTopJobRecommendations(
   env: Env,
@@ -11,12 +34,10 @@ export async function getTopJobRecommendations(
 ): Promise<JobMatch[]> {
   logger.info('Getting top recommendations', { limit, userId });
 
-  // Get user profile
-  const user = await env.DB.prepare(
-    'SELECT * FROM users WHERE id = ?'
-  ).bind(userId).first();
+  // Pre-load user context once (user + workHistory + education) to avoid N+1 queries.
+  const userContext = await buildUserContext(env, userId);
 
-  if (!user) {
+  if (!userContext.user) {
     throw new Error('User not found');
   }
 
@@ -33,12 +54,12 @@ export async function getTopJobRecommendations(
 
   logger.info('Analyzing jobs', { count: jobs.results.length });
 
-  // Analyze each job
+  // Analyze each job — pass pre-loaded userContext to skip per-job DB queries
   const matches: JobMatch[] = [];
 
   for (const job of jobs.results) {
     try {
-      const match = await analyzeJobMatch(env, user, job);
+      const match = await analyzeJobMatch(env, userContext.user, job, userContext);
       matches.push(match);
     } catch (error) {
       logger.error('Failed to analyze job', { jobId: job.id, error: String(error) });
