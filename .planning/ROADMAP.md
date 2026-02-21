@@ -13,7 +13,7 @@ This milestone hardens an existing, feature-complete job search platform for rea
 Decimal phases appear between their surrounding integers in numeric order.
 
 - [x] **Phase 1: Critical Bugs + Test Infrastructure** - Stop the crashes and establish the test harness so every fix has a test from day one
-- [x] **Phase 2: Type Safety + Input Validation** - Eliminate all `any` types and validate every API endpoint with Zod schemas (completed 2026-02-21)
+- [ ] **Phase 2: Type Safety + Input Validation** - Eliminate all `any` types and validate every API endpoint with Zod schemas
 - [ ] **Phase 3: Security + Error Handling** - Apply security headers, sanitize AI output, validate file uploads, and replace raw crashes with typed error responses
 - [ ] **Phase 4: Performance + Graceful Degradation** - Eliminate N+1 queries, add pagination, fix cache invalidation, and make integrations fail gracefully
 - [ ] **Phase 5: Comprehensive Test Suite** - Unit, integration, component, and E2E tests covering all critical paths
@@ -45,11 +45,12 @@ Plans:
   2. The `ParsedResume`, `JobMatch`, and `ApplicationUpdate` types exist in a shared package and are imported by both backend services and frontend code
   3. Submitting a malformed request body to any API endpoint (missing required fields, wrong types) returns a structured JSON error with field-level details and an HTTP 400 status — not a 500 or an unhandled exception
   4. All `catch (error: any)` blocks are replaced with typed error handling that preserves error type information
-**Plans**: 2 plans
+**Plans**: 3 plans
 
 Plans:
-- [ ] 02-01-PLAN.md — Shared types (ParsedResume, JobMatch, ApplicationUpdate), typed error handling, Zod deps
-- [ ] 02-02-PLAN.md — Replace all `any` in route handlers, wire Zod validation middleware on all JSON body routes
+- [x] 02-01-PLAN.md — Shared types (ParsedResume, JobMatch, ApplicationUpdate), typed error handling, Zod deps
+- [x] 02-02-PLAN.md — Replace all `any` in route handlers, wire Zod validation middleware on all JSON body routes
+- [ ] 02-03-PLAN.md — Gap closure: migrate service/frontend files from local type duplicates to shared imports
 
 ### Phase 3: Security + Error Handling
 **Goal**: The security surface is closed — headers applied, AI output sanitized, file uploads verified, sessions cleaned up, password hashing confirmed safe — and all errors reach users as friendly messages rather than raw crashes or alert() dialogs
@@ -94,7 +95,7 @@ Phases execute in numeric order: 1 → 2 → 3 → 4 → 5
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
 | 1. Critical Bugs + Test Infrastructure | 3/3 | Complete    | 2026-02-21 |
-| 2. Type Safety + Input Validation | 2/2 | Complete   | 2026-02-21 |
+| 2. Type Safety + Input Validation | 2/3 | In progress | - |
 | 3. Security + Error Handling | 0/TBD | Not started | - |
 | 4. Performance + Graceful Degradation | 0/TBD | Not started | - |
 | 5. Comprehensive Test Suite | 0/TBD | Not started | - |
