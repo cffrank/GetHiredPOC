@@ -1,3 +1,5 @@
+import type { Job } from '@gethiredpoc/shared';
+
 const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:8787';
 
 export const apiClient = {
@@ -55,11 +57,13 @@ export const apiClient = {
   me: () => apiClient.request('/api/auth/me'),
 
   // Jobs
-  getJobs: (filters?: { title?: string; remote?: boolean; location?: string }) => {
+  getJobs: (filters?: { title?: string; remote?: boolean; location?: string; cursor?: string; limit?: number }): Promise<{ jobs: Job[]; nextCursor: string | null; hasMore: boolean }> => {
     const params = new URLSearchParams();
     if (filters?.title) params.set('title', filters.title);
     if (filters?.remote !== undefined) params.set('remote', String(filters.remote));
     if (filters?.location) params.set('location', filters.location);
+    if (filters?.cursor) params.set('cursor', filters.cursor);
+    if (filters?.limit !== undefined) params.set('limit', String(filters.limit));
     const query = params.toString();
     return apiClient.request(`/api/jobs${query ? `?${query}` : ''}`);
   },

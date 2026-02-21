@@ -34,10 +34,14 @@ export interface GetJobsRequest {
   title?: string;
   remote?: boolean;
   location?: string;
+  cursor?: string;
+  limit?: number;
 }
 
 export interface GetJobsResponse {
   jobs: Job[];
+  nextCursor: string | null;
+  hasMore: boolean;
 }
 
 export interface GetJobResponse {
