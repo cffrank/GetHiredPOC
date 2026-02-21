@@ -54,6 +54,7 @@ export default function Profile() {
   // Check for LinkedIn OAuth callback messages
   useEffect(() => {
     const success = searchParams.get('success');
+    const warning = searchParams.get('warning');
     const error = searchParams.get('error');
 
     if (success === 'linkedin_imported') {
@@ -63,6 +64,16 @@ export default function Profile() {
       setSearchParams(searchParams);
       // Clear message after 5 seconds
       setTimeout(() => setLinkedInMessage(null), 5000);
+    } else if (warning === 'linkedin_limited_data') {
+      setLinkedInMessage({
+        type: 'success',
+        text: 'LinkedIn connected, but only basic info (name and email) was imported. Work history, education, and skills require LinkedIn Partner Program access.'
+      });
+      // Clean the URL param after showing the toast
+      searchParams.delete('warning');
+      setSearchParams(searchParams);
+      // Clear message after 8 seconds (longer — more content to read)
+      setTimeout(() => setLinkedInMessage(null), 8000);
     } else if (error) {
       let errorText = 'Failed to import from LinkedIn';
       if (error === 'linkedin_auth_failed') errorText = 'LinkedIn authorization failed';

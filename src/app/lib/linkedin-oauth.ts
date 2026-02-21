@@ -160,6 +160,15 @@ export async function fetchLinkedInProfile(accessToken: string): Promise<LinkedI
 }
 
 /**
+ * Check if LinkedIn profile contains meaningful data beyond basic name/email.
+ * The basic OpenID Connect API only returns name and email; work history, education,
+ * and skills require LinkedIn Partner Program access.
+ */
+export function hasLinkedInData(profile: LinkedInProfile): boolean {
+  return profile.positions.length > 0 || profile.educations.length > 0 || profile.skills.length > 0;
+}
+
+/**
  * Save LinkedIn profile data to database
  */
 export async function saveLinkedInProfile(

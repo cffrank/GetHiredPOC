@@ -6,7 +6,8 @@ import {
   initiateLinkedInOAuth,
   exchangeLinkedInCode,
   fetchLinkedInProfile,
-  saveLinkedInProfile
+  saveLinkedInProfile,
+  hasLinkedInData
 } from '../services/linkedin.service';
 import {
   parseLinkedInProfileText,
@@ -97,8 +98,14 @@ linkedin.get('/callback', async (c) => {
     // Fetch LinkedIn profile data
     const linkedInProfile = await fetchLinkedInProfile(accessToken);
 
-    // Save to database
+    // Save to database (saves name/email even when positions/education/skills are empty)
     await saveLinkedInProfile(c.env.DB, userId, linkedInProfile);
+
+    // Detect empty profile: LinkedIn's basic OpenID Connect API only returns name/email.
+    // Work history, education, and skills require LinkedIn Partner Program access.
+    if (!hasLinkedInData(linkedInProfile)) {
+      return c.redirect(`${frontendUrl}/profile?warning=linkedin_limited_data`);
+    }
 
     // Redirect back to profile with success message
     return c.redirect(`${frontendUrl}/profile?success=linkedin_imported`);

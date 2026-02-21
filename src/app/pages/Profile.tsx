@@ -37,6 +37,27 @@ function ProfileContent() {
 
   useEffect(() => {
     loadProfile();
+
+    // Check for LinkedIn OAuth callback warnings/success in URL params
+    const params = new URLSearchParams(window.location.search);
+    const warning = params.get('warning');
+    const success = params.get('success');
+
+    if (warning === 'linkedin_limited_data') {
+      toast.warning(
+        'LinkedIn connected, but only basic info (name and email) was imported. Work history, education, and skills require LinkedIn Partner Program access.',
+        { duration: 8000 }
+      );
+      // Clean the URL param after showing the toast
+      params.delete('warning');
+      const newSearch = params.toString();
+      window.history.replaceState({}, '', newSearch ? `?${newSearch}` : window.location.pathname);
+    } else if (success === 'linkedin_imported') {
+      toast.success('Successfully imported profile from LinkedIn!', { duration: 5000 });
+      params.delete('success');
+      const newSearch = params.toString();
+      window.history.replaceState({}, '', newSearch ? `?${newSearch}` : window.location.pathname);
+    }
   }, []);
 
   const loadProfile = async () => {
