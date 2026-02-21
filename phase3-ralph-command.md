@@ -3,7 +3,7 @@
 Copy and paste this command to start Phase 3 development:
 
 ```
-/ralph-loop
+/ralph-wiggum:ralph-loop
 
 Read phase3.md and implement all AI-powered features for GetHiredPOC.
 
