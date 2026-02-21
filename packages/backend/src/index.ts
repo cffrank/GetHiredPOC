@@ -1,6 +1,7 @@
 import { Hono } from 'hono';
 import { secureHeaders } from 'hono/secure-headers';
 import type { Env } from './services/db.service';
+import { AppError } from './utils/errors';
 import auth from './routes/auth';
 import jobs from './routes/jobs';
 import applications from './routes/applications';
@@ -101,7 +102,10 @@ app.notFound((c) => {
 
 // Error handler
 app.onError((err, c) => {
-  console.error(err);
+  if (err instanceof AppError) {
+    return c.json({ error: err.message }, err.statusCode as any);
+  }
+  console.error('[UnhandledError]', err);
   return c.json({ error: 'Internal server error' }, 500);
 });
 
