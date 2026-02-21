@@ -11,7 +11,7 @@ import {
   clearSessionCookie,
 } from '../services/auth.service';
 import { sendWelcomeEmail } from '../services/email.service';
-import { toMessage } from '../utils/errors';
+import { toMessage, UnauthorizedError } from '../utils/errors';
 import { signupSchema, loginSchema } from '../schemas/auth.schema';
 import { validationHook } from '../schemas/validation-hook';
 
@@ -44,22 +44,20 @@ auth.post('/signup', zValidator('json', signupSchema, validationHook), async (c)
 
 // POST /api/auth/login
 auth.post('/login', zValidator('json', loginSchema, validationHook), async (c) => {
-  try {
-    const { email, password } = c.req.valid('json');
+  const { email, password } = c.req.valid('json');
 
-    const { user, sessionId } = await login(c.env, email, password);
-    const isProduction = c.env.FRONTEND_URL?.includes('pages.dev');
+  const { user, sessionId } = await login(c.env, email, password).catch(() => {
+    throw new UnauthorizedError('Invalid credentials');
+  });
+  const isProduction = c.env.FRONTEND_URL?.includes('pages.dev');
 
-    return c.json(
-      { user },
-      200,
-      {
-        'Set-Cookie': setSessionCookie(sessionId, isProduction),
-      }
-    );
-  } catch (error: unknown) {
-    return c.json({ error: toMessage(error) }, 401);
-  }
+  return c.json(
+    { user },
+    200,
+    {
+      'Set-Cookie': setSessionCookie(sessionId, isProduction),
+    }
+  );
 });
 
 // POST /api/auth/logout

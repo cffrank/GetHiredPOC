@@ -8,7 +8,7 @@ import {
   getUserResumes,
   deleteResume
 } from '../services/resume.service';
-import { toMessage } from '../utils/errors';
+import { toMessage, AppError, UnauthorizedError, NotFoundError, ValidationError } from '../utils/errors';
 import { validateFileMagicBytes } from '../utils/file-validation';
 
 const resumes = new Hono<{ Bindings: Env }>();
@@ -18,7 +18,7 @@ resumes.post('/', async (c) => {
   try {
     const user = await getCurrentUser(c);
     if (!user) {
-      return c.json({ error: 'Unauthorized' }, 401);
+      throw new UnauthorizedError('Unauthorized');
     }
 
     const formData = await c.req.formData();
@@ -26,21 +26,21 @@ resumes.post('/', async (c) => {
     const isPrimary = formData.get('isPrimary') === 'true';
 
     if (!file) {
-      return c.json({ error: 'No file provided' }, 400);
+      throw new ValidationError('No file provided');
     }
 
     if (file.type !== 'application/pdf') {
-      return c.json({ error: 'Only PDF files are supported' }, 400);
+      throw new ValidationError('Only PDF files are supported');
     }
 
     if (file.size > 10 * 1024 * 1024) {
-      return c.json({ error: 'File size must be less than 10MB' }, 400);
+      throw new ValidationError('File size must be less than 10MB');
     }
 
     // Validate magic bytes BEFORE reading the full file — reject mismatched content early
     const headerBuffer = await file.slice(0, 8).arrayBuffer();
     if (!validateFileMagicBytes(headerBuffer, file.type)) {
-      return c.json({ error: 'File content does not match declared type' }, 400);
+      throw new ValidationError('File content does not match declared type');
     }
 
     // Upload PDF to R2
@@ -68,6 +68,7 @@ resumes.post('/', async (c) => {
       isPrimary
     }, 201);
   } catch (error: unknown) {
+    if (error instanceof AppError) throw error;
     console.error('Resume upload error:', error);
     return c.json({ error: toMessage(error) }, 500);
   }
@@ -78,12 +79,13 @@ resumes.get('/', async (c) => {
   try {
     const user = await getCurrentUser(c);
     if (!user) {
-      return c.json({ error: 'Unauthorized' }, 401);
+      throw new UnauthorizedError('Unauthorized');
     }
 
     const resumes = await getUserResumes(c.env.DB, user.id);
     return c.json(resumes);
   } catch (error: unknown) {
+    if (error instanceof AppError) throw error;
     console.error('Get resumes error:', error);
     return c.json({ error: toMessage(error) }, 500);
   }
@@ -94,18 +96,19 @@ resumes.delete('/:id', async (c) => {
   try {
     const user = await getCurrentUser(c);
     if (!user) {
-      return c.json({ error: 'Unauthorized' }, 401);
+      throw new UnauthorizedError('Unauthorized');
     }
 
     const resumeId = c.req.param('id');
     const success = await deleteResume(c.env.DB, c.env, resumeId, user.id);
 
     if (!success) {
-      return c.json({ error: 'Resume not found' }, 404);
+      throw new NotFoundError('Resume not found');
     }
 
     return c.json({ success: true });
   } catch (error: unknown) {
+    if (error instanceof AppError) throw error;
     console.error('Delete resume error:', error);
     return c.json({ error: toMessage(error) }, 500);
   }
@@ -116,7 +119,7 @@ resumes.patch('/:id/primary', async (c) => {
   try {
     const user = await getCurrentUser(c);
     if (!user) {
-      return c.json({ error: 'Unauthorized' }, 401);
+      throw new UnauthorizedError('Unauthorized');
     }
 
     const resumeId = c.req.param('id');
@@ -127,7 +130,7 @@ resumes.patch('/:id/primary', async (c) => {
       .first();
 
     if (!resume) {
-      return c.json({ error: 'Resume not found' }, 404);
+      throw new NotFoundError('Resume not found');
     }
 
     // Unset other primary resumes
@@ -142,6 +145,7 @@ resumes.patch('/:id/primary', async (c) => {
 
     return c.json({ success: true });
   } catch (error: unknown) {
+    if (error instanceof AppError) throw error;
     console.error('Set primary resume error:', error);
     return c.json({ error: toMessage(error) }, 500);
   }

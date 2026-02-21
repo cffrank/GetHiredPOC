@@ -11,7 +11,7 @@ import {
 } from '../services/db.service';
 import { sendStatusUpdateEmail } from '../services/email.service';
 import type { ApplicationUpdate } from '@gethiredpoc/shared';
-import { toMessage } from '../utils/errors';
+import { toMessage, AppError, NotFoundError, ForbiddenError } from '../utils/errors';
 import { createApplicationSchema, updateApplicationSchema } from '../schemas/applications.schema';
 import { validationHook } from '../schemas/validation-hook';
 
@@ -51,6 +51,14 @@ applications.put('/:id', zValidator('json', updateApplicationSchema, validationH
     const applicationId = c.req.param('id');
     const body = c.req.valid('json');
 
+    const existing = await getApplicationById(c.env, applicationId);
+    if (!existing) {
+      throw new NotFoundError('Application not found');
+    }
+    if (existing.user_id !== user.id) {
+      throw new ForbiddenError('Not authorized to access this application');
+    }
+
     const updates: ApplicationUpdate = {};
     if (body.status !== undefined) updates.status = body.status;
     if (body.notes !== undefined) updates.notes = body.notes ?? undefined;
@@ -76,6 +84,7 @@ applications.put('/:id', zValidator('json', updateApplicationSchema, validationH
 
     return c.json({ application }, 200);
   } catch (error: unknown) {
+    if (error instanceof AppError) throw error;
     return c.json({ error: toMessage(error) }, 500);
   }
 });
@@ -87,6 +96,14 @@ applications.patch('/:id', zValidator('json', updateApplicationSchema, validatio
     const applicationId = c.req.param('id');
     const body = c.req.valid('json');
 
+    const existing = await getApplicationById(c.env, applicationId);
+    if (!existing) {
+      throw new NotFoundError('Application not found');
+    }
+    if (existing.user_id !== user.id) {
+      throw new ForbiddenError('Not authorized to access this application');
+    }
+
     const updates: ApplicationUpdate = {};
     if (body.status !== undefined) updates.status = body.status;
     if (body.notes !== undefined) updates.notes = body.notes ?? undefined;
@@ -112,6 +129,7 @@ applications.patch('/:id', zValidator('json', updateApplicationSchema, validatio
 
     return c.json({ application }, 200);
   } catch (error: unknown) {
+    if (error instanceof AppError) throw error;
     return c.json({ error: toMessage(error) }, 500);
   }
 });

@@ -12,7 +12,7 @@ import {
 import { mockJobAnalysis } from '../services/ai.service';
 import type { User } from '@gethiredpoc/shared';
 import { requireAuth, type AppVariables } from '../middleware/auth.middleware';
-import { toMessage } from '../utils/errors';
+import { toMessage, AppError, NotFoundError } from '../utils/errors';
 
 const jobs = new Hono<{ Bindings: Env; Variables: AppVariables }>();
 
@@ -103,7 +103,7 @@ jobs.get('/:id', async (c) => {
     const job = await getJobById(c.env, jobId);
 
     if (!job) {
-      return c.json({ error: "Job not found" }, 404);
+      throw new NotFoundError('Job not found');
     }
 
     let saved = false;
@@ -114,6 +114,7 @@ jobs.get('/:id', async (c) => {
 
     return c.json({ job, saved }, 200);
   } catch (error: unknown) {
+    if (error instanceof AppError) throw error;
     return c.json({ error: toMessage(error) }, 500);
   }
 });
@@ -171,7 +172,7 @@ jobs.post('/:id/analyze', requireAuth, async (c) => {
     // Get job
     const job = await getJobById(c.env, jobId);
     if (!job) {
-      return c.json({ error: "Job not found" }, 404);
+      throw new NotFoundError('Job not found');
     }
 
     // Parse skills and requirements
@@ -188,6 +189,7 @@ jobs.post('/:id/analyze', requireAuth, async (c) => {
 
     return c.json({ analysis, cached: false }, 200);
   } catch (error: unknown) {
+    if (error instanceof AppError) throw error;
     return c.json({ error: toMessage(error) }, 500);
   }
 });
@@ -201,7 +203,7 @@ jobs.post('/:id/hide', requireAuth, async (c) => {
     // Check if job exists
     const job = await getJobById(c.env, jobId);
     if (!job) {
-      return c.json({ error: 'Job not found' }, 404);
+      throw new NotFoundError('Job not found');
     }
 
     // Check if already hidden
@@ -220,6 +222,7 @@ jobs.post('/:id/hide', requireAuth, async (c) => {
 
     return c.json({ success: true }, 201);
   } catch (error: unknown) {
+    if (error instanceof AppError) throw error;
     return c.json({ error: toMessage(error) }, 500);
   }
 });
