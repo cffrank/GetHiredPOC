@@ -62,13 +62,14 @@ Plans:
   3. Uploading a file with a `.pdf` extension but non-PDF binary content is rejected with a 400 error before the file reaches any parsing logic
   4. When any component in the Profile, Applications, or JobDetail sections encounters an unhandled JavaScript error, the rest of the application continues to render and the user sees an error message instead of a blank page
   5. All `alert()` calls in the frontend are replaced — users see toast notifications or inline error messages for all success and failure states
-**Plans**: 4 plans
+**Plans**: 5 plans
 
 Plans:
 - [ ] 03-01-PLAN.md — Security headers, magic byte file validation, session cleanup (SEC-01, SEC-03, SEC-04)
-- [ ] 03-02-PLAN.md — AI resume sanitization with js-xss, PBKDF2 password hashing migration (SEC-02, SEC-05)
+- [ ] 03-02-PLAN.md — AI resume sanitization with js-xss, render-time sanitization audit, PBKDF2 password hashing migration (SEC-02, SEC-05)
 - [ ] 03-03-PLAN.md — Typed error classes and global error handler (ERR-01, ERR-02)
-- [ ] 03-04-PLAN.md — React error boundaries and toast notifications replacing alert/confirm (ERR-03, ERR-04)
+- [ ] 03-04-PLAN.md — Error boundaries and toast notifications for rwsdk app (ERR-03, ERR-04)
+- [ ] 03-05-PLAN.md — Error boundaries and toast notifications for packages/frontend (ERR-03, ERR-04)
 
 ### Phase 4: Performance + Graceful Degradation
 **Goal**: The app handles load without slow N+1 queries, paginates job listings correctly, invalidates caches accurately, parses PDFs reliably, and fails gracefully when LinkedIn or AI returns bad data
@@ -102,6 +103,6 @@ Phases execute in numeric order: 1 → 2 → 3 → 4 → 5
 |-------|----------------|--------|-----------|
 | 1. Critical Bugs + Test Infrastructure | 3/3 | Complete    | 2026-02-21 |
 | 2. Type Safety + Input Validation | 3/3 | Complete    | 2026-02-21 |
-| 3. Security + Error Handling | 0/TBD | Not started | - |
+| 3. Security + Error Handling | 0/5 | Not started | - |
 | 4. Performance + Graceful Degradation | 0/TBD | Not started | - |
 | 5. Comprehensive Test Suite | 0/TBD | Not started | - |
