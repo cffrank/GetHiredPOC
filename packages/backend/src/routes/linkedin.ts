@@ -1,4 +1,5 @@
 import { Hono } from 'hono';
+import { zValidator } from '@hono/zod-validator';
 import type { Env } from '../services/db.service';
 import { getCurrentUser } from '../services/auth.service';
 import {
@@ -12,6 +13,8 @@ import {
   saveLinkedInProfileData
 } from '../services/linkedin-parser.service';
 import { toMessage } from '../utils/errors';
+import { linkedinParseSchema } from '../schemas/linkedin.schema';
+import { validationHook } from '../schemas/validation-hook';
 
 const linkedin = new Hono<{ Bindings: Env }>();
 
@@ -107,23 +110,14 @@ linkedin.get('/callback', async (c) => {
 });
 
 // POST /api/linkedin/parse - Parse pasted LinkedIn profile text
-linkedin.post('/parse', async (c) => {
+linkedin.post('/parse', zValidator('json', linkedinParseSchema, validationHook), async (c) => {
   try {
     const user = await getCurrentUser(c);
     if (!user) {
       return c.json({ error: 'Unauthorized' }, 401);
     }
 
-    const body = await c.req.json();
-    const { profileText } = body;
-
-    if (!profileText || typeof profileText !== 'string' || profileText.trim().length === 0) {
-      return c.json({ error: 'Profile text is required' }, 400);
-    }
-
-    if (profileText.length > 50000) {
-      return c.json({ error: 'Profile text is too long (max 50,000 characters)' }, 400);
-    }
+    const { profileText } = c.req.valid('json');
 
     // Parse the LinkedIn profile text using AI
     const parsedProfile = await parseLinkedInProfileText(c.env, profileText);

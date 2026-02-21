@@ -1,7 +1,10 @@
 import { Hono } from 'hono';
+import { zValidator } from '@hono/zod-validator';
 import type { Env } from '../services/db.service';
 import { getCurrentUser } from '../services/auth.service';
 import { toMessage } from '../utils/errors';
+import { createEducationSchema, updateEducationSchema } from '../schemas/education.schema';
+import { validationHook } from '../schemas/validation-hook';
 
 const education = new Hono<{ Bindings: Env }>();
 
@@ -28,19 +31,14 @@ education.get('/', async (c) => {
 });
 
 // POST /api/education - Create new education
-education.post('/', async (c) => {
+education.post('/', zValidator('json', createEducationSchema, validationHook), async (c) => {
   try {
     const user = await getCurrentUser(c);
     if (!user) {
       return c.json({ error: 'Unauthorized' }, 401);
     }
 
-    const body = await c.req.json();
-    const { school, degree, field_of_study, start_date, end_date, gpa, resume_id } = body;
-
-    if (!school) {
-      return c.json({ error: 'School is required' }, 400);
-    }
+    const { school, degree, field_of_study, start_date, end_date, gpa, resume_id } = c.req.valid('json');
 
     // Verify resume belongs to user if resume_id is provided
     if (resume_id) {
@@ -87,7 +85,7 @@ education.post('/', async (c) => {
 });
 
 // PUT /api/education/:id - Update education
-education.put('/:id', async (c) => {
+education.put('/:id', zValidator('json', updateEducationSchema, validationHook), async (c) => {
   try {
     const user = await getCurrentUser(c);
     if (!user) {
@@ -95,8 +93,7 @@ education.put('/:id', async (c) => {
     }
 
     const educationId = c.req.param('id');
-    const body = await c.req.json();
-    const { school, degree, field_of_study, start_date, end_date, gpa } = body;
+    const { school, degree, field_of_study, start_date, end_date, gpa } = c.req.valid('json');
 
     // Verify education belongs to user
     const existing = await c.env.DB.prepare('SELECT id FROM education WHERE id = ? AND user_id = ?')

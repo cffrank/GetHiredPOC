@@ -1,7 +1,10 @@
 import { Hono } from 'hono';
+import { zValidator } from '@hono/zod-validator';
 import type { Env } from '../services/db.service';
 import { getCurrentUser } from '../services/auth.service';
 import { toMessage } from '../utils/errors';
+import { createWorkExperienceSchema, updateWorkExperienceSchema } from '../schemas/work-experience.schema';
+import { validationHook } from '../schemas/validation-hook';
 
 const workExperience = new Hono<{ Bindings: Env }>();
 
@@ -28,19 +31,14 @@ workExperience.get('/', async (c) => {
 });
 
 // POST /api/work-experience - Create new work experience
-workExperience.post('/', async (c) => {
+workExperience.post('/', zValidator('json', createWorkExperienceSchema, validationHook), async (c) => {
   try {
     const user = await getCurrentUser(c);
     if (!user) {
       return c.json({ error: 'Unauthorized' }, 401);
     }
 
-    const body = await c.req.json();
-    const { company, title, location, start_date, end_date, description, resumeId } = body;
-
-    if (!company || !title) {
-      return c.json({ error: 'Company and title are required' }, 400);
-    }
+    const { company, title, location, start_date, end_date, description, resumeId } = c.req.valid('json');
 
     // Verify resume belongs to user if resumeId is provided
     if (resumeId) {
@@ -87,7 +85,7 @@ workExperience.post('/', async (c) => {
 });
 
 // PUT /api/work-experience/:id - Update work experience
-workExperience.put('/:id', async (c) => {
+workExperience.put('/:id', zValidator('json', updateWorkExperienceSchema, validationHook), async (c) => {
   try {
     const user = await getCurrentUser(c);
     if (!user) {
@@ -95,8 +93,7 @@ workExperience.put('/:id', async (c) => {
     }
 
     const experienceId = c.req.param('id');
-    const body = await c.req.json();
-    const { company, title, location, start_date, end_date, description } = body;
+    const { company, title, location, start_date, end_date, description } = c.req.valid('json');
 
     // Verify work experience belongs to user
     const existing = await c.env.DB.prepare('SELECT id FROM work_experience WHERE id = ? AND user_id = ?')

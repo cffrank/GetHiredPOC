@@ -1,4 +1,5 @@
 import { Hono } from 'hono';
+import { zValidator } from '@hono/zod-validator';
 import type { Env } from '../services/db.service';
 import { requireAuth, type AppVariables } from '../middleware/auth.middleware';
 import {
@@ -9,6 +10,8 @@ import {
   deleteConversation
 } from '../services/chat.service';
 import { toMessage } from '../utils/errors';
+import { chatMessageSchema, createConversationSchema } from '../schemas/chat.schema';
+import { validationHook } from '../schemas/validation-hook';
 
 const chat = new Hono<{ Bindings: Env; Variables: AppVariables }>();
 
@@ -16,16 +19,10 @@ const chat = new Hono<{ Bindings: Env; Variables: AppVariables }>();
 chat.use('*', requireAuth);
 
 // POST /api/chat/message - Send a message and get AI response
-chat.post('/message', async (c) => {
+chat.post('/message', zValidator('json', chatMessageSchema, validationHook), async (c) => {
   try {
     const user = c.get('user');
-    const body = await c.req.json();
-
-    const { conversation_id, message } = body;
-
-    if (!message || typeof message !== 'string' || message.trim().length === 0) {
-      return c.json({ error: 'Message is required' }, 400);
-    }
+    const { message, conversation_id } = c.req.valid('json');
 
     const result = await sendChatMessage(
       c.env,
@@ -81,11 +78,10 @@ chat.get('/conversations/:id', async (c) => {
 });
 
 // POST /api/chat/conversations - Create a new conversation
-chat.post('/conversations', async (c) => {
+chat.post('/conversations', zValidator('json', createConversationSchema, validationHook), async (c) => {
   try {
     const user = c.get('user');
-    const body = await c.req.json().catch(() => ({}));
-    const { title } = body;
+    const { title } = c.req.valid('json');
 
     const conversation = await createConversation(c.env, user.id, title);
 

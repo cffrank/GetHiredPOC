@@ -1,4 +1,5 @@
 import { Hono } from 'hono';
+import { zValidator } from '@hono/zod-validator';
 import type { Env } from '../services/db.service';
 import { getCurrentUser } from '../services/auth.service';
 import {
@@ -10,6 +11,8 @@ import {
   type CoverLetterData
 } from '../services/document-export.service';
 import { toMessage } from '../utils/errors';
+import { coverLetterExportSchema } from '../schemas/export.schema';
+import { validationHook } from '../schemas/validation-hook';
 
 const exportRoutes = new Hono<{ Bindings: Env }>();
 
@@ -119,7 +122,7 @@ exportRoutes.get('/resume/:format', async (c) => {
 });
 
 // POST /api/export/cover-letter/:format - Generate and export cover letter
-exportRoutes.post('/cover-letter/:format', async (c) => {
+exportRoutes.post('/cover-letter/:format', zValidator('json', coverLetterExportSchema, validationHook), async (c) => {
   try {
     const user = await getCurrentUser(c);
     if (!user) {
@@ -131,16 +134,7 @@ exportRoutes.post('/cover-letter/:format', async (c) => {
       return c.json({ error: 'Invalid format. Use pdf or docx' }, 400);
     }
 
-    const body = await c.req.json();
-    const { companyName, jobTitle, hiringManagerName, bodyParagraphs } = body;
-
-    if (!companyName || !jobTitle) {
-      return c.json({ error: 'companyName and jobTitle are required' }, 400);
-    }
-
-    if (!bodyParagraphs || !Array.isArray(bodyParagraphs) || bodyParagraphs.length === 0) {
-      return c.json({ error: 'bodyParagraphs array is required' }, 400);
-    }
+    const { companyName, jobTitle, hiringManagerName, bodyParagraphs } = c.req.valid('json');
 
     // Build cover letter data
     const coverLetterData: CoverLetterData = {

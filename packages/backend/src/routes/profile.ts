@@ -4,6 +4,8 @@ import { requireAuth, type AppVariables } from '../middleware/auth.middleware';
 import { uploadFile } from '../services/storage.service';
 import type { User } from '@gethiredpoc/shared';
 import { toMessage } from '../utils/errors';
+import { updateProfileSchema } from '../schemas/profile.schema';
+import { validationHook } from '../schemas/validation-hook';
 
 // Allowed profile update fields (maps to DB column names)
 interface ProfileUpdates {
@@ -32,6 +34,8 @@ profile.get('/', async (c) => {
 });
 
 // PUT /api/profile
+// Dual content-type: JSON (validated with Zod) and multipart/form-data (for avatar uploads)
+// Option A: Check content-type and apply Zod validation only to the JSON branch
 profile.put('/', async (c) => {
   try {
     const user = c.get('user');
@@ -59,8 +63,23 @@ profile.put('/', async (c) => {
         console.log('[Profile Update] Uploaded avatar to:', avatarUrl);
       }
     } else {
-      const body = await c.req.json();
+      // JSON branch — validate with Zod
+      const rawBody = await c.req.json();
+      const parseResult = updateProfileSchema.safeParse(rawBody);
 
+      if (!parseResult.success) {
+        // Invoke shared validation hook for consistent error format
+        const fakeContext = c;
+        return fakeContext.json({
+          error: 'Validation failed',
+          issues: parseResult.error.errors.map(e => ({
+            field: e.path.join('.'),
+            message: e.message,
+          })),
+        }, 400);
+      }
+
+      const body = parseResult.data;
       console.log('[Profile Update] JSON body:', JSON.stringify(body));
 
       if (body.full_name !== undefined) updates.full_name = body.full_name;
@@ -112,6 +131,7 @@ profile.put('/', async (c) => {
 });
 
 // PATCH /api/profile
+// Same dual content-type handling as PUT
 profile.patch('/', async (c) => {
   try {
     const user = c.get('user');
@@ -135,7 +155,21 @@ profile.patch('/', async (c) => {
         updates.avatar_url = avatarUrl;
       }
     } else {
-      const body = await c.req.json();
+      // JSON branch — validate with Zod
+      const rawBody = await c.req.json();
+      const parseResult = updateProfileSchema.safeParse(rawBody);
+
+      if (!parseResult.success) {
+        return c.json({
+          error: 'Validation failed',
+          issues: parseResult.error.errors.map(e => ({
+            field: e.path.join('.'),
+            message: e.message,
+          })),
+        }, 400);
+      }
+
+      const body = parseResult.data;
 
       if (body.full_name !== undefined) updates.full_name = body.full_name;
       if (body.bio !== undefined) updates.bio = body.bio;

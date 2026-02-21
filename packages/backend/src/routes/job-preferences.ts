@@ -1,4 +1,5 @@
 import { Hono } from 'hono';
+import { zValidator } from '@hono/zod-validator';
 import type { Env } from '../services/db.service';
 import { getCurrentUser } from '../services/auth.service';
 import {
@@ -7,6 +8,8 @@ import {
 } from '../services/job-preferences.service';
 import { INDUSTRIES } from '@gethiredpoc/shared';
 import { toMessage } from '../utils/errors';
+import { updateJobPreferencesSchema } from '../schemas/job-preferences.schema';
+import { validationHook } from '../schemas/validation-hook';
 
 const jobPreferences = new Hono<{ Bindings: Env }>();
 
@@ -27,14 +30,14 @@ jobPreferences.get('/', async (c) => {
 });
 
 // PUT /api/job-preferences - Update job search preferences
-jobPreferences.put('/', async (c) => {
+jobPreferences.put('/', zValidator('json', updateJobPreferencesSchema, validationHook), async (c) => {
   try {
     const user = await getCurrentUser(c);
     if (!user) {
       return c.json({ error: 'Unauthorized' }, 401);
     }
 
-    const body = await c.req.json();
+    const body = c.req.valid('json');
 
     await updateJobSearchPreferences(c.env.DB, user.id, body);
 

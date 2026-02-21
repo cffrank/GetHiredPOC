@@ -1,4 +1,5 @@
 import { Hono } from 'hono';
+import { zValidator } from '@hono/zod-validator';
 import type { Env } from '../services/db.service';
 import { requireAuth, type AppVariables } from '../middleware/auth.middleware';
 import {
@@ -11,6 +12,8 @@ import {
 import { sendStatusUpdateEmail } from '../services/email.service';
 import type { ApplicationUpdate } from '@gethiredpoc/shared';
 import { toMessage } from '../utils/errors';
+import { createApplicationSchema, updateApplicationSchema } from '../schemas/applications.schema';
+import { validationHook } from '../schemas/validation-hook';
 
 const applications = new Hono<{ Bindings: Env; Variables: AppVariables }>();
 
@@ -29,15 +32,10 @@ applications.get('/', async (c) => {
 });
 
 // POST /api/applications
-applications.post('/', async (c) => {
+applications.post('/', zValidator('json', createApplicationSchema, validationHook), async (c) => {
   try {
     const user = c.get('user');
-    const body = await c.req.json();
-    const { job_id, status } = body;
-
-    if (!job_id) {
-      return c.json({ error: "job_id is required" }, 400);
-    }
+    const { job_id, status } = c.req.valid('json');
 
     const application = await createApplication(c.env, user.id, job_id, status);
     return c.json({ application }, 201);
@@ -47,17 +45,17 @@ applications.post('/', async (c) => {
 });
 
 // PUT /api/applications/:id
-applications.put('/:id', async (c) => {
+applications.put('/:id', zValidator('json', updateApplicationSchema, validationHook), async (c) => {
   try {
     const user = c.get('user');
     const applicationId = c.req.param('id');
-    const body = await c.req.json();
+    const body = c.req.valid('json');
 
     const updates: ApplicationUpdate = {};
     if (body.status !== undefined) updates.status = body.status;
-    if (body.notes !== undefined) updates.notes = body.notes;
-    if (body.ai_match_score !== undefined) updates.ai_match_score = body.ai_match_score;
-    if (body.ai_analysis !== undefined) updates.ai_analysis = body.ai_analysis;
+    if (body.notes !== undefined) updates.notes = body.notes ?? undefined;
+    if (body.ai_match_score !== undefined) updates.ai_match_score = body.ai_match_score ?? undefined;
+    if (body.ai_analysis !== undefined) updates.ai_analysis = body.ai_analysis ?? undefined;
 
     await updateApplication(c.env, applicationId, updates);
 
@@ -83,17 +81,17 @@ applications.put('/:id', async (c) => {
 });
 
 // PATCH /api/applications/:id
-applications.patch('/:id', async (c) => {
+applications.patch('/:id', zValidator('json', updateApplicationSchema, validationHook), async (c) => {
   try {
     const user = c.get('user');
     const applicationId = c.req.param('id');
-    const body = await c.req.json();
+    const body = c.req.valid('json');
 
     const updates: ApplicationUpdate = {};
     if (body.status !== undefined) updates.status = body.status;
-    if (body.notes !== undefined) updates.notes = body.notes;
-    if (body.ai_match_score !== undefined) updates.ai_match_score = body.ai_match_score;
-    if (body.ai_analysis !== undefined) updates.ai_analysis = body.ai_analysis;
+    if (body.notes !== undefined) updates.notes = body.notes ?? undefined;
+    if (body.ai_match_score !== undefined) updates.ai_match_score = body.ai_match_score ?? undefined;
+    if (body.ai_analysis !== undefined) updates.ai_analysis = body.ai_analysis ?? undefined;
 
     await updateApplication(c.env, applicationId, updates);
 

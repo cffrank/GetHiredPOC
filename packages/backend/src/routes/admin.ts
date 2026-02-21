@@ -1,4 +1,5 @@
 import { Hono } from 'hono';
+import { zValidator } from '@hono/zod-validator';
 import type { Env } from '../services/db.service';
 import { importJobsFromAdzuna, importJobsForUser } from '../services/adzuna.service';
 import { requireAuth, requireAdmin, type AppVariables } from '../middleware/auth.middleware';
@@ -15,6 +16,8 @@ import {
   deletePrompt,
 } from '../services/ai-prompt.service';
 import { toMessage } from '../utils/errors';
+import { updateRoleSchema, createPromptSchema, updatePromptSchema } from '../schemas/admin.schema';
+import { validationHook } from '../schemas/validation-hook';
 
 const admin = new Hono<{ Bindings: Env; Variables: AppVariables }>();
 
@@ -52,15 +55,11 @@ admin.get('/users', async (c) => {
 
 // PUT /api/admin/users/:userId/role
 // Update a user's role
-admin.put('/users/:userId/role', async (c) => {
+admin.put('/users/:userId/role', zValidator('json', updateRoleSchema, validationHook), async (c) => {
   try {
     const userId = c.req.param('userId');
-    const { role } = await c.req.json();
+    const { role } = c.req.valid('json');
     const currentUser = c.get('user');
-
-    if (!role || !['user', 'admin'].includes(role)) {
-      return c.json({ error: 'Invalid role. Must be "user" or "admin"' }, 400);
-    }
 
     const updatedUser = await updateUserRole(c.env, userId, role, currentUser.id);
 
@@ -199,17 +198,10 @@ admin.get('/prompts/:key', async (c) => {
 
 // POST /api/admin/prompts
 // Create or update an AI prompt
-admin.post('/prompts', async (c) => {
+admin.post('/prompts', zValidator('json', createPromptSchema, validationHook), async (c) => {
   try {
-    const body = await c.req.json();
+    const body = c.req.valid('json');
     const currentUser = c.get('user');
-
-    // Validate required fields
-    if (!body.prompt_key || !body.prompt_name || !body.prompt_template) {
-      return c.json({
-        error: 'Missing required fields: prompt_key, prompt_name, prompt_template'
-      }, 400);
-    }
 
     // Validate model_config is valid JSON if provided
     if (body.model_config) {
@@ -255,10 +247,10 @@ admin.post('/prompts', async (c) => {
 
 // PUT /api/admin/prompts/:key
 // Update an existing AI prompt
-admin.put('/prompts/:key', async (c) => {
+admin.put('/prompts/:key', zValidator('json', updatePromptSchema, validationHook), async (c) => {
   try {
     const promptKey = c.req.param('key');
-    const body = await c.req.json();
+    const body = c.req.valid('json');
     const currentUser = c.get('user');
 
     // Check if prompt exists
@@ -280,7 +272,7 @@ admin.put('/prompts/:key', async (c) => {
       prompt_key: promptKey,
       prompt_name: body.prompt_name || existing.prompt_name,
       prompt_template: body.prompt_template || existing.prompt_template,
-      description: body.description !== undefined ? body.description : existing.description,
+      description: body.description !== undefined ? body.description : (existing.description ?? undefined),
       model_config: body.model_config || existing.model_config,
       version: body.version
     });

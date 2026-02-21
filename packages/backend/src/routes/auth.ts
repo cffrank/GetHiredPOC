@@ -1,4 +1,5 @@
 import { Hono } from 'hono';
+import { zValidator } from '@hono/zod-validator';
 import type { Env } from '../services/db.service';
 import {
   signup,
@@ -11,22 +12,15 @@ import {
 } from '../services/auth.service';
 import { sendWelcomeEmail } from '../services/email.service';
 import { toMessage } from '../utils/errors';
+import { signupSchema, loginSchema } from '../schemas/auth.schema';
+import { validationHook } from '../schemas/validation-hook';
 
-type Variables = {
-  env: Env;
-};
-
-const auth = new Hono<{ Bindings: Env; Variables: Variables }>();
+const auth = new Hono<{ Bindings: Env }>();
 
 // POST /api/auth/signup
-auth.post('/signup', async (c) => {
+auth.post('/signup', zValidator('json', signupSchema, validationHook), async (c) => {
   try {
-    const body = await c.req.json();
-    const { email, password } = body;
-
-    if (!email || !password) {
-      return c.json({ error: "Email and password are required" }, 400);
-    }
+    const { email, password } = c.req.valid('json');
 
     const { user, sessionId } = await signup(c.env, email, password);
     const isProduction = c.env.FRONTEND_URL?.includes('pages.dev');
@@ -49,14 +43,9 @@ auth.post('/signup', async (c) => {
 });
 
 // POST /api/auth/login
-auth.post('/login', async (c) => {
+auth.post('/login', zValidator('json', loginSchema, validationHook), async (c) => {
   try {
-    const body = await c.req.json();
-    const { email, password } = body;
-
-    if (!email || !password) {
-      return c.json({ error: "Email and password are required" }, 400);
-    }
+    const { email, password } = c.req.valid('json');
 
     const { user, sessionId } = await login(c.env, email, password);
     const isProduction = c.env.FRONTEND_URL?.includes('pages.dev');
