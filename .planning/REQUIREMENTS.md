@@ -9,9 +9,9 @@ Requirements for production readiness. Each maps to roadmap phases.
 
 ### Bug Fixes
 
-- [ ] **BUG-01**: JobDetail page handles invalid JSON in requirements field without crashing
+- [x] **BUG-01**: JobDetail page handles invalid JSON in requirements field without crashing
 - [ ] **BUG-02**: Application status values are consistent between UI and database schema
-- [ ] **BUG-03**: Status updates wait for API confirmation before updating local state, with rollback on failure
+- [x] **BUG-03**: Status updates wait for API confirmation before updating local state, with rollback on failure
 
 ### Type Safety
 
@@ -97,42 +97,42 @@ Which phases cover which requirements. Updated during roadmap creation.
 
 | Requirement | Phase | Status |
 |-------------|-------|--------|
-| BUG-01 | — | Pending |
-| BUG-02 | — | Pending |
-| BUG-03 | — | Pending |
-| TYPE-01 | — | Pending |
-| TYPE-02 | — | Pending |
-| TYPE-03 | — | Pending |
-| VALID-01 | — | Pending |
-| VALID-02 | — | Pending |
-| VALID-03 | — | Pending |
-| SEC-01 | — | Pending |
-| SEC-02 | — | Pending |
-| SEC-03 | — | Pending |
-| SEC-04 | — | Pending |
-| SEC-05 | — | Pending |
-| ERR-01 | — | Pending |
-| ERR-02 | — | Pending |
-| ERR-03 | — | Pending |
-| ERR-04 | — | Pending |
-| PERF-01 | — | Pending |
-| PERF-02 | — | Pending |
-| PERF-03 | — | Pending |
-| PERF-04 | — | Pending |
-| GRACE-01 | — | Pending |
-| GRACE-02 | — | Pending |
-| GRACE-03 | — | Pending |
-| TEST-01 | — | Pending |
-| TEST-02 | — | Pending |
-| TEST-03 | — | Pending |
-| TEST-04 | — | Pending |
-| TEST-05 | — | Pending |
+| BUG-01 | Phase 1 | Complete |
+| BUG-02 | Phase 1 | Pending |
+| BUG-03 | Phase 1 | Complete |
+| TEST-01 | Phase 1 | Pending |
+| TYPE-01 | Phase 2 | Pending |
+| TYPE-02 | Phase 2 | Pending |
+| TYPE-03 | Phase 2 | Pending |
+| VALID-01 | Phase 2 | Pending |
+| VALID-02 | Phase 2 | Pending |
+| VALID-03 | Phase 2 | Pending |
+| SEC-01 | Phase 3 | Pending |
+| SEC-02 | Phase 3 | Pending |
+| SEC-03 | Phase 3 | Pending |
+| SEC-04 | Phase 3 | Pending |
+| SEC-05 | Phase 3 | Pending |
+| ERR-01 | Phase 3 | Pending |
+| ERR-02 | Phase 3 | Pending |
+| ERR-03 | Phase 3 | Pending |
+| ERR-04 | Phase 3 | Pending |
+| PERF-01 | Phase 4 | Pending |
+| PERF-02 | Phase 4 | Pending |
+| PERF-03 | Phase 4 | Pending |
+| PERF-04 | Phase 4 | Pending |
+| GRACE-01 | Phase 4 | Pending |
+| GRACE-02 | Phase 4 | Pending |
+| GRACE-03 | Phase 4 | Pending |
+| TEST-02 | Phase 5 | Pending |
+| TEST-03 | Phase 5 | Pending |
+| TEST-04 | Phase 5 | Pending |
+| TEST-05 | Phase 5 | Pending |
 
 **Coverage:**
 - v1 requirements: 30 total
-- Mapped to phases: 0
-- Unmapped: 30 ⚠️
+- Mapped to phases: 30
+- Unmapped: 0 ✓
 
 ---
 *Requirements defined: 2026-02-20*
-*Last updated: 2026-02-20 after initial definition*
+*Last updated: 2026-02-20 after 01-02-PLAN.md — BUG-01 and BUG-03 complete*

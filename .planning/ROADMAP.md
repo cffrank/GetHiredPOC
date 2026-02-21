@@ -33,7 +33,7 @@ Decimal phases appear between their surrounding integers in numeric order.
 
 Plans:
 - [ ] 01-01-PLAN.md — Backend test infrastructure (vitest-pool-workers + D1 smoke test)
-- [ ] 01-02-PLAN.md — Frontend crash fixes (safe JSON parse + optimistic update rollback)
+- [x] 01-02-PLAN.md — Frontend crash fixes (safe JSON parse + optimistic update rollback)
 - [ ] 01-03-PLAN.md — Application status schema audit and alignment
 
 ### Phase 2: Type Safety + Input Validation
@@ -89,7 +89,7 @@ Phases execute in numeric order: 1 → 2 → 3 → 4 → 5
 
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
-| 1. Critical Bugs + Test Infrastructure | 0/3 | Planned | - |
+| 1. Critical Bugs + Test Infrastructure | 1/3 | In progress | - |
 | 2. Type Safety + Input Validation | 0/TBD | Not started | - |
 | 3. Security + Error Handling | 0/TBD | Not started | - |
 | 4. Performance + Graceful Degradation | 0/TBD | Not started | - |
