@@ -92,6 +92,14 @@ export async function getJobs(
   let query = "SELECT * FROM jobs WHERE 1=1";
   const params: (string | number)[] = [];
 
+  // Visibility: show public jobs + user's own private jobs
+  if (filters?.userId) {
+    query += " AND (user_id IS NULL OR user_id = ?)";
+    params.push(filters.userId);
+  } else {
+    query += " AND user_id IS NULL";
+  }
+
   if (filters?.title) {
     query += " AND title LIKE ?";
     params.push(`%${filters.title}%`);
@@ -136,10 +144,19 @@ export async function getJobs(
   };
 }
 
-export async function getJobById(env: Env, jobId: string): Promise<Job | null> {
+export async function getJobById(env: Env, jobId: string, userId?: string): Promise<Job | null> {
+  // Private jobs (user_id IS NOT NULL) are only visible to their owner
   const result = await env.DB.prepare("SELECT * FROM jobs WHERE id = ?")
     .bind(jobId)
     .first<Job>();
+
+  if (!result) return null;
+
+  // If job is private and user is not the owner, deny access
+  if (result.user_id && result.user_id !== userId) {
+    return null;
+  }
+
   return result;
 }
 

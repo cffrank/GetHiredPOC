@@ -10,6 +10,8 @@ import {
   isSaved,
 } from '../services/db.service';
 import { mockJobAnalysis } from '../services/ai.service';
+import { scrapeJobFromUrl } from '../services/job-scrape.service';
+import { saveOrUpdateJob } from '../services/job-import.service';
 import type { User } from '@gethiredpoc/shared';
 import { requireAuth, type AppVariables } from '../middleware/auth.middleware';
 import { toMessage, AppError, NotFoundError } from '../utils/errors';
@@ -103,18 +105,58 @@ jobs.get('/', async (c) => {
   }
 });
 
+// POST /api/jobs/import-url
+jobs.post('/import-url', requireAuth, async (c) => {
+  try {
+    const user = c.get('user');
+    const body = await c.req.json<{ url: string }>();
+    const url = body.url?.trim();
+
+    if (!url) {
+      return c.json({ error: 'URL is required' }, 400);
+    }
+
+    // Basic URL validation
+    try {
+      new URL(url);
+    } catch {
+      return c.json({ error: 'Invalid URL' }, 400);
+    }
+
+    // Check if user already imported this URL
+    const existing = await c.env.DB.prepare(
+      'SELECT id FROM jobs WHERE external_url = ? AND user_id = ?'
+    ).bind(url, user.id).first<{ id: string }>();
+
+    if (existing) {
+      const job = await getJobById(c.env, existing.id, user.id);
+      return c.json({ job, alreadyExists: true }, 200);
+    }
+
+    // Scrape and parse the job posting
+    const jobData = await scrapeJobFromUrl(c.env, url);
+
+    // Save with user_id to make it private
+    const result = await saveOrUpdateJob(c.env.DB, jobData, user.id);
+
+    return c.json({ job: result.job, alreadyExists: false }, 201);
+  } catch (error: unknown) {
+    return c.json({ error: toMessage(error) }, 500);
+  }
+});
+
 // GET /api/jobs/:id
 jobs.get('/:id', async (c) => {
   try {
     const jobId = c.req.param('id');
-    const job = await getJobById(c.env, jobId);
+    const user = await getOptionalUser(c);
+    const job = await getJobById(c.env, jobId, user?.id);
 
     if (!job) {
       throw new NotFoundError('Job not found');
     }
 
     let saved = false;
-    const user = await getOptionalUser(c);
     if (user) {
       saved = await isSaved(c.env, user.id, jobId);
     }
@@ -179,7 +221,7 @@ jobs.post('/:id/analyze', requireAuth, async (c) => {
     }
 
     // Get job
-    const job = await getJobById(c.env, jobId);
+    const job = await getJobById(c.env, jobId, user.id);
     if (!job) {
       throw new NotFoundError('Job not found');
     }
@@ -210,7 +252,7 @@ jobs.post('/:id/hide', requireAuth, async (c) => {
     const jobId = c.req.param('id');
 
     // Check if job exists
-    const job = await getJobById(c.env, jobId);
+    const job = await getJobById(c.env, jobId, user.id);
     if (!job) {
       throw new NotFoundError('Job not found');
     }

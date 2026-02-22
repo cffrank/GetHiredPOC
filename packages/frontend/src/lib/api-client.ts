@@ -131,6 +131,12 @@ export const apiClient = {
   quickMatch: (id: string) =>
     apiClient.request(`/api/ai/jobs/${id}/quick-match`),
 
+  importJobUrl: (url: string) =>
+    apiClient.request('/api/jobs/import-url', {
+      method: 'POST',
+      body: JSON.stringify({ url }),
+    }),
+
   hideJob: (id: string) =>
     apiClient.request(`/api/jobs/${id}/hide`, {
       method: 'POST',

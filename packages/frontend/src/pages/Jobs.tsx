@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
-import { Link, useLocation } from 'react-router-dom';
-import { useJobs } from '../hooks/useJobs';
+import { Link, useLocation, useNavigate } from 'react-router-dom';
+import { useJobs, useImportJobUrl } from '../hooks/useJobs';
 import { useRecommendations } from '../hooks/useRecommendations';
 import { useGamification } from '../hooks/useGamification';
 import { useAuth } from '../context/AuthContext';
@@ -13,7 +13,7 @@ import { FloatingShapesBackground } from '../components/effects/FloatingShapesBa
 import { ProgressGamification } from '../components/gamification/ProgressGamification';
 import { CuteRobotLoader } from '../components/loaders/CuteRobotLoader';
 import { JobFilterPanel, JobFilters } from '../components/JobFilterPanel';
-import { ChevronDown, ChevronUp, Filter } from 'lucide-react';
+import { ChevronDown, ChevronUp, Filter, Link2, X, Loader2 } from 'lucide-react';
 
 type TabType = 'all' | 'for-you';
 
@@ -29,8 +29,15 @@ export default function Jobs() {
   const [advancedSearchResults, setAdvancedSearchResults] = useState<any[]>([]);
   const [navigatedFromChat, setNavigatedFromChat] = useState(false);
 
+  const [showImportModal, setShowImportModal] = useState(false);
+  const [importUrl, setImportUrl] = useState('');
+  const [importError, setImportError] = useState('');
+
   const { user } = useAuth();
   const isLoggedIn = !!user;
+  const navigate = useNavigate();
+
+  const importJob = useImportJobUrl();
 
   const { data, isLoading } = useJobs({ title, remote, location: locationFilter });
   const { data: recommendationsData, isLoading: recommendationsLoading } = useRecommendations(20);
@@ -186,38 +193,121 @@ export default function Jobs() {
           </Card>
         )}
 
-        {/* Tabs */}
+        {/* Import Job Modal */}
+        {showImportModal && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50">
+            <Card className="w-full max-w-md mx-4">
+              <CardHeader>
+                <div className="flex items-center justify-between">
+                  <CardTitle className="flex items-center gap-2">
+                    <Link2 className="w-5 h-5" />
+                    Import Job by URL
+                  </CardTitle>
+                  <button onClick={() => { setShowImportModal(false); setImportUrl(''); setImportError(''); }}>
+                    <X className="w-5 h-5 text-gray-500 hover:text-gray-700" />
+                  </button>
+                </div>
+                <CardDescription>
+                  Paste a job posting URL to import it into your personal job list.
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                <form
+                  onSubmit={async (e) => {
+                    e.preventDefault();
+                    setImportError('');
+                    try {
+                      const result = await importJob.mutateAsync(importUrl);
+                      setShowImportModal(false);
+                      setImportUrl('');
+                      if (result.job?.id) {
+                        navigate(`/jobs/${result.job.id}`);
+                      }
+                    } catch (err: any) {
+                      setImportError(err.message || 'Failed to import job');
+                    }
+                  }}
+                  className="space-y-4"
+                >
+                  <Input
+                    placeholder="https://example.com/jobs/software-engineer"
+                    value={importUrl}
+                    onChange={(e) => setImportUrl(e.target.value)}
+                    className="min-h-touch"
+                    required
+                    type="url"
+                  />
+                  {importError && (
+                    <p className="text-sm text-red-600">{importError}</p>
+                  )}
+                  <div className="flex gap-2 justify-end">
+                    <Button
+                      variant="outline"
+                      type="button"
+                      onClick={() => { setShowImportModal(false); setImportUrl(''); setImportError(''); }}
+                    >
+                      Cancel
+                    </Button>
+                    <Button type="submit" disabled={importJob.isPending || !importUrl.trim()}>
+                      {importJob.isPending ? (
+                        <>
+                          <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                          Importing...
+                        </>
+                      ) : (
+                        'Import'
+                      )}
+                    </Button>
+                  </div>
+                </form>
+              </CardContent>
+            </Card>
+          </div>
+        )}
+
+        {/* Tabs + Import Button */}
         {isLoggedIn && (
-          <div className="flex gap-2 mb-6 border-b border-gray-200">
-            <button
-              onClick={() => {
-                setActiveTab('all');
-                clearAdvancedSearch();
-              }}
-              className={`px-4 py-2 font-bold text-sm transition-colors ${
-                activeTab === 'all'
-                  ? 'border-b-2 border-violet text-violet'
-                  : 'text-gray-600 hover:text-gray-900'
-              }`}
+          <div className="flex items-center justify-between mb-6 border-b border-gray-200">
+            <div className="flex gap-2">
+              <button
+                onClick={() => {
+                  setActiveTab('all');
+                  clearAdvancedSearch();
+                }}
+                className={`px-4 py-2 font-bold text-sm transition-colors ${
+                  activeTab === 'all'
+                    ? 'border-b-2 border-violet text-violet'
+                    : 'text-gray-600 hover:text-gray-900'
+                }`}
+              >
+                All Jobs
+              </button>
+              <button
+                onClick={() => {
+                  setActiveTab('for-you');
+                  clearAdvancedSearch();
+                }}
+                className={`px-4 py-2 font-bold text-sm transition-colors ${
+                  activeTab === 'for-you'
+                    ? 'border-b-2 border-violet text-violet'
+                    : 'text-gray-600 hover:text-gray-900'
+                }`}
+              >
+                For You
+                <span className="ml-2 px-2 py-0.5 text-xs font-semibold bg-violet-100 text-violet-dark rounded-full">
+                  AI
+                </span>
+              </button>
+            </div>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => setShowImportModal(true)}
+              className="mb-1"
             >
-              All Jobs
-            </button>
-            <button
-              onClick={() => {
-                setActiveTab('for-you');
-                clearAdvancedSearch();
-              }}
-              className={`px-4 py-2 font-bold text-sm transition-colors ${
-                activeTab === 'for-you'
-                  ? 'border-b-2 border-violet text-violet'
-                  : 'text-gray-600 hover:text-gray-900'
-              }`}
-            >
-              For You
-              <span className="ml-2 px-2 py-0.5 text-xs font-semibold bg-violet-100 text-violet-dark rounded-full">
-                AI
-              </span>
-            </button>
+              <Link2 className="w-4 h-4 mr-1" />
+              Import Job
+            </Button>
           </div>
         )}
 

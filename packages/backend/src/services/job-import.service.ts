@@ -59,10 +59,24 @@ function generateNormalizedHash(title: string, company: string, location: string
  */
 export async function saveOrUpdateJob(
   db: D1Database,
-  jobData: JobData
+  jobData: JobData,
+  userId?: string
 ): Promise<{ result: 'inserted' | 'updated' | 'skipped'; jobId: string; job: any }> {
   const normalizedHash = generateNormalizedHash(jobData.title, jobData.company, jobData.location);
   const newSourcePriority = SOURCE_PRIORITY[jobData.source] || 999;
+
+  // For user-imported jobs, check if this user already imported this URL
+  if (userId) {
+    const existingUserJob = await db.prepare(
+      'SELECT id FROM jobs WHERE external_url = ? AND user_id = ?'
+    ).bind(jobData.external_url, userId).first<{ id: string }>();
+
+    if (existingUserJob) {
+      const job = await db.prepare('SELECT * FROM jobs WHERE id = ?')
+        .bind(existingUserJob.id).first();
+      return { result: 'skipped', jobId: existingUserJob.id, job };
+    }
+  }
 
   // Check if job exists by external_url (exact match)
   const existingByUrl = await db.prepare(
@@ -157,15 +171,16 @@ export async function saveOrUpdateJob(
       title, company, location, state, remote, description, requirements,
       salary_min, salary_max, posted_date, source, external_url,
       contract_time, contract_type, category_tag, category_label,
-      salary_is_predicted, latitude, longitude, adref
+      salary_is_predicted, latitude, longitude, adref, user_id
     )
-    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
   `).bind(
     jobData.title, jobData.company, jobData.location, jobData.state, jobData.remote,
     jobData.description, jobData.requirements, jobData.salary_min, jobData.salary_max,
     jobData.posted_date, jobData.source, jobData.external_url,
     jobData.contract_time, jobData.contract_type, jobData.category_tag, jobData.category_label,
-    jobData.salary_is_predicted, jobData.latitude, jobData.longitude, jobData.adref
+    jobData.salary_is_predicted, jobData.latitude, jobData.longitude, jobData.adref,
+    userId ?? null
   ).run();
 
   // Fetch the newly inserted job

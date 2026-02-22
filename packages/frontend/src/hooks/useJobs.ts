@@ -69,3 +69,14 @@ export function useGenerateCoverLetter() {
     mutationFn: (jobId: string) => apiClient.generateCoverLetter(jobId),
   });
 }
+
+export function useImportJobUrl() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: (url: string) => apiClient.importJobUrl(url),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['jobs'] });
+    },
+  });
+}

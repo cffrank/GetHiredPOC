@@ -20,6 +20,7 @@ export interface Job {
   source: string | null; // 'adzuna', 'manual', etc.
   external_url: string | null;
   is_complete?: number; // 0 or 1 (whether job has complete description) - NEW
+  user_id?: string | null; // NULL = public, non-NULL = private to that user
 }
 
 export interface SavedJob {
