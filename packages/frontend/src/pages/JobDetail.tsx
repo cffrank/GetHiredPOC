@@ -425,9 +425,17 @@ export default function JobDetail() {
                         </CardDescription>
                       </CardHeader>
                       <CardContent className="space-y-4">
-                        {analysis.tip && (
+                        {analysis.summary && (
                           <div className="bg-white border-2 border-violet-200 rounded-2xl p-4 shadow-3d-sm">
                             <h4 className="font-bold mb-2 text-base text-violet flex items-center gap-2">
+                              📋 Summary
+                            </h4>
+                            <p className="text-sm text-gray-700 leading-relaxed">{analysis.summary}</p>
+                          </div>
+                        )}
+                        {analysis.tip && (
+                          <div className="bg-white border-2 border-blue-200 rounded-2xl p-4 shadow-3d-sm">
+                            <h4 className="font-bold mb-2 text-base text-blue-600 flex items-center gap-2">
                               💡 Key Action
                             </h4>
                             <p className="text-sm text-gray-700 leading-relaxed">{analysis.tip}</p>

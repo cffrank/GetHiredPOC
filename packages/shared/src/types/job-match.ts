@@ -4,4 +4,5 @@ export interface JobMatch {
   strengths: string[];
   concerns: string[];
   recommendation: 'strong' | 'good' | 'fair' | 'weak';
+  summary?: string;
 }

@@ -9,7 +9,7 @@ import {
   unsaveJob,
   isSaved,
 } from '../services/db.service';
-import { mockJobAnalysis } from '../services/ai.service';
+import { analyzeJobMatch } from '../services/job-matching.service';
 import { scrapeJobFromUrl } from '../services/job-scrape.service';
 import { saveOrUpdateJob } from '../services/job-import.service';
 import type { User } from '@gethiredpoc/shared';
@@ -220,32 +220,37 @@ jobs.post('/:id/analyze', requireAuth, async (c) => {
     const user = c.get('user');
     const jobId = c.req.param('id');
 
-    // Include profile version (updated_at) in cache key so stale results are never
-    // served after the user updates their profile. Old keys expire via 7-day KV TTL.
-    const profileVersion = user.updated_at || 0;
-    const cacheKey = `job-analysis:${user.id}:${jobId}:v${profileVersion}`;
-    const cached = await c.env.KV_CACHE.get(cacheKey);
-    if (cached) {
-      return c.json({ analysis: JSON.parse(cached), cached: true }, 200);
-    }
-
     // Get job
     const job = await getJobById(c.env, jobId, user.id);
     if (!job) {
       throw new NotFoundError('Job not found');
     }
 
-    // Parse skills and requirements
-    const userSkills = user.skills ? JSON.parse(user.skills) : [];
-    const jobRequirements = job.requirements ? JSON.parse(job.requirements) : [];
+    // Use real AI-powered match analysis (has its own KV caching)
+    const match = await analyzeJobMatch(c.env, user, job);
 
-    // Generate analysis
-    const analysis = await mockJobAnalysis(userSkills, jobRequirements);
+    // Map to AIAnalysis shape expected by frontend
+    const analysis = {
+      score: match.score,
+      recommendation: match.recommendation,
+      strengths: match.strengths,
+      gaps: match.concerns,
+      summary: match.summary || null,
+      tip: match.strengths.length > 0
+        ? `Lead with your strength in ${match.strengths[0].toLowerCase()}`
+        : 'Highlight your most relevant experience in your application',
+    };
 
-    // Cache the result
-    await c.env.KV_CACHE.put(cacheKey, JSON.stringify(analysis), {
-      expirationTtl: 7 * 24 * 60 * 60,
-    });
+    // Save to application if one exists
+    const app = await c.env.DB.prepare(
+      'SELECT id FROM applications WHERE user_id = ? AND job_id = ?'
+    ).bind(user.id, jobId).first();
+
+    if (app) {
+      await c.env.DB.prepare(
+        'UPDATE applications SET ai_match_score = ?, ai_analysis = ? WHERE id = ?'
+      ).bind(match.score, JSON.stringify(analysis), app.id).run();
+    }
 
     return c.json({ analysis, cached: false }, 200);
   } catch (error: unknown) {
