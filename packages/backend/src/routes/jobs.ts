@@ -36,9 +36,12 @@ async function getOptionalUser(
 // GET /api/jobs
 jobs.get('/', async (c) => {
   try {
-    const title = c.req.query("title") || undefined;
+    const rawTitle = c.req.query("title") || undefined;
+    // Keep only alphanumeric, spaces, hyphens; cap at 50 chars to prevent D1 LIKE complexity errors
+    const title = rawTitle ? rawTitle.replace(/[^a-zA-Z0-9\s-]/g, '').slice(0, 50).trim() || undefined : undefined;
     const remote = c.req.query("remote");
-    const location = c.req.query("location") || undefined;
+    const rawLocation = c.req.query("location") || undefined;
+    const location = rawLocation ? rawLocation.replace(/[^a-zA-Z0-9\s-,]/g, '').slice(0, 50).trim() || undefined : undefined;
     const cursor = c.req.query("cursor") || undefined;
     const limitParam = c.req.query("limit");
     const limit = limitParam ? Math.min(Math.max(1, parseInt(limitParam, 10) || 20), 100) : 20;
