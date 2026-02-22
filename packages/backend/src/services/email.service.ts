@@ -1,15 +1,5 @@
-import { Resend } from 'resend';
-import { render } from '@react-email/render';
 import type { Env } from './db.service';
 import type { User } from '@gethiredpoc/shared';
-import { LimitWarningEmail } from '../emails/LimitWarningEmail';
-import { LimitReachedEmail } from '../emails/LimitReachedEmail';
-import { PaymentSuccessEmail } from '../emails/PaymentSuccessEmail';
-import { PaymentFailedEmail } from '../emails/PaymentFailedEmail';
-import { MonthlyUsageSummary } from '../emails/MonthlyUsageSummary';
-import { TrialWarningEmail } from '../emails/TrialWarningEmail';
-import { TrialFinalWarningEmail } from '../emails/TrialFinalWarningEmail';
-import { TrialExpiredEmail } from '../emails/TrialExpiredEmail';
 
 export interface EmailPreferences {
   userId: string;
@@ -17,6 +7,30 @@ export interface EmailPreferences {
   statusUpdatesEnabled: boolean;
   remindersEnabled: boolean;
   digestFrequency: 'daily' | 'weekly' | 'monthly';
+}
+
+/**
+ * Send an email via the email worker service binding
+ */
+async function sendViaWorker(
+  env: Env,
+  type: string,
+  to: string,
+  payload: Record<string, any>
+): Promise<void> {
+  const res = await env.EMAIL_WORKER.fetch('https://email/send', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      type,
+      payload: { ...payload, to },
+      apiKey: env.RESEND_API_KEY,
+    }),
+  });
+  if (!res.ok) {
+    const body = await res.text();
+    throw new Error(`Email worker error (${res.status}): ${body}`);
+  }
 }
 
 /**
@@ -33,31 +47,12 @@ export async function sendWelcomeEmail(
     return;
   }
 
-  const resend = new Resend(apiKey);
-
   try {
-    await resend.emails.send({
-      from: 'GetHired POC <noreply@gethiredpoc.com>',
-      to: userEmail,
-      subject: 'Welcome to GetHired POC!',
-      html: `
-        <h2>Welcome to GetHired POC!</h2>
-        <p>Hi ${userName || 'there'},</p>
-        <p>We're excited to help you in your job search journey.</p>
-        <h3>Get started by:</h3>
-        <ol>
-          <li>Uploading your resume</li>
-          <li>Browsing available jobs</li>
-          <li>Tracking your applications</li>
-        </ol>
-        <p>Best of luck!<br>The GetHired Team</p>
-      `
-    });
-
+    await sendViaWorker(env, 'welcome', userEmail, { userName, userEmail });
     console.log(`Welcome email sent to ${userEmail}`);
     await logEmail(env.DB, userEmail, 'welcome', 'Welcome to GetHired POC!', 'sent');
   } catch (error: unknown) {
-    console.error('Resend error:', error instanceof Error ? error.message : String(error));
+    console.error('Email send error:', error instanceof Error ? error.message : String(error));
     await logEmail(env.DB, userEmail, 'welcome', 'Welcome to GetHired POC!', 'failed');
   }
 }
@@ -78,44 +73,28 @@ export async function sendStatusUpdateEmail(
     return;
   }
 
-  // Check if user has status updates enabled
   const prefs = await getEmailPreferences(env.DB, userEmail);
   if (!prefs.statusUpdatesEnabled) {
     console.log(`Status updates disabled for ${userEmail}`);
     return;
   }
 
-  const resend = new Resend(apiKey);
-
-  const statusMessages = {
+  const statusMessages: Record<string, string> = {
     'applied': 'Your application has been submitted',
     'phone_screen': 'You have a phone screen scheduled',
     'interview': 'You have an interview scheduled',
     'offer': 'Congratulations! You received an offer',
-    'rejected': 'Application status updated'
+    'rejected': 'Application status updated',
   };
-
-  const message = statusMessages[newStatus as keyof typeof statusMessages] || 'Application status updated';
+  const message = statusMessages[newStatus] || 'Application status updated';
   const subject = `${message} - ${jobTitle} at ${company}`;
 
   try {
-    await resend.emails.send({
-      from: 'GetHired POC <noreply@gethiredpoc.com>',
-      to: userEmail,
-      subject,
-      html: `
-        <h2>${message}</h2>
-        <p><strong>Job:</strong> ${jobTitle}</p>
-        <p><strong>Company:</strong> ${company}</p>
-        <p><strong>New Status:</strong> ${newStatus}</p>
-        <p>Good luck!<br>The GetHired Team</p>
-      `
-    });
-
+    await sendViaWorker(env, 'status_update', userEmail, { jobTitle, company, newStatus });
     console.log(`Status update email sent to ${userEmail}`);
     await logEmail(env.DB, userEmail, 'status_update', subject, 'sent');
   } catch (error: unknown) {
-    console.error('Resend error:', error instanceof Error ? error.message : String(error));
+    console.error('Email send error:', error instanceof Error ? error.message : String(error));
     await logEmail(env.DB, userEmail, 'status_update', subject, 'failed');
   }
 }
@@ -134,7 +113,6 @@ export async function getEmailPreferences(
   `).bind(userId).first();
 
   if (!result) {
-    // Return defaults if no preferences exist
     return {
       userId,
       digestEnabled: true,
@@ -161,13 +139,11 @@ export async function updateEmailPreferences(
   userId: string,
   preferences: Partial<Omit<EmailPreferences, 'userId'>>
 ): Promise<void> {
-  // Check if preferences exist
   const existing = await db.prepare('SELECT user_id FROM email_preferences WHERE user_id = ?')
     .bind(userId)
     .first();
 
   if (existing) {
-    // Update existing preferences
     const updates: string[] = [];
     const values: any[] = [];
 
@@ -196,7 +172,6 @@ export async function updateEmailPreferences(
       `).bind(...values).run();
     }
   } else {
-    // Insert new preferences
     await db.prepare(`
       INSERT INTO email_preferences (user_id, digest_enabled, status_updates_enabled, reminders_enabled, digest_frequency)
       VALUES (?, ?, ?, ?, ?)
@@ -220,7 +195,6 @@ async function logEmail(
   subject: string,
   status: string
 ): Promise<void> {
-  // Get user ID from email
   const user = await db.prepare('SELECT id FROM users WHERE email = ?')
     .bind(userEmail)
     .first();
@@ -241,7 +215,6 @@ async function logEmail(
  */
 export function shouldSendLimitWarning(current: number, limit: number): boolean {
   const percentage = (current / limit) * 100;
-  // Send at 80% and 100%
   return percentage >= 80 && percentage < 100;
 }
 
@@ -261,28 +234,17 @@ export async function sendLimitWarningEmail(
     return;
   }
 
-  const resend = new Resend(apiKey);
   const percentage = Math.round((current / limit) * 100);
   const subject = `You've used ${percentage}% of your ${limitType} limit`;
 
   try {
-    const html = await render(
-      LimitWarningEmail({
-        userName: user.full_name || 'there',
-        limitType,
-        current,
-        limit,
-        upgradeUrl: `${env.FRONTEND_URL || 'https://gethiredpoc.pages.dev'}/subscription`,
-      })
-    );
-
-    await resend.emails.send({
-      from: 'GetHiredPOC <noreply@gethiredpoc.com>',
-      to: user.email,
-      subject,
-      html,
+    await sendViaWorker(env, 'limit_warning', user.email, {
+      userName: user.full_name || 'there',
+      limitType,
+      current,
+      limit,
+      upgradeUrl: `${env.FRONTEND_URL || 'https://gethiredpoc.pages.dev'}/subscription`,
     });
-
     console.log(`Limit warning email sent to ${user.email}`);
     await logEmail(env.DB, user.email, 'limit_warning', subject, 'sent');
   } catch (error: any) {
@@ -307,27 +269,16 @@ export async function sendLimitReachedEmail(
     return;
   }
 
-  const resend = new Resend(apiKey);
   const subject = `You've reached your ${limitType} limit`;
 
   try {
-    const html = await render(
-      LimitReachedEmail({
-        userName: user.full_name || 'there',
-        limitType,
-        limit,
-        upgradeUrl: `${env.FRONTEND_URL || 'https://gethiredpoc.pages.dev'}/subscription`,
-        resetDate,
-      })
-    );
-
-    await resend.emails.send({
-      from: 'GetHiredPOC <noreply@gethiredpoc.com>',
-      to: user.email,
-      subject,
-      html,
+    await sendViaWorker(env, 'limit_reached', user.email, {
+      userName: user.full_name || 'there',
+      limitType,
+      limit,
+      upgradeUrl: `${env.FRONTEND_URL || 'https://gethiredpoc.pages.dev'}/subscription`,
+      resetDate,
     });
-
     console.log(`Limit reached email sent to ${user.email}`);
     await logEmail(env.DB, user.email, 'limit_reached', subject, 'sent');
   } catch (error: any) {
@@ -353,28 +304,17 @@ export async function sendPaymentSuccessEmail(
     return;
   }
 
-  const resend = new Resend(apiKey);
   const subject = 'Thank you for upgrading to PRO!';
 
   try {
-    const html = await render(
-      PaymentSuccessEmail({
-        userName: user.full_name || 'there',
-        amount,
-        subscriptionId,
-        startDate,
-        nextBillingDate,
-        dashboardUrl: `${env.FRONTEND_URL || 'https://gethiredpoc.pages.dev'}/dashboard`,
-      })
-    );
-
-    await resend.emails.send({
-      from: 'GetHiredPOC <noreply@gethiredpoc.com>',
-      to: user.email,
-      subject,
-      html,
+    await sendViaWorker(env, 'payment_success', user.email, {
+      userName: user.full_name || 'there',
+      amount,
+      subscriptionId,
+      startDate,
+      nextBillingDate,
+      dashboardUrl: `${env.FRONTEND_URL || 'https://gethiredpoc.pages.dev'}/dashboard`,
     });
-
     console.log(`Payment success email sent to ${user.email}`);
     await logEmail(env.DB, user.email, 'payment_success', subject, 'sent');
   } catch (error: any) {
@@ -399,27 +339,16 @@ export async function sendPaymentFailedEmail(
     return;
   }
 
-  const resend = new Resend(apiKey);
   const subject = 'Action required: Payment failed';
 
   try {
-    const html = await render(
-      PaymentFailedEmail({
-        userName: user.full_name || 'there',
-        amount,
-        failureReason,
-        retryDate,
-        updatePaymentUrl: `${env.FRONTEND_URL || 'https://gethiredpoc.pages.dev'}/subscription`,
-      })
-    );
-
-    await resend.emails.send({
-      from: 'GetHiredPOC <noreply@gethiredpoc.com>',
-      to: user.email,
-      subject,
-      html,
+    await sendViaWorker(env, 'payment_failed', user.email, {
+      userName: user.full_name || 'there',
+      amount,
+      failureReason,
+      retryDate,
+      updatePaymentUrl: `${env.FRONTEND_URL || 'https://gethiredpoc.pages.dev'}/subscription`,
     });
-
     console.log(`Payment failed email sent to ${user.email}`);
     await logEmail(env.DB, user.email, 'payment_failed', subject, 'sent');
   } catch (error: any) {
@@ -449,30 +378,19 @@ export async function sendMonthlyUsageSummary(
     return;
   }
 
-  const resend = new Resend(apiKey);
   const subject = `Your ${month} usage summary`;
 
   try {
-    const html = await render(
-      MonthlyUsageSummary({
-        userName: user.full_name || 'there',
-        month,
-        tier: user.subscription_tier === 'pro' ? 'pro' : 'free',
-        usage,
-        dashboardUrl: `${env.FRONTEND_URL || 'https://gethiredpoc.pages.dev'}/dashboard`,
-        upgradeUrl: user.subscription_tier !== 'pro'
-          ? `${env.FRONTEND_URL || 'https://gethiredpoc.pages.dev'}/subscription`
-          : undefined,
-      })
-    );
-
-    await resend.emails.send({
-      from: 'GetHiredPOC <noreply@gethiredpoc.com>',
-      to: user.email,
-      subject,
-      html,
+    await sendViaWorker(env, 'monthly_summary', user.email, {
+      userName: user.full_name || 'there',
+      month,
+      tier: user.subscription_tier === 'pro' ? 'pro' : 'free',
+      usage,
+      dashboardUrl: `${env.FRONTEND_URL || 'https://gethiredpoc.pages.dev'}/dashboard`,
+      upgradeUrl: user.subscription_tier !== 'pro'
+        ? `${env.FRONTEND_URL || 'https://gethiredpoc.pages.dev'}/subscription`
+        : undefined,
     });
-
     console.log(`Monthly usage summary sent to ${user.email}`);
     await logEmail(env.DB, user.email, 'monthly_summary', subject, 'sent');
   } catch (error: any) {
@@ -495,25 +413,14 @@ export async function sendTrialWarningEmail(
     return;
   }
 
-  const resend = new Resend(apiKey);
   const subject = `Your PRO trial expires in ${daysRemaining} days`;
 
   try {
-    const html = await render(
-      TrialWarningEmail({
-        userName: user.full_name || 'there',
-        daysRemaining,
-        upgradeUrl: `${env.FRONTEND_URL || 'https://gethiredpoc.pages.dev'}/subscription`,
-      })
-    );
-
-    await resend.emails.send({
-      from: 'GetHiredPOC <noreply@gethiredpoc.com>',
-      to: user.email,
-      subject,
-      html,
+    await sendViaWorker(env, 'trial_warning', user.email, {
+      userName: user.full_name || 'there',
+      daysRemaining,
+      upgradeUrl: `${env.FRONTEND_URL || 'https://gethiredpoc.pages.dev'}/subscription`,
     });
-
     console.log(`Trial warning email sent to ${user.email}`);
     await logEmail(env.DB, user.email, 'trial_warning', subject, 'sent');
   } catch (error: any) {
@@ -535,24 +442,13 @@ export async function sendTrialFinalWarningEmail(
     return;
   }
 
-  const resend = new Resend(apiKey);
   const subject = 'Your PRO trial expires tomorrow!';
 
   try {
-    const html = await render(
-      TrialFinalWarningEmail({
-        userName: user.full_name || 'there',
-        upgradeUrl: `${env.FRONTEND_URL || 'https://gethiredpoc.pages.dev'}/subscription`,
-      })
-    );
-
-    await resend.emails.send({
-      from: 'GetHiredPOC <noreply@gethiredpoc.com>',
-      to: user.email,
-      subject,
-      html,
+    await sendViaWorker(env, 'trial_final_warning', user.email, {
+      userName: user.full_name || 'there',
+      upgradeUrl: `${env.FRONTEND_URL || 'https://gethiredpoc.pages.dev'}/subscription`,
     });
-
     console.log(`Trial final warning email sent to ${user.email}`);
     await logEmail(env.DB, user.email, 'trial_final_warning', subject, 'sent');
   } catch (error: any) {
@@ -574,24 +470,13 @@ export async function sendTrialExpiredEmail(
     return;
   }
 
-  const resend = new Resend(apiKey);
   const subject = 'Your PRO trial has ended';
 
   try {
-    const html = await render(
-      TrialExpiredEmail({
-        userName: user.full_name || 'there',
-        upgradeUrl: `${env.FRONTEND_URL || 'https://gethiredpoc.pages.dev'}/subscription`,
-      })
-    );
-
-    await resend.emails.send({
-      from: 'GetHiredPOC <noreply@gethiredpoc.com>',
-      to: user.email,
-      subject,
-      html,
+    await sendViaWorker(env, 'trial_expired', user.email, {
+      userName: user.full_name || 'there',
+      upgradeUrl: `${env.FRONTEND_URL || 'https://gethiredpoc.pages.dev'}/subscription`,
     });
-
     console.log(`Trial expired email sent to ${user.email}`);
     await logEmail(env.DB, user.email, 'trial_expired', subject, 'sent');
   } catch (error: any) {

@@ -4,7 +4,8 @@
     "lib": ["ES2022"],
     "module": "ESNext",
     "moduleResolution": "bundler",
-    "types": ["@cloudflare/workers-types", "@cloudflare/vitest-pool-workers"],
+    "jsx": "react-jsx",
+    "types": ["@cloudflare/workers-types"],
     "outDir": "./dist",
     "strict": true,
     "esModuleInterop": true,
@@ -14,6 +15,6 @@
     "isolatedModules": true,
     "noEmit": false
   },
-  "include": ["src/**/*", "test/**/*", "vitest.config.mts"],
-  "exclude": ["node_modules", "dist", "src/emails"]
+  "include": ["src/**/*"],
+  "exclude": ["node_modules", "dist"]
 }

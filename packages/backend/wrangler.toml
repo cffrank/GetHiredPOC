@@ -6,6 +6,10 @@ compatibility_flags = ["nodejs_compat"]
 # Disable workers.dev subdomain (only use custom domain)
 workers_dev = false
 
+# Smart Placement: run Worker near D1 database to reduce latency
+[placement]
+mode = "smart"
+
 # CORS allowed origins (update with production frontend URL)
 [vars]
 FRONTEND_URL = "https://app.allfrontoffice.com"
@@ -73,6 +77,15 @@ gateway_id = "jobmatch-ai-gateway-dev"
 [[vectorize]]
 binding = "VECTORIZE"
 index_name = "job-embeddings"
+
+# Service Bindings to sub-workers
+[[services]]
+binding = "EMAIL_WORKER"
+service = "gethiredpoc-email"
+
+[[services]]
+binding = "DOCUMENT_WORKER"
+service = "gethiredpoc-document"
 
 # Cron triggers
 [triggers]

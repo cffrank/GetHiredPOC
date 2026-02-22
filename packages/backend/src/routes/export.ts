@@ -2,17 +2,46 @@ import { Hono } from 'hono';
 import { zValidator } from '@hono/zod-validator';
 import type { Env } from '../services/db.service';
 import { getCurrentUser } from '../services/auth.service';
-import {
-  generateResumePDF,
-  generateResumeDOCX,
-  generateCoverLetterPDF,
-  generateCoverLetterDOCX,
-  type ResumeData,
-  type CoverLetterData
-} from '../services/document-export.service';
 import { toMessage } from '../utils/errors';
 import { coverLetterExportSchema } from '../schemas/export.schema';
 import { validationHook } from '../schemas/validation-hook';
+
+interface ResumeData {
+  fullName: string;
+  email: string;
+  phone?: string;
+  location?: string;
+  summary?: string;
+  workExperience: Array<{
+    company: string;
+    title: string;
+    location?: string;
+    startDate?: string;
+    endDate?: string;
+    description?: string;
+  }>;
+  education: Array<{
+    school: string;
+    degree?: string;
+    fieldOfStudy?: string;
+    startDate?: string;
+    endDate?: string;
+    gpa?: string;
+  }>;
+  skills?: string[];
+}
+
+interface CoverLetterData {
+  applicantName: string;
+  applicantEmail: string;
+  applicantPhone?: string;
+  applicantAddress?: string;
+  companyName: string;
+  jobTitle: string;
+  hiringManagerName?: string;
+  bodyParagraphs: string[];
+  date: string;
+}
 
 const exportRoutes = new Hono<{ Bindings: Env }>();
 
@@ -92,20 +121,26 @@ exportRoutes.get('/resume/:format', async (c) => {
       skills: parsedData.skills || (user.skills ? JSON.parse(user.skills) : [])
     };
 
-    // Generate document
-    let fileBuffer: Uint8Array;
-    let contentType: string;
-    let filename: string;
+    // Generate document via document worker
+    const docType = format === 'pdf' ? 'resume-pdf' : 'resume-docx';
+    const res = await c.env.DOCUMENT_WORKER.fetch('https://document/generate', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ type: docType, data: resumeData }),
+    });
 
-    if (format === 'pdf') {
-      fileBuffer = await generateResumePDF(resumeData);
-      contentType = 'application/pdf';
-      filename = `resume_${user.full_name?.replace(/\s+/g, '_') || 'resume'}.pdf`;
-    } else {
-      fileBuffer = await generateResumeDOCX(resumeData);
-      contentType = 'application/vnd.openxmlformats-officedocument.wordprocessingml.document';
-      filename = `resume_${user.full_name?.replace(/\s+/g, '_') || 'resume'}.docx`;
+    if (!res.ok) {
+      const errorBody = await res.text();
+      throw new Error(`Document worker error (${res.status}): ${errorBody}`);
     }
+
+    const fileBuffer = new Uint8Array(await res.arrayBuffer());
+    const contentType = format === 'pdf'
+      ? 'application/pdf'
+      : 'application/vnd.openxmlformats-officedocument.wordprocessingml.document';
+    const filename = format === 'pdf'
+      ? `resume_${user.full_name?.replace(/\s+/g, '_') || 'resume'}.pdf`
+      : `resume_${user.full_name?.replace(/\s+/g, '_') || 'resume'}.docx`;
 
     return new Response(fileBuffer, {
       headers: {
@@ -140,7 +175,7 @@ exportRoutes.post('/cover-letter/:format', zValidator('json', coverLetterExportS
     const coverLetterData: CoverLetterData = {
       applicantName: user.full_name || 'Your Name',
       applicantEmail: user.email,
-      applicantPhone: undefined, // Could be fetched from profile if added
+      applicantPhone: undefined,
       applicantAddress: user.location ?? undefined,
       companyName,
       jobTitle,
@@ -153,20 +188,26 @@ exportRoutes.post('/cover-letter/:format', zValidator('json', coverLetterExportS
       })
     };
 
-    // Generate document
-    let fileBuffer: Uint8Array;
-    let contentType: string;
-    let filename: string;
+    // Generate document via document worker
+    const docType = format === 'pdf' ? 'cover-letter-pdf' : 'cover-letter-docx';
+    const res = await c.env.DOCUMENT_WORKER.fetch('https://document/generate', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ type: docType, data: coverLetterData }),
+    });
 
-    if (format === 'pdf') {
-      fileBuffer = await generateCoverLetterPDF(coverLetterData);
-      contentType = 'application/pdf';
-      filename = `cover_letter_${companyName.replace(/\s+/g, '_')}.pdf`;
-    } else {
-      fileBuffer = await generateCoverLetterDOCX(coverLetterData);
-      contentType = 'application/vnd.openxmlformats-officedocument.wordprocessingml.document';
-      filename = `cover_letter_${companyName.replace(/\s+/g, '_')}.docx`;
+    if (!res.ok) {
+      const errorBody = await res.text();
+      throw new Error(`Document worker error (${res.status}): ${errorBody}`);
     }
+
+    const fileBuffer = new Uint8Array(await res.arrayBuffer());
+    const contentType = format === 'pdf'
+      ? 'application/pdf'
+      : 'application/vnd.openxmlformats-officedocument.wordprocessingml.document';
+    const filename = format === 'pdf'
+      ? `cover_letter_${companyName.replace(/\s+/g, '_')}.pdf`
+      : `cover_letter_${companyName.replace(/\s+/g, '_')}.docx`;
 
     return new Response(fileBuffer, {
       headers: {

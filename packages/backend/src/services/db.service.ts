@@ -41,6 +41,8 @@ export interface Env {
   KV_CACHE: KVNamespace;
   KV_SESSIONS: KVNamespace;
   AI: Ai;
+  EMAIL_WORKER: Fetcher;
+  DOCUMENT_WORKER: Fetcher;
   FRONTEND_URL?: string;
   BACKEND_URL?: string;
   ADZUNA_APP_ID?: string;

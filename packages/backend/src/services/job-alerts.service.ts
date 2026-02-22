@@ -1,5 +1,4 @@
 import type { Env } from './db.service';
-import { Resend } from 'resend';
 import { getRecommendationsWithJobDetails } from './job-recommendations.service';
 
 export async function sendDailyJobAlert(env: Env, userId: string): Promise<boolean> {
@@ -83,21 +82,27 @@ export async function sendDailyJobAlert(env: Env, userId: string): Promise<boole
       </html>
     `;
 
-    // Send email using Resend
+    // Send email via email worker service binding
     const apiKey = env.RESEND_API_KEY;
     if (!apiKey) {
       console.error('[Job Alert] Resend API key not configured');
       return false;
     }
 
-    const resend = new Resend(apiKey);
-
-    await resend.emails.send({
-      from: 'GetHired POC <noreply@gethiredpoc.com>',
-      to: user.email,
-      subject: `${recommendations.length} New Job ${recommendations.length === 1 ? 'Match' : 'Matches'} for You!`,
-      html
+    const subject = `${recommendations.length} New Job ${recommendations.length === 1 ? 'Match' : 'Matches'} for You!`;
+    const res = await env.EMAIL_WORKER.fetch('https://email/send', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        type: 'raw',
+        payload: { to: user.email, subject, html },
+        apiKey,
+      }),
     });
+    if (!res.ok) {
+      const body = await res.text();
+      throw new Error(`Email worker error (${res.status}): ${body}`);
+    }
 
     console.log(`[Job Alert] Successfully sent alert to ${user.email}`);
     return true;

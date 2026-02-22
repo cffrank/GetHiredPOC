@@ -1,0 +1,20 @@
+{
+  "name": "@gethiredpoc/document-worker",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "wrangler dev",
+    "deploy": "wrangler deploy"
+  },
+  "dependencies": {
+    "hono": "^4.7.8",
+    "pdf-lib": "^1.17.1",
+    "pizzip": "^3.2.0"
+  },
+  "devDependencies": {
+    "@cloudflare/workers-types": "^4.20250110.0",
+    "typescript": "^5.9.3",
+    "wrangler": "^3.100.0"
+  }
+}
