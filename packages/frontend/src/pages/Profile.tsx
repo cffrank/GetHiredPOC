@@ -207,7 +207,13 @@ export default function Profile() {
         throw new Error(error.error || 'Upload failed');
       }
 
-      setLinkedInMessage({ type: 'success', text: 'Successfully imported profile from resume!' });
+      const result = await response.json();
+
+      if (!result.imported) {
+        setLinkedInMessage({ type: 'error', text: 'Resume uploaded but we could not extract profile data. The PDF may be image-based or have an unsupported format. Try the "Paste Profile" option instead.' });
+      } else {
+        setLinkedInMessage({ type: 'success', text: 'Successfully imported profile from resume!' });
+      }
       setShowResumeUpload(false);
       setResumeFile(null);
       window.location.reload();

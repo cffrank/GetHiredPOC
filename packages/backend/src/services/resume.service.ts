@@ -150,7 +150,7 @@ export async function uploadResumePDF(
 }
 
 /**
- * Save resume record to database
+ * Save resume record to database and update user profile with parsed data
  */
 export async function saveResume(
   db: D1Database,
@@ -189,8 +189,48 @@ export async function saveResume(
   // Extract the resume ID from the result
   const resumeId = result.meta.last_row_id?.toString() || '';
 
+  // Update user profile with parsed resume data (COALESCE preserves existing values)
+  const pd = safeResumeData.parsedData;
+  const skillsJson = pd.skills && pd.skills.length > 0 ? JSON.stringify(pd.skills) : null;
+
+  // Split fullName into first/last if we have it
+  let firstName: string | null = null;
+  let lastName: string | null = null;
+  if (pd.fullName) {
+    const parts = pd.fullName.trim().split(/\s+/);
+    firstName = parts[0] || null;
+    lastName = parts.length > 1 ? parts.slice(1).join(' ') : null;
+  }
+
+  await db.prepare(`
+    UPDATE users
+    SET
+      full_name = COALESCE(?, full_name),
+      first_name = COALESCE(?, first_name),
+      last_name = COALESCE(?, last_name),
+      phone = COALESCE(?, phone),
+      bio = COALESCE(?, bio),
+      location = COALESCE(?, location),
+      skills = COALESCE(?, skills)
+    WHERE id = ?
+  `).bind(
+    pd.fullName || null,
+    firstName,
+    lastName,
+    pd.phone || null,
+    pd.summary || null,
+    pd.location || null,
+    skillsJson,
+    safeResumeData.userId
+  ).run();
+
   // Save work experience
   for (const exp of safeResumeData.parsedData.workExperience) {
+    if (!exp.company || !exp.title) {
+      logger.warn('Skipping work experience - missing required fields', { company: exp.company, title: exp.title });
+      continue;
+    }
+
     await db.prepare(`
       INSERT INTO work_experience (user_id, resume_id, company, title, location, start_date, end_date, description)
       VALUES (?, ?, ?, ?, ?, ?, ?, ?)
@@ -208,6 +248,11 @@ export async function saveResume(
 
   // Save education
   for (const edu of safeResumeData.parsedData.education) {
+    if (!edu.school) {
+      logger.warn('Skipping education - missing school name');
+      continue;
+    }
+
     await db.prepare(`
       INSERT INTO education (user_id, resume_id, school, degree, field_of_study, start_date, end_date, gpa)
       VALUES (?, ?, ?, ?, ?, ?, ?, ?)

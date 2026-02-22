@@ -59,13 +59,21 @@ resumes.post('/', async (c) => {
       isPrimary
     });
 
+    const hasData = !!(
+      parsedData.fullName ||
+      parsedData.workExperience?.length ||
+      parsedData.education?.length ||
+      parsedData.skills?.length
+    );
+
     return c.json({
       id: resumeId,
       fileName: file.name,
       fileUrl,
       fileSize,
       parsedData,
-      isPrimary
+      isPrimary,
+      imported: hasData
     }, 201);
   } catch (error: unknown) {
     if (error instanceof AppError) throw error;
