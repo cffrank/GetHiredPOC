@@ -1,6 +1,6 @@
 import { Page, expect } from '@playwright/test';
 
-const BACKEND_URL = 'http://localhost:8787';
+const BACKEND_URL = process.env.E2E_BACKEND_URL || 'http://localhost:8787';
 
 /**
  * Generate a unique test email for each test run
