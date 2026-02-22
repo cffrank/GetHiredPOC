@@ -33,7 +33,7 @@ async function getOptionalUser(
   return await getSession(c.env, sessionId);
 }
 
-// GET /api/jobs
+// GET /api/jobs - search with sanitized filters
 jobs.get('/', async (c) => {
   try {
     const rawTitle = c.req.query("title") || undefined;
