@@ -81,6 +81,8 @@ jobs:
           cache-dependency-path: package-lock.json
       - run: npm ci
         working-directory: packages/shared
+      - run: npm run build
+        working-directory: packages/shared
       - run: npm ci
         working-directory: packages/backend
       - run: npx wrangler deploy
