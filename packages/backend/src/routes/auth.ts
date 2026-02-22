@@ -9,6 +9,7 @@ import {
   getCookie,
   setSessionCookie,
   clearSessionCookie,
+  getCurrentUser,
 } from '../services/auth.service';
 import { sendWelcomeEmail } from '../services/email.service';
 import { toMessage, UnauthorizedError } from '../utils/errors';
@@ -20,9 +21,9 @@ const auth = new Hono<{ Bindings: Env }>();
 // POST /api/auth/signup
 auth.post('/signup', zValidator('json', signupSchema, validationHook), async (c) => {
   try {
-    const { email, password } = c.req.valid('json');
+    const data = c.req.valid('json');
 
-    const { user, sessionId } = await signup(c.env, email, password);
+    const { user, sessionId } = await signup(c.env, data);
     const isProduction = c.env.FRONTEND_URL?.includes('pages.dev');
 
     // Send welcome email (non-blocking)
@@ -31,7 +32,7 @@ auth.post('/signup', zValidator('json', signupSchema, validationHook), async (c)
     );
 
     return c.json(
-      { user },
+      { user, sessionId },
       201,
       {
         'Set-Cookie': setSessionCookie(sessionId, isProduction),
@@ -52,7 +53,7 @@ auth.post('/login', zValidator('json', loginSchema, validationHook), async (c) =
   const isProduction = c.env.FRONTEND_URL?.includes('pages.dev');
 
   return c.json(
-    { user },
+    { user, sessionId },
     200,
     {
       'Set-Cookie': setSessionCookie(sessionId, isProduction),
@@ -80,13 +81,7 @@ auth.post('/logout', async (c) => {
 
 // GET /api/auth/me
 auth.get('/me', async (c) => {
-  const sessionId = getCookie(c.req.raw, "session");
-
-  if (!sessionId) {
-    return c.json({ user: null }, 200);
-  }
-
-  const user = await getSession(c.env, sessionId);
+  const user = await getCurrentUser(c);
   return c.json({ user }, 200);
 });
 

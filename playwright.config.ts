@@ -20,16 +20,18 @@ export default defineConfig({
     },
   ],
 
-  webServer: [
+  webServer: process.env.E2E_SKIP_SERVERS ? undefined : [
     {
       command: 'npm run dev:frontend',
       url: 'http://localhost:5173',
       reuseExistingServer: !process.env.CI,
+      timeout: 120000,
     },
     {
       command: 'npm run dev:backend',
       url: 'http://localhost:8787',
       reuseExistingServer: !process.env.CI,
+      timeout: 120000,
     },
   ],
 });
