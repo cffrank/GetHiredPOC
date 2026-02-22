@@ -10,6 +10,13 @@ import { validationHook } from '../schemas/validation-hook';
 // Allowed profile update fields (maps to DB column names)
 interface ProfileUpdates {
   full_name?: string;
+  first_name?: string;
+  last_name?: string;
+  phone?: string;
+  street_address?: string;
+  city?: string;
+  state?: string;
+  zip_code?: string;
   bio?: string;
   location?: string;
   skills?: string;
@@ -47,14 +54,18 @@ profile.put('/', async (c) => {
       const formData = await c.req.formData();
 
       if (formData.has("full_name")) updates.full_name = formData.get("full_name") as string;
+      if (formData.has("first_name")) updates.first_name = formData.get("first_name") as string;
+      if (formData.has("last_name")) updates.last_name = formData.get("last_name") as string;
+      if (formData.has("phone")) updates.phone = formData.get("phone") as string;
+      if (formData.has("street_address")) updates.street_address = formData.get("street_address") as string;
+      if (formData.has("city")) updates.city = formData.get("city") as string;
+      if (formData.has("state")) updates.state = formData.get("state") as string;
+      if (formData.has("zip_code")) updates.zip_code = formData.get("zip_code") as string;
       if (formData.has("bio")) updates.bio = formData.get("bio") as string;
       if (formData.has("location")) updates.location = formData.get("location") as string;
       if (formData.has("skills")) updates.skills = formData.get("skills") as string;
       if (formData.has("address")) updates.address = formData.get("address") as string;
       if (formData.has("linkedin_url")) updates.linkedin_url = formData.get("linkedin_url") as string;
-
-      console.log('[Profile Update] FormData - address:', formData.get("address"));
-      console.log('[Profile Update] FormData - linkedin_url:', formData.get("linkedin_url"));
 
       const avatarFile = formData.get("avatar");
       if (avatarFile && typeof avatarFile === 'object' && 'arrayBuffer' in avatarFile) {
@@ -83,6 +94,13 @@ profile.put('/', async (c) => {
       console.log('[Profile Update] JSON body:', JSON.stringify(body));
 
       if (body.full_name !== undefined) updates.full_name = body.full_name;
+      if (body.first_name !== undefined) updates.first_name = body.first_name;
+      if (body.last_name !== undefined) updates.last_name = body.last_name;
+      if (body.phone !== undefined) updates.phone = body.phone;
+      if (body.street_address !== undefined) updates.street_address = body.street_address;
+      if (body.city !== undefined) updates.city = body.city;
+      if (body.state !== undefined) updates.state = body.state;
+      if (body.zip_code !== undefined) updates.zip_code = body.zip_code;
       if (body.bio !== undefined) updates.bio = body.bio;
       if (body.location !== undefined) updates.location = body.location;
       if (body.skills !== undefined) {
@@ -91,8 +109,6 @@ profile.put('/', async (c) => {
       if (body.address !== undefined) updates.address = body.address;
       if (body.linkedin_url !== undefined) updates.linkedin_url = body.linkedin_url;
     }
-
-    console.log('[Profile Update] Updates object:', JSON.stringify(updates));
 
     const fields: string[] = [];
     const params: (string | null)[] = [];
@@ -110,19 +126,13 @@ profile.put('/', async (c) => {
     params.push(user.id);
 
     const query = `UPDATE users SET ${fields.join(", ")} WHERE id = ?`;
-    console.log('[Profile Update] SQL query:', query);
-    console.log('[Profile Update] SQL params:', JSON.stringify(params));
-
-    const result = await c.env.DB.prepare(query).bind(...params).run();
-    console.log('[Profile Update] SQL result:', JSON.stringify(result));
+    await c.env.DB.prepare(query).bind(...params).run();
 
     const updatedUser = await c.env.DB.prepare(
-      "SELECT id, email, full_name, bio, location, skills, avatar_url, address, linkedin_url, created_at, updated_at FROM users WHERE id = ?"
+      "SELECT * FROM users WHERE id = ?"
     )
       .bind(user.id)
       .first<User>();
-
-    console.log('[Profile Update] Updated user data:', JSON.stringify(updatedUser));
 
     return c.json({ profile: updatedUser }, 200);
   } catch (error: unknown) {
@@ -143,6 +153,13 @@ profile.patch('/', async (c) => {
       const formData = await c.req.formData();
 
       if (formData.has("full_name")) updates.full_name = formData.get("full_name") as string;
+      if (formData.has("first_name")) updates.first_name = formData.get("first_name") as string;
+      if (formData.has("last_name")) updates.last_name = formData.get("last_name") as string;
+      if (formData.has("phone")) updates.phone = formData.get("phone") as string;
+      if (formData.has("street_address")) updates.street_address = formData.get("street_address") as string;
+      if (formData.has("city")) updates.city = formData.get("city") as string;
+      if (formData.has("state")) updates.state = formData.get("state") as string;
+      if (formData.has("zip_code")) updates.zip_code = formData.get("zip_code") as string;
       if (formData.has("bio")) updates.bio = formData.get("bio") as string;
       if (formData.has("location")) updates.location = formData.get("location") as string;
       if (formData.has("skills")) updates.skills = formData.get("skills") as string;
@@ -172,6 +189,13 @@ profile.patch('/', async (c) => {
       const body = parseResult.data;
 
       if (body.full_name !== undefined) updates.full_name = body.full_name;
+      if (body.first_name !== undefined) updates.first_name = body.first_name;
+      if (body.last_name !== undefined) updates.last_name = body.last_name;
+      if (body.phone !== undefined) updates.phone = body.phone;
+      if (body.street_address !== undefined) updates.street_address = body.street_address;
+      if (body.city !== undefined) updates.city = body.city;
+      if (body.state !== undefined) updates.state = body.state;
+      if (body.zip_code !== undefined) updates.zip_code = body.zip_code;
       if (body.bio !== undefined) updates.bio = body.bio;
       if (body.location !== undefined) updates.location = body.location;
       if (body.skills !== undefined) {
@@ -200,7 +224,7 @@ profile.patch('/', async (c) => {
     await c.env.DB.prepare(query).bind(...params).run();
 
     const updatedUser = await c.env.DB.prepare(
-      "SELECT id, email, full_name, bio, location, skills, avatar_url, address, linkedin_url, created_at, updated_at FROM users WHERE id = ?"
+      "SELECT * FROM users WHERE id = ?"
     )
       .bind(user.id)
       .first<User>();
