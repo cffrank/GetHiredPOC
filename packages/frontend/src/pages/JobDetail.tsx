@@ -243,7 +243,7 @@ export default function JobDetail() {
 
   // Get selected resume/cover letter
   const selectedResume = resumes.find(r => r.id === selectedResumeId);
-  const resumeData = selectedResume ? JSON.parse(selectedResume.resume_data) : null;
+  const resumeData = selectedResume?.resume_data ? JSON.parse(selectedResume.resume_data) : null;
   const selectedCoverLetter = coverLetters.find(c => c.id === selectedCoverLetterId);
 
   // Determine if any tabs should be shown
