@@ -162,7 +162,7 @@ export default function JobDetail() {
     try {
       const result = await analyzeJobMutation.mutateAsync(id!);
       console.log('[JobDetail] Analysis result:', result);
-      setAnalysis(result);
+      setAnalysis(result.analysis);
       setActiveTab('analysis'); // Auto-switch to analysis tab
     } catch (error) {
       console.error('[JobDetail] Analysis error:', error);

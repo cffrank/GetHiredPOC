@@ -26,11 +26,11 @@ export interface ApplicationWithJob extends Application {
 }
 
 export interface AIAnalysis {
-  match_score: number;
-  matching_skills: string[];
-  missing_skills: string[];
-  recommendations: string[];
-  summary: string;
+  score: number;
+  recommendation: 'strong' | 'good' | 'fair' | 'weak';
+  strengths: string[];
+  gaps: string[];
+  tip: string;
 }
 
 export interface ApplicationWithAnalysis extends Omit<Application, 'ai_analysis'> {

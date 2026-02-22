@@ -50,11 +50,18 @@ export async function mockJobAnalysis(
     summary = "Good match - strong candidate for this role";
   }
 
+  // Derive recommendation level from score
+  let recommendation: 'strong' | 'good' | 'fair' | 'weak' = 'fair';
+  if (matchScore >= 85) recommendation = 'strong';
+  else if (matchScore >= 75) recommendation = 'good';
+  else if (matchScore >= 50) recommendation = 'fair';
+  else recommendation = 'weak';
+
   return {
-    match_score: matchScore,
-    matching_skills: matchingSkills.slice(0, 5),
-    missing_skills: missingSkills.slice(0, 5),
-    recommendations: recommendations.slice(0, 3),
-    summary,
+    score: matchScore,
+    recommendation,
+    strengths: matchingSkills.slice(0, 5),
+    gaps: missingSkills.slice(0, 5),
+    tip: recommendations[0] || summary,
   };
 }
