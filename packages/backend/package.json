@@ -12,6 +12,9 @@
   "dependencies": {
     "@gethiredpoc/shared": "file:../shared",
     "@hono/zod-validator": "^0.7.6",
+    "@polar-sh/sdk": "^0.43.1",
+    "@react-email/components": "^1.0.8",
+    "@react-email/render": "^2.0.4",
     "bcryptjs": "^2.4.3",
     "docxtemplater": "^3.67.6",
     "hono": "^4.7.8",
