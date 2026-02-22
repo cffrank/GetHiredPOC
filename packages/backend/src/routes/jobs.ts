@@ -22,7 +22,13 @@ const jobs = new Hono<{ Bindings: Env; Variables: AppVariables }>();
 async function getOptionalUser(
   c: Context<{ Bindings: Env; Variables: AppVariables }>
 ): Promise<User | null> {
-  const sessionId = getCookie(c.req.raw, "session");
+  let sessionId = getCookie(c.req.raw, "session");
+  if (!sessionId) {
+    const authHeader = c.req.header('Authorization');
+    if (authHeader?.startsWith('Bearer ')) {
+      sessionId = authHeader.substring(7);
+    }
+  }
   if (!sessionId) return null;
   return await getSession(c.env, sessionId);
 }
