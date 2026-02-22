@@ -24,6 +24,7 @@ jobs:
             backend:
               - 'packages/backend/**'
               - 'packages/shared/**'
+              - '.github/workflows/deploy.yml'
             email-worker:
               - 'packages/email-worker/**'
             document-worker:
