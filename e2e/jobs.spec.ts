@@ -9,14 +9,14 @@ test.describe('Job browsing & detail', () => {
     await signupUser(page, email);
     await bypassOnboarding(page, email);
     await page.goto('/jobs');
-    await page.waitForLoadState('networkidle', { timeout: 15000 });
+    await page.waitForLoadState('domcontentloaded');
   });
 
   test('jobs page loads with listings or empty state', async ({ page }) => {
-    // Should see either job cards or the empty state message
-    const hasJobs = await page.locator('[class*="JobCard"], a[href^="/jobs/"]').count() > 0;
-    const hasEmpty = await page.getByText('No jobs found matching your criteria').isVisible().catch(() => false);
-    expect(hasJobs || hasEmpty).toBeTruthy();
+    // Wait for either job cards or the empty state message to appear
+    const jobCard = page.locator('a[href^="/jobs/"]').first();
+    const emptyState = page.getByText('No jobs found matching your criteria');
+    await expect(jobCard.or(emptyState)).toBeVisible({ timeout: 15_000 });
   });
 
   test('search filters jobs by title', async ({ page }) => {
@@ -28,7 +28,7 @@ test.describe('Job browsing & detail', () => {
 
       // Should show empty state or no results
       // (the API filters server-side, so wait for network)
-      await page.waitForLoadState('networkidle', { timeout: 10000 });
+      await page.waitForLoadState('domcontentloaded');
     }
   });
 
@@ -98,7 +98,7 @@ test.describe('Job browsing & detail', () => {
 
     // Navigate to saved jobs
     await navigateTo(page, '/saved');
-    await page.waitForLoadState('networkidle', { timeout: 10000 });
+    await page.waitForLoadState('domcontentloaded');
 
     // Should see at least one saved job
     await expect(page.getByText('Saved Jobs')).toBeVisible({ timeout: 5000 });

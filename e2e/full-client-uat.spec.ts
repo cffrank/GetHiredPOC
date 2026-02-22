@@ -19,7 +19,7 @@ test('full client UAT: signup through AI-generated documents', async ({ page }) 
 
   // ── Step 2: Setup Profile (bio, skills, LinkedIn, photo) ────────────
   await navigateTo(page, '/profile');
-  await page.waitForLoadState('networkidle', { timeout: 15_000 });
+  await page.waitForLoadState('domcontentloaded');
   await expect(page.getByRole('heading', { name: /Your Profile/ })).toBeVisible({ timeout: 5_000 });
 
   // Enter edit mode
@@ -81,7 +81,7 @@ test('full client UAT: signup through AI-generated documents', async ({ page }) 
 
   // ── Step 4: Browse Jobs & Save One ──────────────────────────────────
   await page.goto('/jobs');
-  await page.waitForLoadState('networkidle', { timeout: 15_000 });
+  await page.waitForLoadState('domcontentloaded');
 
   const firstJobLink = page.locator('a[href^="/jobs/"]').first();
   const hasJobs = await firstJobLink.isVisible({ timeout: 15_000 }).catch(() => false);
@@ -96,7 +96,7 @@ test('full client UAT: signup through AI-generated documents', async ({ page }) 
 
   // Click into job detail
   await firstJobLink.click();
-  await page.waitForLoadState('networkidle', { timeout: 10_000 });
+  await page.waitForLoadState('domcontentloaded');
 
   // Save the job
   const saveBtn = page.locator('button:has-text("☆ Save")');

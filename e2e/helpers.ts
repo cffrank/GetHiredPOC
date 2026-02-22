@@ -40,7 +40,8 @@ export async function signupUser(
   await page.click('button:has-text("Start Free Trial")');
 
   // Wait for auth to complete — redirects to profile or onboarding
-  await page.waitForURL(/.*(profile|onboarding|jobs)/, { timeout: 15000 });
+  // Production cold starts + password hashing can be very slow
+  await page.waitForURL(/.*(profile|onboarding|jobs)/, { timeout: 90_000 });
 }
 
 /**
@@ -55,7 +56,7 @@ export async function loginUser(
   await page.fill('#email', email);
   await page.fill('#password', password);
   await page.click('button:has-text("Sign In")');
-  await page.waitForURL(/.*(jobs|profile|onboarding)/, { timeout: 15000 });
+  await page.waitForURL(/.*(jobs|profile|onboarding)/, { timeout: 90_000 });
 }
 
 /**
@@ -63,7 +64,7 @@ export async function loginUser(
  */
 export async function logoutUser(page: Page) {
   await page.click('button:has-text("Logout")');
-  await page.waitForURL(/\/(login)?$/, { timeout: 10000 });
+  await page.waitForURL(/\/(login)?$/, { timeout: 30000 });
 }
 
 /**
@@ -75,6 +76,8 @@ export async function bypassOnboarding(page: Page, email: string) {
     headers: { 'Content-Type': 'application/json' },
   });
   expect(response.ok()).toBeTruthy();
+  // Reload so the frontend picks up the updated onboarding state
+  await page.reload({ waitUntil: 'domcontentloaded' });
 }
 
 /**

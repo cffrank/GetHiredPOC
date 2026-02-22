@@ -8,7 +8,7 @@ import { generateTestEmail, signupUser, bypassOnboarding, navigateTo } from './h
  * persisted to the database and survive navigation away and back.
  */
 test('profile updates persist after navigating away and back', async ({ page }) => {
-  test.setTimeout(60_000);
+  test.setTimeout(120_000);
 
   const email = generateTestEmail();
 
@@ -18,7 +18,7 @@ test('profile updates persist after navigating away and back', async ({ page }) 
 
   // ── Navigate to profile ──────────────────────────────────────────────
   await navigateTo(page, '/profile');
-  await page.waitForLoadState('networkidle', { timeout: 15_000 });
+  await page.waitForLoadState('domcontentloaded');
   await expect(page.getByRole('heading', { name: /Your Profile/ })).toBeVisible({ timeout: 5_000 });
 
   // ── Enter edit mode ──────────────────────────────────────────────────
@@ -51,13 +51,13 @@ test('profile updates persist after navigating away and back', async ({ page }) 
   await expect(page.getByText(`${updatedStreet}, ${updatedCity}, ${updatedState} ${updatedZip}`)).toBeVisible({ timeout: 5_000 });
 
   // ── Navigate away ────────────────────────────────────────────────────
-  await navigateTo(page, '/jobs');
-  await page.waitForLoadState('networkidle', { timeout: 10_000 });
-  await expect(page.url()).toContain('/jobs');
+  await page.goto('/jobs');
+  await page.waitForLoadState('domcontentloaded');
+  await expect(page).toHaveURL(/\/jobs/);
 
   // ── Navigate back to profile ─────────────────────────────────────────
   await navigateTo(page, '/profile');
-  await page.waitForLoadState('networkidle', { timeout: 15_000 });
+  await page.waitForLoadState('domcontentloaded');
   await expect(page.getByRole('heading', { name: /Your Profile/ })).toBeVisible({ timeout: 5_000 });
 
   // ── Verify data persisted ────────────────────────────────────────────

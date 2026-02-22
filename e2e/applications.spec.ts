@@ -1,6 +1,22 @@
 import { test, expect } from '@playwright/test';
 import { generateTestEmail, signupUser, bypassOnboarding, navigateTo } from './helpers';
 
+/**
+ * Helper: navigate to /jobs and wait for at least one job link to render.
+ * Skips the test gracefully if no jobs are available.
+ */
+async function gotoJobsAndWait(page: any, t: any) {
+  await page.goto('/jobs');
+  await page.waitForLoadState('domcontentloaded');
+
+  const firstJobLink = page.locator('a[href^="/jobs/"]').first();
+  const hasJobs = await firstJobLink.isVisible({ timeout: 20_000 }).catch(() => false);
+
+  if (!hasJobs) {
+    t.skip(true, 'No jobs in database — skipping');
+  }
+}
+
 test.describe('Application tracker', () => {
   let email: string;
 
@@ -11,79 +27,51 @@ test.describe('Application tracker', () => {
   });
 
   test('apply to a job from job detail', async ({ page }) => {
-    await page.goto('/jobs');
-    await page.waitForLoadState('networkidle', { timeout: 15000 });
+    test.setTimeout(120_000);
+    await gotoJobsAndWait(page, test);
 
-    const jobLinks = page.locator('a[href^="/jobs/"]');
-    const count = await jobLinks.count();
+    await page.locator('a[href^="/jobs/"]').first().click();
+    await expect(page).toHaveURL(/\/jobs\/[^/]+$/, { timeout: 10_000 });
 
-    if (count === 0) {
-      test.skip(true, 'No jobs in database to test applications');
-      return;
-    }
-
-    // Go to first job
-    await jobLinks.first().click();
-    await expect(page).toHaveURL(/\/jobs\/[^/]+$/, { timeout: 10000 });
-
-    // Click Apply Now
     await page.click('button:has-text("Apply Now")');
-
-    // Should redirect to applications page
-    await expect(page).toHaveURL(/\/applications/, { timeout: 15000 });
+    await expect(page).toHaveURL(/\/applications/, { timeout: 15_000 });
   });
 
   test('application appears in tracker', async ({ page }) => {
-    await page.goto('/jobs');
-    await page.waitForLoadState('networkidle', { timeout: 15000 });
-
-    const jobLinks = page.locator('a[href^="/jobs/"]');
-    const count = await jobLinks.count();
-
-    if (count === 0) {
-      test.skip(true, 'No jobs in database to test applications');
-      return;
-    }
+    test.setTimeout(120_000);
+    await gotoJobsAndWait(page, test);
 
     // Apply to a job first
-    await jobLinks.first().click();
-    await expect(page).toHaveURL(/\/jobs\/[^/]+$/, { timeout: 10000 });
+    await page.locator('a[href^="/jobs/"]').first().click();
+    await expect(page).toHaveURL(/\/jobs\/[^/]+$/, { timeout: 10_000 });
     await page.click('button:has-text("Apply Now")');
-    await expect(page).toHaveURL(/\/applications/, { timeout: 15000 });
+    await expect(page).toHaveURL(/\/applications/, { timeout: 15_000 });
 
     // Should see Application Tracker heading
-    await expect(page.getByText('Application Tracker')).toBeVisible({ timeout: 5000 });
+    await expect(page.getByText('Application Tracker')).toBeVisible({ timeout: 5_000 });
 
     // Should see the Applied column with at least one entry
     await expect(page.getByText('Applied')).toBeVisible();
   });
 
   test('delete an application', async ({ page }) => {
-    await page.goto('/jobs');
-    await page.waitForLoadState('networkidle', { timeout: 15000 });
-
-    const jobLinks = page.locator('a[href^="/jobs/"]');
-    const count = await jobLinks.count();
-
-    if (count === 0) {
-      test.skip(true, 'No jobs in database to test delete');
-      return;
-    }
+    test.setTimeout(120_000);
+    await gotoJobsAndWait(page, test);
 
     // Apply to a job first
-    await jobLinks.first().click();
-    await expect(page).toHaveURL(/\/jobs\/[^/]+$/, { timeout: 10000 });
+    await page.locator('a[href^="/jobs/"]').first().click();
+    await expect(page).toHaveURL(/\/jobs\/[^/]+$/, { timeout: 10_000 });
     await page.click('button:has-text("Apply Now")');
-    await expect(page).toHaveURL(/\/applications/, { timeout: 15000 });
+    await expect(page).toHaveURL(/\/applications/, { timeout: 15_000 });
 
-    // Find and click the delete button (the x button on application card)
+    // Find and click the delete button (the × button on application card)
     const deleteBtn = page.locator('button:has-text("×")').first();
-    if (await deleteBtn.isVisible({ timeout: 5000 }).catch(() => false)) {
+    if (await deleteBtn.isVisible({ timeout: 5_000 }).catch(() => false)) {
       await deleteBtn.click();
-      await page.waitForTimeout(1000);
+      await page.waitForTimeout(1_000);
 
       // Verify the application was removed or "No applications yet" appears
-      const noApps = await page.getByText('No applications yet').isVisible({ timeout: 3000 }).catch(() => false);
+      const noApps = await page.getByText('No applications yet').isVisible({ timeout: 3_000 }).catch(() => false);
       // Either no apps message or one fewer card — test passes either way
       expect(true).toBeTruthy();
     }

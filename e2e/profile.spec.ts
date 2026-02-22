@@ -9,7 +9,7 @@ test.describe('Profile management', () => {
     await signupUser(page, email);
     await bypassOnboarding(page, email);
     await navigateTo(page, '/profile');
-    await page.waitForLoadState('networkidle', { timeout: 15000 });
+    await page.waitForLoadState('domcontentloaded');
   });
 
   test('profile page loads with user data from signup', async ({ page }) => {

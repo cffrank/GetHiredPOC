@@ -12,7 +12,7 @@ test.describe('Subscription & trial', () => {
 
   test('new user has PRO trial badge', async ({ page }) => {
     await page.goto('/subscription');
-    await page.waitForLoadState('networkidle', { timeout: 15000 });
+    await page.waitForLoadState('domcontentloaded');
 
     // Should show PRO TRIAL badge (use exact locator to avoid multiple matches)
     await expect(page.getByText('⚡ PRO TRIAL')).toBeVisible({ timeout: 10000 });
@@ -20,7 +20,7 @@ test.describe('Subscription & trial', () => {
 
   test('subscription page shows trial status', async ({ page }) => {
     await page.goto('/subscription');
-    await page.waitForLoadState('networkidle', { timeout: 15000 });
+    await page.waitForLoadState('domcontentloaded');
 
     // Should show Current Plan section with "PRO Trial" (use exact match)
     await expect(page.getByText('Current Plan')).toBeVisible({ timeout: 5000 });
@@ -32,7 +32,7 @@ test.describe('Subscription & trial', () => {
 
   test('usage dashboard displays limits', async ({ page }) => {
     await page.goto('/subscription');
-    await page.waitForLoadState('networkidle', { timeout: 15000 });
+    await page.waitForLoadState('domcontentloaded');
 
     // Should show Usage Dashboard
     await expect(page.getByText('Usage Dashboard')).toBeVisible({ timeout: 5000 });
