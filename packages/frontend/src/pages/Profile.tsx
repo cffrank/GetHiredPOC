@@ -41,7 +41,6 @@ export default function Profile() {
   const [state, setState] = useState(user?.state || '');
   const [zipCode, setZipCode] = useState(user?.zip_code || '');
   const [bio, setBio] = useState(user?.bio || '');
-  const [location, setLocation] = useState(user?.location || '');
   const [linkedInUrl, setLinkedInUrl] = useState(user?.linkedin_url || '');
   const [skills, setSkills] = useState(
     user?.skills ? (JSON.parse(user.skills) as string[]).join(', ') : ''
@@ -70,7 +69,6 @@ export default function Profile() {
       setState(user.state || '');
       setZipCode(user.zip_code || '');
       setBio(user.bio || '');
-      setLocation(user.location || '');
       setLinkedInUrl(user.linkedin_url || '');
       setSkills(user.skills ? (JSON.parse(user.skills) as string[]).join(', ') : '');
     }
@@ -114,7 +112,8 @@ export default function Profile() {
     e.preventDefault();
 
     // Calculate fields updated for XP determination
-    const fieldsUpdated = [firstName, lastName, phone, streetAddress, city, state, zipCode, bio, location, linkedInUrl, skills].filter(f => f && f.toString().trim()).length;
+    const derivedLocation = city && state ? `${city}, ${state}` : '';
+    const fieldsUpdated = [firstName, lastName, phone, streetAddress, city, state, zipCode, bio, derivedLocation, linkedInUrl, skills].filter(f => f && f.toString().trim()).length;
 
     if (avatarFile) {
       const formData = new FormData();
@@ -126,7 +125,7 @@ export default function Profile() {
       formData.append('state', state);
       formData.append('zip_code', zipCode);
       formData.append('bio', bio);
-      formData.append('location', location);
+      formData.append('location', derivedLocation);
       formData.append('linkedin_url', linkedInUrl);
       formData.append('skills', JSON.stringify(skills.split(',').map(s => s.trim()).filter(Boolean)));
       formData.append('avatar', avatarFile);
@@ -141,7 +140,7 @@ export default function Profile() {
         state,
         zip_code: zipCode,
         bio,
-        location,
+        location: derivedLocation,
         linkedin_url: linkedInUrl,
         skills: skills.split(',').map((s: string) => s.trim()).filter(Boolean),
       });
@@ -437,7 +436,6 @@ export default function Profile() {
                         setState(user?.state || '');
                         setZipCode(user?.zip_code || '');
                         setBio(user?.bio || '');
-                        setLocation(user?.location || '');
                         setLinkedInUrl(user?.linkedin_url || '');
                         setSkills(user?.skills ? (JSON.parse(user.skills) as string[]).join(', ') : '');
                         setAvatarFile(null);
@@ -482,12 +480,7 @@ export default function Profile() {
                     </div>
 
                     <div>
-                      <Label className="text-gray-500 text-sm">Location (City, State)</Label>
-                      <p className="text-gray-900">{location || 'Not set'}</p>
-                    </div>
-
-                    <div>
-                      <Label className="text-gray-500 text-sm">Full Address</Label>
+                      <Label className="text-gray-500 text-sm">Address</Label>
                       <p className="text-gray-900">
                         {streetAddress && city && state && zipCode
                           ? `${streetAddress}, ${city}, ${state} ${zipCode}`
@@ -560,16 +553,6 @@ export default function Profile() {
                         value={bio}
                         onChange={(e) => setBio(e.target.value)}
                         placeholder="Tell us about yourself..."
-                      />
-                    </div>
-
-                    <div className="space-y-2">
-                      <Label htmlFor="location">Location (City, State)</Label>
-                      <Input
-                        id="location"
-                        value={location}
-                        onChange={(e) => setLocation(e.target.value)}
-                        placeholder="San Francisco, CA"
                       />
                     </div>
 

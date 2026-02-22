@@ -20,7 +20,7 @@ test.describe('Profile management', () => {
     await expect(page.getByText(email).first()).toBeVisible({ timeout: 5000 });
   });
 
-  test('edit profile info (bio, location, LinkedIn)', async ({ page }) => {
+  test('edit profile info (bio, LinkedIn)', async ({ page }) => {
     // Click Edit button
     const editBtn = page.locator('button:has-text("Edit")').first();
     await expect(editBtn).toBeVisible({ timeout: 5000 });
@@ -28,9 +28,6 @@ test.describe('Profile management', () => {
 
     // Fill in bio
     await page.fill('#bio', 'E2E test bio - software engineer');
-
-    // Fill in location
-    await page.fill('#location', 'San Francisco, CA');
 
     // Fill in LinkedIn URL
     await page.fill('#linkedInUrl', 'https://www.linkedin.com/in/testuser');
@@ -43,7 +40,6 @@ test.describe('Profile management', () => {
 
     // Verify data persists (read-only view should show updated values)
     await expect(page.getByText('E2E test bio - software engineer')).toBeVisible({ timeout: 5000 });
-    await expect(page.getByText('San Francisco, CA')).toBeVisible();
   });
 
   test('add work experience entry', async ({ page }) => {
