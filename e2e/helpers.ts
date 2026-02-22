@@ -3,6 +3,21 @@ import { Page, expect } from '@playwright/test';
 const BACKEND_URL = process.env.E2E_BACKEND_URL || 'http://localhost:8787';
 
 /**
+ * Warm up the backend worker to avoid cold-start timeouts during signup.
+ * Retries the health check to absorb the full cold-start delay.
+ */
+async function warmupBackend(page: Page) {
+  for (let i = 0; i < 3; i++) {
+    try {
+      const res = await page.request.get(`${BACKEND_URL}/api/health`, { timeout: 30_000 });
+      if (res.ok()) return;
+    } catch {
+      // Cold start may cause the first request to time out — retry
+    }
+  }
+}
+
+/**
  * Generate a unique test email for each test run
  */
 export function generateTestEmail(): string {
@@ -19,6 +34,9 @@ export async function signupUser(
   email: string,
   password: string = 'TestPassword123!'
 ) {
+  // Wake up the worker before navigating so cold-start doesn't eat into the signup timeout
+  await warmupBackend(page);
+
   await page.goto('/signup');
 
   // Fill all required fields
