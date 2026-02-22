@@ -239,6 +239,8 @@ jobs.post('/:id/analyze', requireAuth, async (c) => {
       tip: match.strengths.length > 0
         ? `Lead with your strength in ${match.strengths[0].toLowerCase()}`
         : 'Highlight your most relevant experience in your application',
+      qualifications: match.qualifications || [],
+      resumeTips: match.resumeTips || [],
     };
 
     // Save to application if one exists

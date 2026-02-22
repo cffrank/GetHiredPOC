@@ -1,6 +1,6 @@
 import type { Env } from './db.service';
 import { getPrompt, renderPrompt, parseModelConfig } from './ai-prompt.service';
-import type { JobMatch } from '@gethiredpoc/shared';
+import type { JobMatch, QualificationMatch, ResumeTip } from '@gethiredpoc/shared';
 import { createLogger } from '../utils/logger';
 
 const logger = createLogger('job-matching');
@@ -13,6 +13,8 @@ interface MatchResult {
   concerns: string[];
   recommendation: 'strong' | 'good' | 'fair' | 'weak';
   summary?: string;
+  qualifications?: QualificationMatch[];
+  resumeTips?: ResumeTip[];
 }
 
 const PARSE_FALLBACK: MatchResult = {
@@ -20,7 +22,9 @@ const PARSE_FALLBACK: MatchResult = {
   strengths: ['Unable to analyze at this time'],
   concerns: ['Analysis temporarily unavailable'],
   recommendation: 'fair',
-  summary: 'Analysis could not be completed. Please try again.'
+  summary: 'Analysis could not be completed. Please try again.',
+  qualifications: [],
+  resumeTips: []
 };
 
 export interface UserContext {
@@ -176,6 +180,24 @@ function parseMatchJSON(text: string): MatchResult {
     // Validate structure
     if (typeof parsed.score !== 'number' || !parsed.strengths || !parsed.concerns || !parsed.recommendation) {
       throw new Error('Missing required fields in AI response');
+    }
+
+    // Validate optional qualifications array
+    if (parsed.qualifications && Array.isArray(parsed.qualifications)) {
+      parsed.qualifications = parsed.qualifications.filter(
+        (q: any) => q && typeof q.requirement === 'string' && typeof q.matched === 'boolean'
+      );
+    } else {
+      parsed.qualifications = [];
+    }
+
+    // Validate optional resumeTips array
+    if (parsed.resumeTips && Array.isArray(parsed.resumeTips)) {
+      parsed.resumeTips = parsed.resumeTips.filter(
+        (t: any) => t && typeof t.suggestion === 'string'
+      );
+    } else {
+      parsed.resumeTips = [];
     }
 
     return parsed as MatchResult;

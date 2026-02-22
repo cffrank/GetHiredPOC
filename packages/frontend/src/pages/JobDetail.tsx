@@ -433,6 +433,34 @@ export default function JobDetail() {
                             <p className="text-sm text-gray-700 leading-relaxed">{analysis.summary}</p>
                           </div>
                         )}
+
+                        {/* Qualification Match Section */}
+                        {analysis.qualifications?.length > 0 && (
+                          <div className="bg-white border-2 border-violet-200 rounded-2xl p-4 shadow-3d-sm">
+                            <h4 className="font-bold mb-3 text-base text-purple-deep flex items-center gap-2">
+                              📋 Qualification Match
+                              <span className="text-sm font-normal text-gray-500 ml-auto">
+                                Matches {analysis.qualifications.filter((q: any) => q.matched).length} of {analysis.qualifications.length} qualifications
+                              </span>
+                            </h4>
+                            <ul className="space-y-3">
+                              {analysis.qualifications.map((q: any, i: number) => (
+                                <li key={i} className="flex items-start gap-3">
+                                  <span className={`mt-0.5 text-lg flex-shrink-0 ${q.matched ? 'text-green-600' : 'text-red-400'}`}>
+                                    {q.matched ? '✓' : '✗'}
+                                  </span>
+                                  <div className="flex-1">
+                                    <p className="text-sm font-medium text-gray-800">{q.requirement}</p>
+                                    {q.evidence && (
+                                      <p className="text-xs text-gray-500 mt-0.5">{q.evidence}</p>
+                                    )}
+                                  </div>
+                                </li>
+                              ))}
+                            </ul>
+                          </div>
+                        )}
+
                         {analysis.tip && (
                           <div className="bg-white border-2 border-blue-200 rounded-2xl p-4 shadow-3d-sm">
                             <h4 className="font-bold mb-2 text-base text-blue-600 flex items-center gap-2">
@@ -466,6 +494,27 @@ export default function JobDetail() {
                                 <li key={i} className="text-sm text-gray-700 leading-relaxed flex items-start gap-2">
                                   <span className="text-orange-600 mt-0.5 text-lg">•</span>
                                   <span>{gap}</span>
+                                </li>
+                              ))}
+                            </ul>
+                          </div>
+                        )}
+
+                        {/* Resume Suggestions Section */}
+                        {analysis.resumeTips?.length > 0 && (
+                          <div className="bg-white rounded-2xl p-4 border-2 border-blue-200">
+                            <h4 className="font-bold mb-3 text-base text-blue-900 flex items-center gap-2">
+                              📝 Resume Suggestions
+                            </h4>
+                            <ul className="space-y-4">
+                              {analysis.resumeTips.map((tip: any, i: number) => (
+                                <li key={i}>
+                                  <p className="text-sm font-medium text-gray-800">{tip.suggestion}</p>
+                                  {tip.example && (
+                                    <p className="text-xs text-gray-500 mt-1 pl-3 border-l-2 border-blue-300 italic">
+                                      Example: "{tip.example}"
+                                    </p>
+                                  )}
                                 </li>
                               ))}
                             </ul>
