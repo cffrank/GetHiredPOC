@@ -55,7 +55,7 @@ DEFAULT_QUERIES = [
 LOCATION = os.environ.get("JOBSPY_LOCATION", "United States")
 RESULTS_WANTED = int(os.environ.get("JOBSPY_RESULTS_WANTED", "25"))
 HOURS_OLD = int(os.environ.get("JOBSPY_HOURS_OLD", "24"))
-SITES = ["indeed", "google"]
+SITES = os.environ.get("JOBSPY_SITES", "indeed").split(",")
 
 
 def map_job(row: dict) -> dict | None:
