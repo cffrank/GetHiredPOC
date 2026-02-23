@@ -151,6 +151,8 @@ def post_batch(jobs: list[dict]) -> dict:
     headers = {"Content-Type": "application/json", "X-API-Key": CRON_API_KEY}
     cleaned = _clean_for_json(jobs)
     resp = requests.post(url, json={"jobs": cleaned}, headers=headers, timeout=60)
+    if not resp.ok:
+        print(f"  HTTP {resp.status_code}: {resp.text[:500]}")
     resp.raise_for_status()
     return resp.json()
 
