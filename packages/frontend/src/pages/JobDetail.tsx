@@ -11,7 +11,7 @@ import { MatchScoreDial } from '../components/ui/MatchScoreDial';
 import { FloatingShapesBackground } from '../components/effects/FloatingShapesBackground';
 import { CuteRobotLoader } from '../components/loaders/CuteRobotLoader';
 import { SuccessCelebration } from '../components/SuccessCelebration';
-import { MapPin, BarChart3, FileText, Mail, Briefcase, Loader2 } from 'lucide-react';
+import { MapPin, BarChart3, FileText, Mail, Briefcase, Loader2, Download } from 'lucide-react';
 
 interface GeneratedResume {
   id: string;
@@ -58,6 +58,46 @@ export default function JobDetail() {
   const [loadingGeneratedContent, setLoadingGeneratedContent] = useState(false);
   const [activeTab, setActiveTab] = useState<string>('');
   const [showCelebration, setShowCelebration] = useState(false);
+  const [downloading, setDownloading] = useState<string | null>(null);
+
+  const handleDownload = async (type: 'resume' | 'cover-letter', id: string, format: 'pdf' | 'docx') => {
+    const key = `${type}-${id}-${format}`;
+    setDownloading(key);
+    try {
+      const endpoint = type === 'resume'
+        ? `generated-resumes/${id}/download/${format}`
+        : `generated-cover-letters/${id}/download/${format}`;
+      const response = await fetch(
+        `${import.meta.env.VITE_API_URL}/api/applications/${endpoint}`,
+        {
+          headers: {
+            'Authorization': `Bearer ${localStorage.getItem('token')}`
+          }
+        }
+      );
+
+      if (!response.ok) {
+        const err = await response.json().catch(() => ({ error: 'Download failed' }));
+        throw new Error(err.error || 'Download failed');
+      }
+
+      const blob = await response.blob();
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      const disposition = response.headers.get('Content-Disposition');
+      const filenameMatch = disposition?.match(/filename="(.+)"/);
+      a.download = filenameMatch?.[1] || `${type}.${format}`;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+    } catch (error: any) {
+      alert(error.message || 'Download failed');
+    } finally {
+      setDownloading(null);
+    }
+  };
 
   // Fetch generated content on mount
   useEffect(() => {
@@ -558,6 +598,36 @@ export default function JobDetail() {
                             </select>
                           )}
                         </div>
+                        {selectedResumeId && (
+                          <div className="flex gap-2 mt-3">
+                            <Button
+                              variant="outline"
+                              onClick={() => handleDownload('resume', selectedResumeId, 'pdf')}
+                              disabled={downloading === `resume-${selectedResumeId}-pdf`}
+                              className="text-sm"
+                            >
+                              {downloading === `resume-${selectedResumeId}-pdf` ? (
+                                <Loader2 className="w-4 h-4 animate-spin mr-1" />
+                              ) : (
+                                <Download className="w-4 h-4 mr-1" />
+                              )}
+                              PDF
+                            </Button>
+                            <Button
+                              variant="outline"
+                              onClick={() => handleDownload('resume', selectedResumeId, 'docx')}
+                              disabled={downloading === `resume-${selectedResumeId}-docx`}
+                              className="text-sm"
+                            >
+                              {downloading === `resume-${selectedResumeId}-docx` ? (
+                                <Loader2 className="w-4 h-4 animate-spin mr-1" />
+                              ) : (
+                                <Download className="w-4 h-4 mr-1" />
+                              )}
+                              DOCX
+                            </Button>
+                          </div>
+                        )}
                       </CardHeader>
                       <CardContent className="space-y-4">
                         {resumeData && (
@@ -640,6 +710,36 @@ export default function JobDetail() {
                             </select>
                           )}
                         </div>
+                        {selectedCoverLetterId && (
+                          <div className="flex gap-2 mt-3">
+                            <Button
+                              variant="outline"
+                              onClick={() => handleDownload('cover-letter', selectedCoverLetterId, 'pdf')}
+                              disabled={downloading === `cover-letter-${selectedCoverLetterId}-pdf`}
+                              className="text-sm"
+                            >
+                              {downloading === `cover-letter-${selectedCoverLetterId}-pdf` ? (
+                                <Loader2 className="w-4 h-4 animate-spin mr-1" />
+                              ) : (
+                                <Download className="w-4 h-4 mr-1" />
+                              )}
+                              PDF
+                            </Button>
+                            <Button
+                              variant="outline"
+                              onClick={() => handleDownload('cover-letter', selectedCoverLetterId, 'docx')}
+                              disabled={downloading === `cover-letter-${selectedCoverLetterId}-docx`}
+                              className="text-sm"
+                            >
+                              {downloading === `cover-letter-${selectedCoverLetterId}-docx` ? (
+                                <Loader2 className="w-4 h-4 animate-spin mr-1" />
+                              ) : (
+                                <Download className="w-4 h-4 mr-1" />
+                              )}
+                              DOCX
+                            </Button>
+                          </div>
+                        )}
                       </CardHeader>
                       <CardContent>
                         <div className="prose prose-sm max-w-none">

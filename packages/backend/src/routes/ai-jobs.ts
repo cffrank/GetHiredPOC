@@ -30,18 +30,26 @@ aiJobs.post('/:id/generate-resume', async (c) => {
     // Generate tailored resume
     const resume = await generateTailoredResume(c.env, user, job);
 
-    // Save to application if one exists
+    // Count existing versions for this job to determine version name
+    const countResult = await c.env.DB.prepare(
+      'SELECT COUNT(*) as cnt FROM generated_resumes WHERE user_id = ? AND job_id = ?'
+    ).bind(user.id, jobId).first<{ cnt: number }>();
+    const versionNum = (countResult?.cnt ?? 0) + 1;
+    const versionName = `Version ${versionNum}`;
+
+    // Look up application_id if one exists
     const app = await c.env.DB.prepare(
       'SELECT id FROM applications WHERE user_id = ? AND job_id = ?'
-    ).bind(user.id, jobId).first();
+    ).bind(user.id, jobId).first<{ id: string }>();
 
-    if (app) {
-      await c.env.DB.prepare(
-        'UPDATE applications SET resume_content = ? WHERE id = ?'
-      ).bind(JSON.stringify(resume), app.id).run();
-    }
+    // Persist to generated_resumes table
+    const resumeId = crypto.randomUUID();
+    await c.env.DB.prepare(
+      `INSERT INTO generated_resumes (id, user_id, job_id, application_id, version_name, resume_data)
+       VALUES (?, ?, ?, ?, ?, ?)`
+    ).bind(resumeId, user.id, jobId, app?.id ?? null, versionName, JSON.stringify(resume)).run();
 
-    return c.json({ id: crypto.randomUUID(), version_name: 'v1', resume });
+    return c.json({ id: resumeId, version_name: versionName, resume });
   } catch (error: unknown) {
     console.error('Generate resume error:', error);
     return c.json({ error: toMessage(error) }, 500);
@@ -77,18 +85,26 @@ aiJobs.post('/:id/generate-cover-letter', async (c) => {
       coverLetter = `Dear Hiring Manager,\n\nI am writing to express my strong interest in the ${job.title} position at ${job.company}. ${user.bio || 'With my professional background and skills, I am confident I would be a valuable addition to your team.'}\n\nI look forward to the opportunity to discuss how my experience aligns with the needs of your team.\n\nSincerely,\n${userName}`;
     }
 
-    // Save to application if one exists
+    // Count existing versions for this job to determine version name
+    const countResult = await c.env.DB.prepare(
+      'SELECT COUNT(*) as cnt FROM generated_cover_letters WHERE user_id = ? AND job_id = ?'
+    ).bind(user.id, jobId).first<{ cnt: number }>();
+    const versionNum = (countResult?.cnt ?? 0) + 1;
+    const versionName = `Version ${versionNum}`;
+
+    // Look up application_id if one exists
     const app = await c.env.DB.prepare(
       'SELECT id FROM applications WHERE user_id = ? AND job_id = ?'
-    ).bind(user.id, jobId).first();
+    ).bind(user.id, jobId).first<{ id: string }>();
 
-    if (app) {
-      await c.env.DB.prepare(
-        'UPDATE applications SET cover_letter = ? WHERE id = ?'
-      ).bind(coverLetter, app.id).run();
-    }
+    // Persist to generated_cover_letters table
+    const coverId = crypto.randomUUID();
+    await c.env.DB.prepare(
+      `INSERT INTO generated_cover_letters (id, user_id, job_id, application_id, version_name, cover_letter_text)
+       VALUES (?, ?, ?, ?, ?, ?)`
+    ).bind(coverId, user.id, jobId, app?.id ?? null, versionName, coverLetter).run();
 
-    return c.json({ id: crypto.randomUUID(), version_name: 'v1', coverLetter });
+    return c.json({ id: coverId, version_name: versionName, coverLetter });
   } catch (error: unknown) {
     console.error('Generate cover letter error:', error);
     return c.json({ error: toMessage(error) }, 500);
