@@ -150,9 +150,16 @@ export default function JobDetail() {
   };
 
   const handleApply = async () => {
+    // Track the application internally
     await createApplicationMutation.mutateAsync({ jobId: id!, status: 'applied' });
+
+    // Open the external job posting so the user can apply on the job site
+    const externalUrl = data?.job?.external_url;
+    if (externalUrl) {
+      window.open(externalUrl, '_blank', 'noopener');
+    }
+
     setShowCelebration(true);
-    // Navigate after celebration
     setTimeout(() => {
       navigate('/applications');
     }, 3000);
