@@ -1,3 +1,4 @@
+import { useNavigate } from 'react-router-dom';
 import { DndContext, closestCorners, DragEndEvent, useDroppable } from '@dnd-kit/core';
 import { SortableContext, verticalListSortingStrategy, useSortable } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
@@ -23,6 +24,7 @@ const STATUS_LABELS: Record<ApplicationStatus, string> = {
 };
 
 function SortableApplication({ application, onDelete }: any) {
+  const navigate = useNavigate();
   const { attributes, listeners, setNodeRef, transform, transition } = useSortable({
     id: application.id,
   });
@@ -36,7 +38,15 @@ function SortableApplication({ application, onDelete }: any) {
     <div ref={setNodeRef} style={style} {...attributes} {...listeners}>
       <Card className="mb-3 cursor-move touch-manipulation rounded-2xl shadow-3d-sm hover:shadow-3d-md hover:-translate-y-1 transition-all border-2 border-gray-100">
         <CardHeader className="p-3 sm:p-4">
-          <CardTitle className="text-sm sm:text-base font-bold text-purple-deep">{application.job.title}</CardTitle>
+          <CardTitle
+            className="text-sm sm:text-base font-bold text-purple-deep hover:underline cursor-pointer"
+            onClick={(e: React.MouseEvent) => {
+              e.stopPropagation();
+              navigate(`/jobs/${application.job_id}`);
+            }}
+          >
+            {application.job.title}
+          </CardTitle>
           <CardDescription className="text-xs sm:text-sm font-medium">{application.job.company}</CardDescription>
         </CardHeader>
         <CardContent className="p-3 pt-0 sm:p-4 sm:pt-0">

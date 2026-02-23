@@ -161,7 +161,7 @@ export default function JobDetail() {
 
     setShowCelebration(true);
     setTimeout(() => {
-      navigate('/applications');
+      setShowCelebration(false);
     }, 3000);
   };
 
