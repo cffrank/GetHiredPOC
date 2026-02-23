@@ -23,6 +23,7 @@ import analytics from './routes/analytics';
 import interviewQuestions from './routes/interview-questions';
 import generatedContent from './routes/generated-content';
 import gamification from './routes/gamification';
+import cronRoutes from './routes/cron';
 import testUtils from './routes/test-utils';
 import { getFile } from './services/storage.service';
 
@@ -81,6 +82,7 @@ app.route('/api/webhooks', webhooks);
 app.route('/api/admin/analytics', analytics);
 app.route('/api/interview-questions', interviewQuestions);
 app.route('/api/gamification', gamification);
+app.route('/api/cron', cronRoutes);
 app.route('/api/test-utils', testUtils);
 
 // File serving endpoint

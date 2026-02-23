@@ -36,7 +36,8 @@ const SOURCE_PRIORITY: Record<string, number> = {
   'linkedin': 1,
   'indeed': 2,
   'dice': 3,
-  'adzuna': 4
+  'adzuna': 4,
+  'google': 5
 };
 
 /**

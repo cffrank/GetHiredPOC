@@ -55,6 +55,7 @@ export interface Env {
   OPENAI_API_KEY?: string;
   CLOUDFLARE_API_TOKEN?: string;
   ADMIN_EMAILS?: string;
+  CRON_API_KEY?: string;
 }
 
 // Cursor encoding/decoding utilities for keyset pagination
