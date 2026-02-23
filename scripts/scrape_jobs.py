@@ -13,6 +13,32 @@ from datetime import datetime
 import requests
 from jobspy import scrape_jobs
 
+def _safe_int(val) -> int | None:
+    """Convert a value to int, returning None for NaN/None/non-numeric."""
+    if val is None:
+        return None
+    try:
+        if math.isnan(val):
+            return None
+    except (TypeError, ValueError):
+        pass
+    try:
+        return int(val)
+    except (TypeError, ValueError):
+        return None
+
+
+def _clean_for_json(obj):
+    """Recursively replace NaN/Inf floats with None for JSON serialization."""
+    if isinstance(obj, float) and (math.isnan(obj) or math.isinf(obj)):
+        return None
+    if isinstance(obj, dict):
+        return {k: _clean_for_json(v) for k, v in obj.items()}
+    if isinstance(obj, list):
+        return [_clean_for_json(v) for v in obj]
+    return obj
+
+
 BACKEND_URL = os.environ.get("BACKEND_URL", "https://api.allfrontoffice.com")
 CRON_API_KEY = os.environ.get("CRON_API_KEY", "")
 BATCH_SIZE = 50
@@ -61,16 +87,8 @@ def map_job(row: dict) -> dict | None:
         description = description[:10000]
 
     # Salary (enforce_annual_salary is set in scrape call)
-    salary_min = row.get("min_amount")
-    salary_max = row.get("max_amount")
-    if salary_min is not None and not math.isnan(salary_min):
-        salary_min = int(salary_min)
-    else:
-        salary_min = None
-    if salary_max is not None and not math.isnan(salary_max):
-        salary_max = int(salary_max)
-    else:
-        salary_max = None
+    salary_min = _safe_int(row.get("min_amount"))
+    salary_max = _safe_int(row.get("max_amount"))
 
     # Posted date → unix timestamp
     date_posted = row.get("date_posted")
@@ -131,7 +149,8 @@ def post_batch(jobs: list[dict]) -> dict:
     """POST a batch of jobs to the bulk-import endpoint."""
     url = f"{BACKEND_URL}/api/cron/bulk-import"
     headers = {"Content-Type": "application/json", "X-API-Key": CRON_API_KEY}
-    resp = requests.post(url, json={"jobs": jobs}, headers=headers, timeout=60)
+    cleaned = _clean_for_json(jobs)
+    resp = requests.post(url, json={"jobs": cleaned}, headers=headers, timeout=60)
     resp.raise_for_status()
     return resp.json()
 
