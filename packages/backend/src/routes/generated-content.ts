@@ -11,9 +11,17 @@ type Variables = {
 
 const generatedContent = new Hono<{ Bindings: Env; Variables: Variables }>();
 
-// Middleware to require auth
+// Middleware to require auth (supports both cookie and Bearer token)
 async function requireAuth(c: any): Promise<User> {
-  const sessionId = getCookie(c.req.raw, "session");
+  let sessionId = getCookie(c.req.raw, "session");
+
+  if (!sessionId) {
+    const authHeader = c.req.header('Authorization');
+    if (authHeader && authHeader.startsWith('Bearer ')) {
+      sessionId = authHeader.substring(7);
+    }
+  }
+
   if (!sessionId) {
     throw new Error('Unauthorized');
   }

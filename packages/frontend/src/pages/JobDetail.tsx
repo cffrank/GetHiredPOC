@@ -70,8 +70,9 @@ export default function JobDetail() {
       const response = await fetch(
         `${import.meta.env.VITE_API_URL}/api/applications/${endpoint}`,
         {
+          credentials: 'include',
           headers: {
-            'Authorization': `Bearer ${localStorage.getItem('token')}`
+            'Authorization': `Bearer ${localStorage.getItem('sessionToken')}`
           }
         }
       );
@@ -129,8 +130,9 @@ export default function JobDetail() {
       const response = await fetch(
         `${import.meta.env.VITE_API_URL}/api/applications/job/${id}/generated-content`,
         {
+          credentials: 'include',
           headers: {
-            'Authorization': `Bearer ${localStorage.getItem('token')}`
+            'Authorization': `Bearer ${localStorage.getItem('sessionToken')}`
           }
         }
       );
@@ -164,8 +166,9 @@ export default function JobDetail() {
       const response = await fetch(
         `${import.meta.env.VITE_API_URL}/api/jobs/${data.job.id}/similar`,
         {
+          credentials: 'include',
           headers: {
-            'Authorization': `Bearer ${localStorage.getItem('token')}`
+            'Authorization': `Bearer ${localStorage.getItem('sessionToken')}`
           }
         }
       );
