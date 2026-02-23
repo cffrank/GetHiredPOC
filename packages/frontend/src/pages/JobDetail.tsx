@@ -568,7 +568,7 @@ export default function JobDetail() {
                                       <p className="font-medium text-sm">{exp.title} at {exp.company}</p>
                                       <p className="text-xs text-gray-600 mb-1">{exp.dates}</p>
                                       <ul className="list-disc list-inside text-sm text-gray-700 space-y-1">
-                                        {exp.highlights?.map((h: string, j: number) => (
+                                        {(exp.achievements || exp.highlights)?.map((h: string, j: number) => (
                                           <li key={j}>{h}</li>
                                         ))}
                                       </ul>
@@ -583,6 +583,19 @@ export default function JobDetail() {
                                 <div className="flex flex-wrap gap-2">
                                   {resumeData.skills.map((skill: string, i: number) => (
                                     <Badge key={i} className="bg-gradient-to-r from-green-500 to-teal text-white shadow-3d-sm">{skill}</Badge>
+                                  ))}
+                                </div>
+                              </div>
+                            )}
+                            {resumeData.education?.length > 0 && (
+                              <div>
+                                <h4 className="font-semibold mb-2 text-base">Education</h4>
+                                <div className="space-y-2">
+                                  {resumeData.education.map((edu: any, i: number) => (
+                                    <div key={i} className="border-l-2 border-blue-400 pl-3">
+                                      <p className="font-medium text-sm">{edu.degree}</p>
+                                      <p className="text-xs text-gray-600">{edu.school} {edu.year && `· ${edu.year}`}</p>
+                                    </div>
                                   ))}
                                 </div>
                               </div>

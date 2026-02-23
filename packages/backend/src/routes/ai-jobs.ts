@@ -27,25 +27,8 @@ aiJobs.post('/:id/generate-resume', async (c) => {
       return c.json({ error: 'Job not found' }, 404);
     }
 
-    // Generate tailored resume (with fallback for when AI is unavailable)
-    let resume;
-    try {
-      resume = await generateTailoredResume(c.env, user, job);
-    } catch (aiError) {
-      console.warn('AI resume generation failed, using mock fallback:', aiError);
-      const userSkills = user.skills ? JSON.parse(user.skills) : ['Professional skills'];
-      resume = {
-        summary: `Experienced professional targeting the ${job.title} role at ${job.company}. ${user.bio || 'Bringing a strong track record of delivering results.'}`,
-        experience: [{
-          company: 'Previous Experience',
-          title: 'Professional Role',
-          dates: '2020 - Present',
-          achievements: ['Delivered key projects on time', 'Collaborated with cross-functional teams'],
-        }],
-        skills: userSkills,
-        education: [{ school: 'University', degree: 'Degree', year: '2020' }],
-      };
-    }
+    // Generate tailored resume
+    const resume = await generateTailoredResume(c.env, user, job);
 
     // Save to application if one exists
     const app = await c.env.DB.prepare(
