@@ -181,6 +181,33 @@ In a production app, this would connect to actual AI services like OpenAI or Ant
 - **Component Library**: shadcn/ui-inspired components with Tailwind
 - **Modern Stack**: React 19 with Vite and Hono for optimal performance
 
+## Claude Code: Cloudflare Plugin
+
+This project runs on Cloudflare Workers, D1, KV, and R2. If you use [Claude Code](https://docs.claude.com/claude-code) for development, the official Cloudflare plugin adds MCP tools for managing those resources directly from your Claude Code session (listing D1 databases, querying them, inspecting KV namespaces, R2 buckets, Workers, Hyperdrive configs, and searching Cloudflare docs).
+
+### Install
+
+In your Claude Code CLI, run:
+
+```bash
+claude plugin install cloudflare@claude-plugins-official
+```
+
+The plugin is published under the `claude-plugins-official` marketplace. After installing, restart your Claude Code session so the new MCP tools are picked up.
+
+### Authenticate
+
+The plugin requires a Cloudflare account. On first use you will be prompted to authenticate via OAuth. You can also set `set_active_account` to switch between accounts if you have multiple.
+
+### What it's useful for in this repo
+
+- Inspecting the `gethiredpoc` D1 database without dropping into `wrangler d1 execute`.
+- Listing the deployed Worker and reading its current code.
+- Browsing R2 buckets used for file uploads.
+- Searching official Cloudflare documentation while iterating on `wrangler.toml` / Workers code.
+
+The plugin is optional — `npm run dev` and `wrangler` continue to work without it.
+
 ## Seeded Data
 
 The database comes pre-populated with 15 sample jobs across various tech roles including:
